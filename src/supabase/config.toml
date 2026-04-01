@@ -1,0 +1,39 @@
+# Supabase Configuration
+# MaisFrete - Client-side only application
+# NO EDGE FUNCTIONS TO DEPLOY
+# ALL SUPABASE ACCESS IS THROUGH CLIENT SDKS ONLY
+
+[api]
+enabled = false
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+enabled = false
+port = 54323
+
+# CRITICAL: Edge functions are COMPLETELY DISABLED
+# This application does NOT use server-side code
+[functions]
+enabled = false
+verify_jwt = false
+
+# DO NOT DEPLOY - Intentionally disabled
+[functions.server]
+enabled = false
+verify_jwt = false
+
+# DO NOT DEPLOY - Intentionally disabled  
+[functions.send-email]
+enabled = false
+verify_jwt = false
+
+# DO NOT DEPLOY - Intentionally disabled
+[functions.make-server]
+enabled = false
+verify_jwt = false
+
+[edge_runtime]
+enabled = false

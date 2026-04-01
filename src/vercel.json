@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "name": "maisfrete",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "framework": null,
+  "functions": {},
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "env": {
+    "DISABLE_SUPABASE": "true",
+    "STATIC_ONLY": "true"
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./supabase/",
+  "ignore": [
+    "supabase/**",
+    "**/supabase/**",
+    "**/*.edge.ts",
+    "**/*.edge.js",
+    "**/*.sql"
+  ]
+}

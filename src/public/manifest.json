@@ -1,0 +1,86 @@
+{
+  "name": "MaisFrete - Logística Inteligente",
+  "short_name": "MaisFrete",
+  "description": "Plataforma completa de logística de fretes conectando embarcadores, transportadoras e caminhoneiros",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#253663",
+  "theme_color": "#253663",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "business",
+    "logistics",
+    "productivity"
+  ],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "scope": "/",
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Publicar Frete",
+      "short_name": "Publicar",
+      "description": "Publicar um novo frete",
+      "url": "/?action=new-freight",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Minhas Cotações",
+      "short_name": "Cotações",
+      "description": "Ver cotações recebidas",
+      "url": "/?action=quotes",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "short_name": "Chat",
+      "description": "Abrir conversas",
+      "url": "/?action=chat",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

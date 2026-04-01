@@ -1,0 +1,18 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[build.environment]
+  DISABLE_SUPABASE = "true"
+  STATIC_ONLY = "true"
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  # Disable all functions
+  included_files = []
+  ignore = "**/*"

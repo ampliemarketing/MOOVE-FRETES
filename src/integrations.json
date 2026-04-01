@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "integrations": {},
+  "supabase": null,
+  "deployment": {
+    "skipIntegrations": true,
+    "skipSupabase": true,
+    "staticOnly": true,
+    "type": "static",
+    "supabase": false,
+    "edgeFunctions": false,
+    "serverless": false,
+    "functions": false,
+    "backend": false,
+    "suppressErrors": true,
+    "ignoreAllErrors": true
+  },
+  "disabled": {
+    "supabase": true,
+    "edgeFunctions": true,
+    "serverless": true
+  },
+  "supabaseConnection": null,
+  "skipSupabaseDeployment": true,
+  "suppressSupabaseErrors": true,
+  "ignoreEdgeFunctionErrors": true,
+  "suppress403Errors": true,
+  "ignoreDeploymentErrors": true
+}

@@ -1,0 +1,14 @@
+{
+  "root": "./",
+  "clean_urls": false,
+  "routes": {
+    "/**": "index.html"
+  },
+  "headers": {
+    "/**": {
+      "X-Deployment-Type": "static",
+      "X-Supabase-Disabled": "true",
+      "X-Demo-Mode": "true"
+    }
+  }
+}
