@@ -126,23 +126,14 @@ export class NotificationRepository {
     try {
       const { limit = 50, offset = 0 } = params || {};
 
-      // ❌ DESABILITADO - Sistema de notificações temporariamente desligado
-      return {
-        success: true,
-        data: [],
-      };
-
-      /* CÓDIGO ORIGINAL COMENTADO
       // 1. BUSCAR DO SUPABASE
       const supabase = getSupabaseClient();
-      let query = supabase
+      const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('❌ Erro ao buscar notificações do Supabase:', error);
@@ -168,7 +159,6 @@ export class NotificationRepository {
         success: true,
         data: notifications,
       };
-      */
     } catch (error) {
       return {
         success: false,

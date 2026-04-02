@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useMemo } from 'react';
+import { UIProvider, useUI } from './UIContext';
 import { toast } from 'sonner@2.0.3';
 import type { User as DBUser } from '../../utils/database/schema';
 
@@ -78,14 +79,10 @@ export interface AppState {
   stats: AppStats;
   favorites: string[];
   searchHistory: string[];
-  activeScreen: string;
-  darkMode: boolean;
-  connectionStatus: 'online' | 'offline' | 'syncing';
-  lastSync: string | null;
   demoMode: boolean;
 }
 
-type AppAction = 
+type AppAction =
   | { type: 'SET_USER'; payload: User }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'ADD_NOTIFICATION'; payload: Notification }
@@ -95,10 +92,6 @@ type AppAction =
   | { type: 'UPDATE_STATS'; payload: Partial<AppStats> }
   | { type: 'TOGGLE_FAVORITE'; payload: string }
   | { type: 'ADD_SEARCH'; payload: string }
-  | { type: 'SET_ACTIVE_SCREEN'; payload: string }
-  | { type: 'TOGGLE_DARK_MODE' }
-  | { type: 'SET_CONNECTION_STATUS'; payload: 'online' | 'offline' | 'syncing' }
-  | { type: 'UPDATE_LAST_SYNC'; payload: string }
   | { type: 'LOGOUT' }
   | { type: 'INIT_DEMO_MODE' }
   | { type: 'SET_NOTIFICATIONS'; payload: Notification[] };
@@ -122,11 +115,7 @@ const initialState: AppState = {
   },
   favorites: [],
   searchHistory: [],
-  activeScreen: 'dashboard',
-  darkMode: false,
-  connectionStatus: 'online', // Sistema em produção
-  lastSync: null,
-  demoMode: false // Sem modo demo - sistema real
+  demoMode: false
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -197,36 +186,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
         searchHistory: newHistory
       };
 
-    case 'SET_ACTIVE_SCREEN':
-      return {
-        ...state,
-        activeScreen: action.payload
-      };
-
-    case 'TOGGLE_DARK_MODE':
-      return {
-        ...state,
-        darkMode: !state.darkMode
-      };
-
-    case 'SET_CONNECTION_STATUS':
-      return {
-        ...state,
-        connectionStatus: action.payload
-      };
-
-    case 'UPDATE_LAST_SYNC':
-      return {
-        ...state,
-        lastSync: action.payload
-      };
-
     case 'LOGOUT':
       return {
         ...initialState,
         loading: false,
-        darkMode: state.darkMode, // Preserve theme preference
-        connectionStatus: 'online' // Restore online status
       };
 
     case 'SET_NOTIFICATIONS':
@@ -251,12 +214,20 @@ const AppContext = createContext<{
     updateStats: (stats: Partial<AppStats>) => void;
     toggleFavorite: (id: string) => void;
     addSearch: (query: string) => void;
-    setActiveScreen: (screen: string) => void;
     logout: () => void;
   };
 } | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <UIProvider>
+      <AppProviderCore>{children}</AppProviderCore>
+    </UIProvider>
+  );
+}
+
+function AppProviderCore({ children }: { children: React.ReactNode }) {
+  const { setConnectionStatus, setLastSync } = useUI();
   const [state, dispatch] = useReducer(appReducer, initialState);
 
   // Initialize app with Supabase backend connection
@@ -369,7 +340,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                   type: 'SET_NOTIFICATIONS', 
                   payload: notificationsResponse.data.map(n => ({
                     id: n.id,
-                    type: n.type as any,
+                    type: n.type as Notification['type'],
                     title: n.title,
                     message: n.message,
                     timestamp: n.createdAt,
@@ -387,16 +358,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           console.log('AppProvider: No active session found');
         }
         
-        // Set connection status to online
-        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'online' });
-        dispatch({ type: 'UPDATE_LAST_SYNC', payload: new Date().toISOString() });
+        setConnectionStatus('online');
+        setLastSync(new Date().toISOString());
         dispatch({ type: 'SET_LOADING', payload: false });
 
         console.log('AppProvider: Backend connection established');
 
       } catch (error) {
         console.error('AppProvider: Error initializing app:', error);
-        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'offline' });
+        setConnectionStatus('offline');
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
@@ -454,7 +424,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                     type: 'SET_NOTIFICATIONS', 
                     payload: response.data.map(n => ({
                       id: n.id,
-                      type: n.type as any,
+                      type: n.type as Notification['type'],
                       title: n.title,
                       message: n.message,
                       timestamp: n.createdAt,
@@ -465,7 +435,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
                   // Mostrar toast apenas para novas notificações (INSERT)
                   if (payload.eventType === 'INSERT') {
-                    const notification = payload.new as any;
+                    const notification = payload.new as { title: string; message: string };
                     toast.info(notification.title, {
                       description: notification.message,
                       duration: 5000
@@ -580,43 +550,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, [state.user?.id]);
 
-  // Monitor online/offline status
-  useEffect(() => {
-    const handleOnline = () => {
-      console.log('AppProvider: Connection restored');
-      dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'online' });
-    };
-    
-    const handleOffline = () => {
-      console.log('AppProvider: Connection lost');
-      dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'offline' });
-    };
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Dark mode persistence
-  useEffect(() => {
-    const savedDarkMode = localStorage.getItem('maisfrete-dark-mode');
-    if (savedDarkMode === 'true') {
-      dispatch({ type: 'TOGGLE_DARK_MODE' });
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('maisfrete-dark-mode', state.darkMode.toString());
-    if (state.darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [state.darkMode]);
+  // Dark mode é gerenciado pelo UIContext
 
   const actions = useMemo(() => ({
     dispatch, // Expor dispatch para uso direto quando necessário
@@ -666,8 +600,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     },
 
-    setActiveScreen: (screen: string) => dispatch({ type: 'SET_ACTIVE_SCREEN', payload: screen }),
-
     logout: async () => {
       try {
         // Import Supabase client
@@ -694,6 +626,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     </AppContext.Provider>
   );
 }
+
+export { UIProvider, useUI } from './UIContext';
 
 export function useApp() {
   const context = useContext(AppContext);

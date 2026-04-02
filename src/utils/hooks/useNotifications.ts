@@ -121,12 +121,7 @@ export function useNotifications(overrideUserId?: string) {
   }, [notifications, loadNotifications]);
 
   useEffect(() => {
-    // ❌ DESABILITADO - Sistema de notificações temporariamente desligado
-    // loadNotifications();
-    
-    // ❌ DESABILITADO - Polling removido
-    // const interval = setInterval(loadNotifications, 30000);
-    // return () => clearInterval(interval);
+    loadNotifications();
   }, [loadNotifications]);
 
   return {

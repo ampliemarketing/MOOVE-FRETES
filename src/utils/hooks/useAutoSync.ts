@@ -90,18 +90,15 @@ export function useAutoSync(options: AutoSyncOptions) {
 
       onSyncSuccess?.(totalSynced);
     } catch (error) {
-      // Silenciar completamente erros de sincronização - não são críticos
-      // Sistema funciona perfeitamente sem sincronização
-      
+      // Sincronização é opcional — não bloqueia o sistema
+      console.warn('[Sync] Falha na sincronização (não crítico):', error);
+
       setSyncState(prev => ({
         ...prev,
         isSyncing: false,
-        lastSyncSuccess: true, // Marcar como sucesso para não gerar alertas
-        retryCount: 0 // Não fazer retry
+        lastSyncSuccess: false,
+        retryCount: 0
       }));
-
-      // Não mostrar toast de erro - sincronização é opcional
-      // Não chamar onSyncError - sincronização é opcional
     } finally {
       isSyncingRef.current = false;
     }

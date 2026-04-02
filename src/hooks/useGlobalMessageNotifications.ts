@@ -4,15 +4,9 @@ import { createNotification } from '../utils/notification-manager';
 
 /**
  * Hook global para detectar novas mensagens e criar notificações automaticamente.
- * ❌ TEMPORARIAMENTE DESABILITADO - Sistema de notificações em manutenção
  */
 export function useGlobalMessageNotifications(userId: string | undefined) {
   useEffect(() => {
-    // ❌ DESABILITADO - Sistema de notificações temporariamente desligado
-    // Para evitar loop infinito de requisições ao Supabase
-    return;
-    
-    /* CÓDIGO ORIGINAL COMENTADO
     if (!userId) {
       return;
     }
@@ -23,9 +17,9 @@ export function useGlobalMessageNotifications(userId: string | undefined) {
     const setupListener = async () => {
       try {
         const supabase = getSupabaseClient();
-        
+
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+
         if (sessionError || !session) {
           console.log('⚠️ [Global Notifications] Sem sessão ativa - notificações realtime desabilitadas');
           return;
@@ -44,7 +38,7 @@ export function useGlobalMessageNotifications(userId: string | undefined) {
             },
             async (payload) => {
               if (!isActive) return;
-              
+
               const newMessage = payload.new as any;
 
               if (newMessage.sender_id === userId) {
@@ -84,7 +78,7 @@ export function useGlobalMessageNotifications(userId: string | undefined) {
               try {
                 const { database } = await import('../utils/database');
                 const createResult = await database.notifications.create(notification);
-                
+
                 if (createResult.success) {
                   console.log('📬 [Global Notifications] Notificação criada');
                 }
@@ -107,7 +101,7 @@ export function useGlobalMessageNotifications(userId: string | undefined) {
             if (status === 'CLOSED') {
               return;
             }
-            
+
             if (status === 'SUBSCRIBED') {
               console.log('✅ [Global Notifications] Notificações ativadas');
             } else if (status === 'CHANNEL_ERROR') {
@@ -127,6 +121,5 @@ export function useGlobalMessageNotifications(userId: string | undefined) {
         channel.unsubscribe();
       }
     };
-    */
   }, [userId]);
 }

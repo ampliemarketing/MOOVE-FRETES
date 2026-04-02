@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { formatLocationSlash, formatLocation, isValidLocation, isSameLocation } from '../utils/location-helpers';
 import { validateFreights } from '../utils/freight-validator';
@@ -690,16 +690,16 @@ export function FreightManagement({
   }, [freights, resolvedCompanyId]);
   
   // Filtrar fretes baseado no modo de visualização
-  const getFilteredFreights = () => {
+  const filteredFreights = useMemo(() => {
     let baseFreights = freights;
-    
+
     // Filtrar por "Meus Fretes" ou "Todos os Fretes"
     if (viewMode === 'my-freights') {
       // Apenas fretes do usuário logado, EXCLUINDO concluídos (vão para seção separada)
       baseFreights = freights.filter(freight => freight.customerId === resolvedCompanyId && freight.status !== 'completed');
     }
     // Para 'all-freights', mostra todos os fretes da plataforma (sem filtro adicional)
-    
+
     // Aplicar filtros de busca e status
     return baseFreights.filter(freight => {
       // ✅ VERIFICAÇÃO DE NULL ADICIONADA - Previne erro "Cannot read properties of null"
@@ -792,28 +792,21 @@ export function FreightManagement({
       
       if (activeFilter === 'all') return matchesSearch;
       return matchesSearch && freight.status === activeFilter;
-    });
-  };
+    }).sort((a, b) => {
+      // Prioridade de ordenação: fretes ativos primeiro, depois agendados e inativos por último
+      const getPriority = (status: string) => {
+        if (status === 'inactive') return 2;
+        if (status === 'scheduled') return 2;
+        return 1;
+      };
 
-  const filteredFreights = getFilteredFreights().sort((a, b) => {
-    // Prioridade de ordenação: fretes ativos primeiro, depois agendados e inativos por último
-    const getPriority = (status: string) => {
-      if (status === 'inactive') return 2; // Inativos por último
-      if (status === 'scheduled') return 2; // Agendados por último (mesma prioridade)
-      return 1; // Todos os outros primeiro
-    };
-    
-    const priorityA = getPriority(a.status);
-    const priorityB = getPriority(b.status);
-    
-    // Se têm prioridades diferentes, ordenar por prioridade
-    if (priorityA !== priorityB) {
-      return priorityA - priorityB;
-    }
-    
-    // Se têm a mesma prioridade, ordenar por data de criação (mais recentes primeiro)
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+      const priorityA = getPriority(a.status);
+      const priorityB = getPriority(b.status);
+
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [freights, viewMode, resolvedCompanyId, searchTerm, freightFilters, activeFilter, user.currentLocation]);
   
   // 🔍 DEBUG: Verificar fretes filtrados (desabilitado para reduzir logs)
   // React.useEffect(() => {
@@ -836,18 +829,17 @@ export function FreightManagement({
   //   });
   // }, [filteredFreights, viewMode, activeFilter]);
 
-  const getStatusCounts = () => {
-    const relevantFreights = viewMode === 'my-freights' 
+  const statusCounts = useMemo(() => {
+    const relevantFreights = viewMode === 'my-freights'
       ? freights.filter(f => f.customerId === resolvedCompanyId)
       : viewMode === 'all-freights'
-      ? freights // Todos os fretes da plataforma
-      : []; // Para quotes, não mostra contadores de fretes
-    
-    // Para "Meus Fretes", o total exclui concluídos (eles ficam em seção separada)
+      ? freights
+      : [];
+
     const activeRelevant = viewMode === 'my-freights'
       ? relevantFreights.filter(f => f.status !== 'completed')
       : relevantFreights;
-      
+
     return {
       all: activeRelevant.length,
       draft: relevantFreights.filter(f => f.status === 'draft').length,
@@ -857,9 +849,7 @@ export function FreightManagement({
       completed: relevantFreights.filter(f => f.status === 'completed').length,
       inactive: relevantFreights.filter(f => f.status === 'inactive').length
     };
-  };
-
-  const statusCounts = getStatusCounts();
+  }, [freights, viewMode, resolvedCompanyId]);
 
   // Ações de CRUD integradas com banco de dados
   const handleDeleteFreight = async (id: string) => {

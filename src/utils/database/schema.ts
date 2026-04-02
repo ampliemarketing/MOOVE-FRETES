@@ -3,6 +3,8 @@
  * Hybrid approach using Supabase KV Store with structured keys
  */
 
+import type { CollaboratorRole } from '../collaborator-types';
+
 // ============================================
 // USER ENTITIES
 // ============================================
@@ -374,7 +376,7 @@ export interface Transaction {
   
   // Gateway info
   gatewayTransactionId?: string;
-  gatewayResponse?: any;
+  gatewayResponse?: Record<string, unknown>;
   
   // Timestamps
   createdAt: string;
@@ -524,7 +526,7 @@ export interface Collaborator {
   email: string;
   phone?: string;
   roleId: string;
-  role: any; // CollaboratorRole from collaborator-types.ts
+  role: CollaboratorRole;
   isSuperAdmin: boolean;
   isActive: boolean;
   lastAccess?: string;
@@ -635,7 +637,7 @@ export interface FilterParams {
   type?: string;
   dateFrom?: string;
   dateTo?: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | string[] | null | undefined;
 }
 
 // ============================================
