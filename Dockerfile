@@ -15,10 +15,10 @@ FROM nginx:1.24-alpine
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy nginx config and built app to /app (same path as Nixpacks)
-COPY nginx.conf /app/nginx.conf
-COPY --from=builder /app/build /app/build
+# Copy SPA-aware nginx config and built app
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/build /usr/share/nginx/html
 
 EXPOSE 80
 
-CMD ["nginx", "-c", "/app/nginx.conf", "-g", "daemon off;"]
+CMD ["nginx", "-g", "daemon off;"]
