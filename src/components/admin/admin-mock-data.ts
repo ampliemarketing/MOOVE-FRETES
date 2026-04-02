@@ -1,10 +1,11 @@
 // Mock data for Super Admin Panel
 
-export const SUPER_ADMIN_EMAILS = [
-  'admin@moovefretes.com.br',
-  'suporte@moovefretes.com.br',
-  'dev@moovefretes.com.br',
-];
+// E-mails dos admins lidos da env var VITE_ADMIN_EMAILS (separados por vírgula)
+// Ex.: VITE_ADMIN_EMAILS=admin@moovefretes.com.br,suporte@moovefretes.com.br
+const _adminEmailsEnv = import.meta.env.VITE_ADMIN_EMAILS as string | undefined;
+export const SUPER_ADMIN_EMAILS: string[] = _adminEmailsEnv
+  ? _adminEmailsEnv.split(',').map((e) => e.trim()).filter(Boolean)
+  : [];
 
 export interface AdminUser {
   id: string;

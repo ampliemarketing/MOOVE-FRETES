@@ -163,7 +163,7 @@ export function FreightRegistration({
       totalWeight: '',
       cargoType: 'completa',
       volumes: '',
-      volumeUnit: 'unidades',
+      volumeUnit: 'Unidades',
       needsCover: true,
       needsTracker: false,
       isInsured: true,
@@ -883,12 +883,12 @@ export function FreightRegistration({
 
   const volumeUnits = [
     'Unidades',
-    'kg',
-    'm³',
-    'Litros',
-    'Toneladas',
+    'Caixas',
+    'Sacos',
     'Paletes',
-    'Volumes'
+    'Fardos',
+    'Tambores',
+    'm³'
   ];
 
   const speciesOptions = [
@@ -1514,9 +1514,9 @@ export function FreightRegistration({
                   </div>
                 </div>
 
-                {/* Tipo de carga */}
+                {/* Tipo do frete */}
                 <div className="space-y-3">
-                  <Label>Tipo de carga</Label>
+                  <Label>Tipo do frete</Label>
                   <div className="grid grid-cols-2 gap-3">
                     <div 
                       className={`p-4 border rounded-lg cursor-pointer transition-all ${

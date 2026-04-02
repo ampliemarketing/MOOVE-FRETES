@@ -14,7 +14,7 @@ export function EmailNotConfirmedAlert({ onClose }: EmailNotConfirmedAlertProps)
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [copiedSQL, setCopiedSQL] = useState(false);
 
-  const projectUrl = 'https://supabase.com/dashboard/project/hjdykjdhxepgfnkurvgr';
+  const projectUrl = `https://supabase.com/dashboard/project/${import.meta.env.VITE_SUPABASE_PROJECT_ID}`;
   const authProvidersUrl = `${projectUrl}/auth/providers`;
   const sqlEditorUrl = `${projectUrl}/sql/new`;
   

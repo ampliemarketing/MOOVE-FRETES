@@ -4,9 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from './info';
-
-const supabaseUrl = `https://${projectId}.supabase.co`;
+import { supabaseUrl, publicAnonKey } from './info';
 
 // Create a single instance using global storage to persist across hot reloads
 const globalForSupabase = globalThis as unknown as {

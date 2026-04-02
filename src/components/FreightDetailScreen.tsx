@@ -539,6 +539,7 @@ ${generateDeepLinkUrl('freight', freight.id)}
         origin,
         destination,
         cargoType: typeof cargoType === 'string' ? cargoType : 'Não especificado',
+        product: freight.product || 'Não especificado',
         price,
         driverName,
         driverRating: String(driverRating),
@@ -565,6 +566,7 @@ ${generateDeepLinkUrl('freight', freight.id)}
     origin: string;
     destination: string;
     cargoType: string;
+    product: string;
     price: string;
     driverName: string;
     driverRating: string;
@@ -578,7 +580,7 @@ ${generateDeepLinkUrl('freight', freight.id)}
 
 📦 *Frete ${params.freightCode}:*
 ${params.origin} → ${params.destination}
-Produto: ${params.cargoType}
+Produto: ${params.product}
 
 🔗 *Link do frete:*
 ${generateDeepLinkUrl('freight', params.freightId)}
@@ -627,6 +629,7 @@ ${generateDeepLinkUrl('profile', params.driverId)}
         origin,
         destination,
         cargoType,
+        product: freight.product || 'Não especificado',
         price,
         driverName: user.name || 'Motorista',
         driverRating,
@@ -1157,13 +1160,17 @@ ${generateDeepLinkUrl('profile', params.driverId)}
                       <div className="text-xs text-gray-500 mb-1">Tipo de Carga</div>
                       <div className="text-sm font-medium text-gray-900">
                         {typeof freight.cargo === 'string' ? freight.cargo : freight.cargo.type}
-                        {freight.cargoType && (
-                          <span className="block text-xs text-gray-600 mt-0.5">
-                            {freight.cargoType === 'completa' ? 'Carga Completa' : 'Complemento'}
-                          </span>
-                        )}
                       </div>
                     </div>
+
+                    {freight.cargoType && (
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-xs text-gray-500 mb-1">Tipo do Frete</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {freight.cargoType === 'completa' ? 'Carga Completa' : 'Carga Complemento'}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="bg-gray-50 p-3 rounded">
                       <div className="text-xs text-gray-500 mb-1">Peso Total</div>

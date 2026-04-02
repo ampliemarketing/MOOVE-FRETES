@@ -136,8 +136,8 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         return;
       }
 
-      if (formData.password.length < 6) {
-        toast.error("A senha deve ter no mínimo 6 caracteres");
+      if (formData.password.length < 8) {
+        toast.error("A senha deve ter no mínimo 8 caracteres");
         setLoading(false);
         return;
       }
