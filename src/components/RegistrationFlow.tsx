@@ -75,8 +75,8 @@ export function RegistrationFlow({ onComplete, onBackToAuth, selectedUserType = 
   };
 
   const renderPendingApproval = () => (
-    <div className="fixed inset-0 bg-background overflow-y-auto">
-      <div className="min-h-full flex items-center justify-center py-8 px-4">
+    <div className="w-full">
+      <div className="flex items-center justify-center py-8 px-4">
         <div className="max-w-md w-full">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -136,8 +136,8 @@ export function RegistrationFlow({ onComplete, onBackToAuth, selectedUserType = 
     const TypeIcon = typeInfo.icon;
 
     return (
-      <div className="fixed inset-0 bg-background overflow-y-auto">
-        <div className="min-h-full flex items-center justify-center py-8 px-4">
+      <div className="w-full">
+        <div className="flex items-center justify-center py-8 px-4">
           <div className="max-w-md w-full">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}

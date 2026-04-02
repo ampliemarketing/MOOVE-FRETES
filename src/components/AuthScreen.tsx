@@ -2145,7 +2145,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
   }
 
   return (
-    <div className="w-full p-4 overflow-y-auto">
+    <div className="w-full px-4 py-8">
       <div className="w-full max-w-md my-auto mx-auto">
         {/* Logo */}
         <motion.div
@@ -2168,7 +2168,20 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="border-0 shadow-[0_0_0_1px_rgba(29,52,99,0.06),0_0_40px_8px_rgba(29,52,99,0.18),0_0_80px_20px_rgba(29,52,99,0.12)]">
+          <Card
+            className="border-0"
+            style={{
+              boxShadow: [
+                '0 0 0 1px rgba(29,52,99,0.06)',
+                '0 8px 30px 0px rgba(29,52,99,0.14)',
+                '0 20px 60px 0px rgba(29,52,99,0.10)',
+                '0 -8px 30px 0px rgba(29,52,99,0.14)',
+                '0 -20px 60px 0px rgba(29,52,99,0.10)',
+                '-10px 0 24px 0px rgba(29,52,99,0.08)',
+                '10px 0 24px 0px rgba(29,52,99,0.08)',
+              ].join(', '),
+            }}
+          >
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-2xl text-primary">
                 {isLogin ? "Entrar" : "Criar Conta"}

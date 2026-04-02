@@ -1499,8 +1499,8 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
   }
 
   return (
-    <div className="fixed inset-0 bg-background overflow-y-auto">
-      <div className="max-w-md w-full mx-auto py-8 px-4 min-h-full">
+    <div className="w-full">
+      <div className="max-w-md w-full mx-auto py-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

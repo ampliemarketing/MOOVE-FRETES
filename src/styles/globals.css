@@ -250,7 +250,6 @@
 
 html {
   font-size: var(--font-size);
-  overflow: hidden;
   height: 100vh;
 }
 

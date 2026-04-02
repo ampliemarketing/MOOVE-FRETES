@@ -909,7 +909,20 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
               />
             </div>
 
-            <Card className="bg-white shadow-card">
+            <Card
+              className="border-0"
+              style={{
+                boxShadow: [
+                  '0 0 0 1px rgba(29,52,99,0.06)',
+                  '0 8px 30px 0px rgba(29,52,99,0.14)',
+                  '0 20px 60px 0px rgba(29,52,99,0.10)',
+                  '0 -8px 30px 0px rgba(29,52,99,0.14)',
+                  '0 -20px 60px 0px rgba(29,52,99,0.10)',
+                  '-10px 0 24px 0px rgba(29,52,99,0.08)',
+                  '10px 0 24px 0px rgba(29,52,99,0.08)',
+                ].join(', '),
+              }}
+            >
               <CardHeader className="border-b border-light">
               <div className="space-y-4">
                 <div className="text-center">
