@@ -38,7 +38,7 @@ export function SyncStatusIndicator({ userId }: SyncStatusIndicatorProps) {
       const result = await syncAllUserData(userId);
       
       if (result.success) {
-        toast.success(`✅ ${result.totalSynced} itens sincronizados`);
+        toast.success(`${result.totalSynced} itens sincronizados`);
       } else {
         const errorCount = Object.values(result.results)
           .reduce((sum, r) => sum + r.errors.length, 0);

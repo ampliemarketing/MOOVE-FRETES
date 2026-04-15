@@ -408,7 +408,7 @@ export function FreightManagement({
       if (result.success) {
         setIsAvailable(true);
         setAvailabilityExpiry(newExpiryDate);
-        toast.success('✅ Disponibilidade renovada por mais 24h');
+        toast.success('Disponibilidade renovada por mais 24h');
       } else {
         toast.error('Erro ao renovar: ' + (result.error || 'Erro desconhecido'));
       }
@@ -1961,7 +1961,7 @@ https://moovefretes.com.br`;
                       if (result.success) {
                         setIsAvailable(true);
                         setAvailabilityExpiry(expiryDate);
-                        toast.success('Você está disponível para fretes! 🚛', {
+                        toast.success('Você está disponível para fretes!', {
                           description: `Localização: ${currentLocation.city}, ${currentLocation.state}`
                         });
                       } else {

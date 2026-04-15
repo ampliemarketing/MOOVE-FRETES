@@ -13,7 +13,6 @@ import {
   unsubscribeFromRealtime
 } from '../supabase-sync';
 import { database } from '../database';
-import { getSupabaseClient } from '../supabase/client';
 
 export interface UsePreferredRoutesRealtimeOptions {
   onNewRoute?: (route: PreferredRoute) => void;
@@ -313,41 +312,18 @@ export function useMyPreferredRoutes(driverId: string) {
   // Deletar rota permanentemente
   const deleteRoute = useCallback(async (routeId: string) => {
     try {
-      console.log('🗑️ Deletando rota:', routeId);
-      
-      // Verificar se o ID é um UUID válido
-      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(routeId);
-      
-      if (isValidUUID) {
-        // Deletar do Supabase (apenas se for UUID válido)
-        const supabase = getSupabaseClient();
-        const { error: supabaseError } = await supabase
-          .from('preferred_routes')
-          .delete()
-          .eq('id', routeId);
-
-        if (supabaseError) {
-          console.error('❌ Erro ao deletar rota do Supabase:', supabaseError);
-          toast.error('Erro ao deletar rota do servidor');
-          return { success: false, error: supabaseError.message };
-        }
-        
-        console.log('✅ Rota deletada do Supabase com sucesso!');
-      } else {
-        console.warn('⚠️ Rota com ID legado (não-UUID), deletando apenas do LocalStorage:', routeId);
-      }
-
-      // Deletar do LocalStorage
+      // database.preferredRoutes.delete já gerencia Supabase + localStorage.
+      // Não chamamos o Supabase diretamente aqui para evitar dupla deleção:
+      // a segunda tentativa de deletar uma linha já removida gera erro no
+      // servidor, que fazia o hook exibir toast de erro mesmo após sucesso.
       const deleteResult = await database.preferredRoutes.delete(routeId);
-      
+
       if (!deleteResult.success) {
-        toast.error('Erro ao deletar rota local');
+        toast.error('Erro ao deletar rota');
         return { success: false, error: deleteResult.error };
       }
-      
-      // Remover da lista local (otimistic update)
+
       setRoutes(prev => prev.filter(r => r.id !== routeId));
-      
       toast.success('Rota deletada com sucesso!');
       return { success: true };
     } catch (err) {

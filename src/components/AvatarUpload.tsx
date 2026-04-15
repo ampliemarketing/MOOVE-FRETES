@@ -164,15 +164,9 @@ export function AvatarUpload({
       console.error('❌ [AvatarUpload] Erro:', error);
       
       if (error?.message?.includes('Bucket not found')) {
-        toast.error('❌ Storage não configurado no Supabase', {
-          description: 'Execute o SQL de criação de buckets',
-          duration: 8000,
-        });
+        toast.error('Não foi possível enviar a foto. Tente novamente ou contate o suporte.');
       } else if (error?.message?.includes('row-level security') || error?.message?.includes('policy')) {
-        toast.error('❌ Permissões não configuradas', {
-          description: 'Configure as políticas RLS no Supabase Storage',
-          duration: 8000,
-        });
+        toast.error('Sem permissão para enviar a foto. Tente novamente ou contate o suporte.');
       } else {
         toast.error('Erro ao fazer upload da imagem. Tente novamente.');
       }

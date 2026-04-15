@@ -319,7 +319,7 @@ function createDemoNotifications(user: User): CollaboratorNotification[] {
     {
       id: 'notif_1',
       type: 'invite',
-      title: 'Bem-vindo ao MaisFrete!',
+      title: 'Bem-vindo ao MooveFretes!',
       message: 'Sua conta de colaborador foi criada com sucesso. Complete seu perfil para começar.',
       timestamp: new Date(now.getTime() - 1000 * 60 * 5).toISOString(), // 5 min atrás
       read: false,

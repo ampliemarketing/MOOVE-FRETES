@@ -163,7 +163,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         // Não bloquear o login se houver erro ao salvar
       }
 
-      toast.success(`Bem-vindo ao MaisFrete!`);
+      toast.success(`Bem-vindo ao MooveFretes!`);
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -2373,7 +2373,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           className="text-center mt-8 space-y-3"
         >
           <p className="text-muted-foreground text-sm">
-            © 2024 MaisFrete - Logística Inteligente
+            © 2026 MooveFretes - Logística Inteligente
           </p>
         </motion.div>
       </div>

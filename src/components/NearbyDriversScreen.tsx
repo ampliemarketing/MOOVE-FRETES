@@ -424,7 +424,7 @@ Podemos conversar? 📦`;
 
       await Promise.all(promises);
       
-      toast.success(`✅ Mensagem enviada para ${filteredDrivers.length} motorista${filteredDrivers.length > 1 ? 's' : ''}!`);
+      toast.success(`Mensagem enviada para ${filteredDrivers.length} motorista${filteredDrivers.length > 1 ? 's' : ''}!`);
     } catch (error) {
       console.error('❌ Erro ao enviar mensagens:', error);
       toast.error('Erro ao enviar mensagens. Tente novamente.');

@@ -85,7 +85,7 @@ export function useAutoSync(options: AutoSyncOptions) {
       }));
 
       if (showToast && totalSynced > 0) {
-        toast.success(`✅ ${totalSynced} ${totalSynced === 1 ? 'item sincronizado' : 'itens sincronizados'}`);
+        toast.success(`${totalSynced} ${totalSynced === 1 ? 'item sincronizado' : 'itens sincronizados'}`);
       }
 
       onSyncSuccess?.(totalSynced);

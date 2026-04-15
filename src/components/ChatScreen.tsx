@@ -1612,17 +1612,17 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         setSelectedChat(prev => prev ? { ...prev, isMuted: newMutedState } : null);
       }
       
-      toast.success(isMuted ? 'Conversa desmutada' : 'Conversa mutada');
+      toast.success(isMuted ? 'Conversa reativada' : 'Conversa silenciada');
       
       // Update in background
       database.chats.mute(chatId, newMutedState).catch(error => {
         console.error('Error muting chat:', error);
-        toast.error('Erro ao mutar conversa');
+        toast.error('Erro ao silenciar conversa');
         loadChats(false);
       });
     } catch (error) {
       console.error('Error muting chat:', error);
-      toast.error('Erro ao mutar conversa');
+      toast.error('Erro ao silenciar conversa');
     }
   };
 

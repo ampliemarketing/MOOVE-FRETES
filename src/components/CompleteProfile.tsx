@@ -444,7 +444,7 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
       console.log('═══════════════════════════════════════════════════════════');
       console.log('');
 
-      toast.success('Cadastro completo! Bem-vindo ao MaisFrete!');
+      toast.success('Cadastro completo! Bem-vindo ao MooveFretes!');
       
       setLoading(false);
       

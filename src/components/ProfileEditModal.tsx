@@ -149,7 +149,7 @@ export function ProfileEditModal({
     }
     
     // Toast de confirmação
-    toast.success('✅ Foto de perfil atualizada!', {
+    toast.success('Foto de perfil atualizada!', {
       description: 'Seu avatar foi sincronizado em todo o sistema.',
       duration: 3000,
     });
