@@ -1,27 +1,24 @@
 /**
  * Logger Utility
- * Simple logging utility for debugging and monitoring
+ * Em produção apenas erros são emitidos, evitando vazamento de dados
+ * sensíveis e poluição do console. Em desenvolvimento todos os níveis
+ * são exibidos normalmente.
  */
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'success';
 
+// import.meta.env.DEV é a forma correta no Vite (process.env não é confiável)
+const isDev: boolean =
+  typeof import.meta !== 'undefined'
+    ? (import.meta as any).env?.DEV === true
+    : process.env.NODE_ENV === 'development';
+
 class Logger {
-  private isDevelopment = process.env.NODE_ENV === 'development';
+  private emit(level: LogLevel, context: string, ...args: unknown[]) {
+    // Em produção exibe apenas erros
+    if (!isDev && level !== 'error') return;
 
-  private log(level: LogLevel, context: string, ...args: any[]) {
-    // 🔇 MOSTRAR APENAS ERROS (e warnings em desenvolvimento)
-    if (level === 'debug' || level === 'info' || level === 'success') {
-      return; // Suprimir logs de debug, info e success
-    }
-
-    // Warnings apenas em desenvolvimento
-    if (!this.isDevelopment && level === 'warn') {
-      return;
-    }
-
-    const timestamp = new Date().toISOString();
-    const prefix = `[${timestamp}] [${level.toUpperCase()}] [${context}]`;
-
+    const prefix = `[${level.toUpperCase()}] [${context}]`;
     switch (level) {
       case 'warn':
         console.warn(prefix, ...args);
@@ -29,27 +26,35 @@ class Logger {
       case 'error':
         console.error(prefix, ...args);
         break;
+      default:
+        console.log(prefix, ...args);
     }
   }
 
-  debug(context: string, ...args: any[]) {
-    this.log('debug', context, ...args);
+  /** Log genérico de debug (suprimido em produção) */
+  log(context: string, ...args: unknown[]) {
+    this.emit('debug', context, ...args);
   }
 
-  info(context: string, ...args: any[]) {
-    this.log('info', context, ...args);
+  debug(context: string, ...args: unknown[]) {
+    this.emit('debug', context, ...args);
   }
 
-  warn(context: string, ...args: any[]) {
-    this.log('warn', context, ...args);
+  info(context: string, ...args: unknown[]) {
+    this.emit('info', context, ...args);
   }
 
-  error(context: string, ...args: any[]) {
-    this.log('error', context, ...args);
+  warn(context: string, ...args: unknown[]) {
+    this.emit('warn', context, ...args);
   }
 
-  success(context: string, ...args: any[]) {
-    this.log('success', context, ...args);
+  /** Erros são sempre emitidos, mesmo em produção */
+  error(context: string, ...args: unknown[]) {
+    this.emit('error', context, ...args);
+  }
+
+  success(context: string, ...args: unknown[]) {
+    this.emit('success', context, ...args);
   }
 }
 

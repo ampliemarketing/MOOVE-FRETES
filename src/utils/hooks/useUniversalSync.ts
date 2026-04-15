@@ -2,7 +2,7 @@
  * Hook para sincronização universal de dados
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   syncAllUserData,
   loadAllUserDataFromSupabase,
@@ -10,6 +10,7 @@ import {
   stopAutoSync,
   getSyncStatus,
   updateSyncStatus,
+  AUTO_SYNC_INTERVAL_MINUTES,
   type SyncStatus
 } from '../universal-sync';
 
@@ -17,11 +18,15 @@ export function useUniversalSync(userId: string | null, autoSync: boolean = true
   const [status, setStatus] = useState<SyncStatus>(getSyncStatus());
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<any>(null);
+  // Ref garante que a guarda seja atômica — estado React é assíncrono e
+  // não previne chamadas simultâneas que chegam antes do próximo render.
+  const isSyncingRef = useRef(false);
 
   // Função para sincronizar manualmente
   const sync = useCallback(async () => {
-    if (!userId || isSyncing) return;
+    if (!userId || isSyncingRef.current) return;
 
+    isSyncingRef.current = true;
     setIsSyncing(true);
     try {
       const result = await syncAllUserData(userId);
@@ -32,9 +37,10 @@ export function useUniversalSync(userId: string | null, autoSync: boolean = true
       console.error('Erro na sincronização:', error);
       return null;
     } finally {
+      isSyncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [userId, isSyncing]);
+  }, [userId]); // isSyncing removido das deps — usamos a ref para a guarda
 
   // Função para carregar dados do Supabase
   const loadFromSupabase = useCallback(async () => {
@@ -57,7 +63,7 @@ export function useUniversalSync(userId: string | null, autoSync: boolean = true
   // Iniciar auto-sync quando o usuário estiver logado
   useEffect(() => {
     if (userId && autoSync && status.autoSync) {
-      startAutoSync(userId, 0.166667); // ✅ Sync a cada 10 segundos
+      startAutoSync(userId, AUTO_SYNC_INTERVAL_MINUTES);
       
       return () => {
         stopAutoSync();

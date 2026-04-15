@@ -24,6 +24,49 @@ export interface Conversation {
   updatedAt: string;
 }
 
+/**
+ * Normaliza uma mensagem vinda do Supabase (snake_case) ou de cache
+ * (camelCase) para o formato canônico da interface Message.
+ */
+function normalizeMessage(raw: any): Message {
+  return {
+    id: raw.id,
+    senderId: raw.senderId ?? raw.sender_id ?? '',
+    text: raw.text ?? raw.content ?? '',
+    createdAt: raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
+    read: raw.read ?? false,
+  };
+}
+
+/**
+ * Normaliza uma conversa vinda do Supabase (snake_case) ou de cache
+ * (camelCase) para o formato canônico da interface Conversation.
+ */
+function normalizeConversation(raw: any): Conversation {
+  return {
+    id: raw.id,
+    participants: raw.participants ?? [],
+    freightId: raw.freightId ?? raw.freight_id,
+    messages: Array.isArray(raw.messages) ? raw.messages.map(normalizeMessage) : [],
+    createdAt: raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
+    updatedAt: raw.updatedAt ?? raw.updated_at ?? raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
+  };
+}
+
+/** Intervalo de polling para novas mensagens (em ms) */
+const CHAT_POLL_INTERVAL_MS = 10_000; // 10 segundos
+
+/** Lê conversas do localStorage sem lançar exceção em caso de JSON inválido */
+function safeParseLocalConversations(): any[] {
+  try {
+    const raw = localStorage.getItem('local_conversations');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function useChat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,22 +80,21 @@ export function useChat() {
       // Verificar se Supabase está disponível antes de tentar carregar
       const isAvailable = await checkSupabaseAvailability();
       if (!isAvailable) {
-        // Modo offline - usar dados locais ou array vazio
-        const localConversations = localStorage.getItem('local_conversations');
-        setConversations(localConversations ? JSON.parse(localConversations) : []);
+        const raw = safeParseLocalConversations();
+        setConversations(raw.map(normalizeConversation));
         setLoading(false);
         return;
       }
-      
+
       const response = await chatAPI.getConversations();
-      setConversations(response.data || []);
-      
+      const normalized = (response.data ?? []).map(normalizeConversation);
+      setConversations(normalized);
+
       // Salvar no localStorage para modo offline
-      localStorage.setItem('local_conversations', JSON.stringify(response.data || []));
+      localStorage.setItem('local_conversations', JSON.stringify(normalized));
     } catch (err) {
       // Silenciar erro e usar dados locais
-      const localConversations = localStorage.getItem('local_conversations');
-      setConversations(localConversations ? JSON.parse(localConversations) : []);
+      setConversations(safeParseLocalConversations().map(normalizeConversation));
       // Não definir erro nem logar - sistema funciona sem chat online
     } finally {
       setLoading(false);
@@ -106,8 +148,7 @@ export function useChat() {
   useEffect(() => {
     loadConversations();
     
-    // Poll for new messages every 10 seconds
-    const interval = setInterval(loadConversations, 10000);
+    const interval = setInterval(loadConversations, CHAT_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [loadConversations]);
 

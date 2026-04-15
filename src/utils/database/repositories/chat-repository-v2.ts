@@ -14,6 +14,7 @@ import { KeyPatterns } from '../schema';
 import { conversationToSQL, sqlToConversation, messageToSQL, sqlToMessage } from '../adapters';
 import { generateId } from '../id-generator';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { logger } from '../../logger';
 
 // ============================================
 // TYPES
@@ -474,41 +475,30 @@ export class MessageRepository {
   }
 
   /**
-   * Get pinned messages for a conversation
-   * ⚠️ DESABILITADO: Coluna is_pinned não existe no Supabase ainda
-   * TODO: Adicionar coluna is_pinned na tabela messages
+   * Retorna mensagens fixadas de uma conversa.
+   *
+   * Desabilitado: a coluna `is_pinned` ainda não existe na tabela `messages`
+   * do Supabase. Para habilitar, adicione a coluna e descomente a query abaixo:
+   *
+   *   ALTER TABLE messages ADD COLUMN is_pinned BOOLEAN NOT NULL DEFAULT FALSE;
    */
-  async getPinned(conversationId: string): Promise<DBResponse<Message[]>> {
+  async getPinned(_conversationId: string): Promise<DBResponse<Message[]>> {
     try {
-      // Retornar array vazio por enquanto
-      console.log('⚠️ Feature de mensagens fixadas desabilitada - coluna is_pinned não existe');
-      return {
-        success: true,
-        data: [],
-      };
-      
-      /* TODO: Descomentar quando adicionar is_pinned no Supabase
+      return { success: true, data: [] };
+
+      /*
       const supabase = getSupabaseClient();
-      
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .eq('conversation_id', conversationId)
+        .eq('conversation_id', _conversationId)
         .eq('is_pinned', true)
         .order('created_at', { ascending: false });
-      
       if (error) throw error;
-      
-      const messages = data.map(sqlToMessage);
-      console.log(`✅ ${messages.length} mensagens fixadas carregadas`);
-      
-      return {
-        success: true,
-        data: messages,
-      };
+      return { success: true, data: data.map(sqlToMessage) };
       */
     } catch (error) {
-      console.error('❌ Erro ao buscar mensagens fixadas:', error);
+      logger.error('❌ Erro ao buscar mensagens fixadas:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to get pinned messages',

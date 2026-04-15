@@ -7,6 +7,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { database } from '../database';
 import { getSupabaseClient } from '../supabase/client';
 import { toast } from 'sonner@2.0.3';
+import { mapSupabaseStatusToLocal } from '../freight-status';
+import { logger } from '../logger';
 
 export interface Freight {
   id: string;
@@ -89,25 +91,6 @@ export interface Freight {
   // ✅ FIM DOS CAMPOS ADICIONAIS
 }
 
-/**
- * Mapear status do Supabase para LocalStorage
- */
-function mapSupabaseStatusToLocal(status: string): any {
-  const statusMap: Record<string, string> = {
-    'open': 'active',              // ✅ open → active (formato usado pelo FreightManagement)
-    'active': 'active',            // ✅ active permanece active
-    'draft': 'draft',              // ✅ draft permanece draft
-    'in_transit': 'in-transit',    // ✅ underscore → hífen
-    'in-transit': 'in-transit',    // ✅ já correto
-    'completed': 'completed',      // ✅ completed permanece completed
-    'delivered': 'completed',      // ✅ delivered = completed
-    'cancelled': 'cancelled',      // ✅ cancelled permanece cancelled
-    'contracted': 'contracted',    // ✅ contracted permanece contracted
-    'inactive': 'inactive',        // ⚠️ Fretes pausados mantêm status 'inactive'
-    'scheduled': 'scheduled',      // ✅ Fretes agendados
-  };
-  return (statusMap[status] || 'active') as any;
-}
 
 /**
  * Parse price string to number
@@ -152,12 +135,12 @@ export function useFreights() {
             .order('created_at', { ascending: false });
           
           if (supabaseError) {
-            console.error('❌ [useFreights] Erro ao carregar do Supabase:', supabaseError);
+            logger.error('❌ [useFreights] Erro ao carregar do Supabase:', supabaseError);
             throw supabaseError;
           }
           
           // 🔍 DEBUG: Verificar quantos fretes vieram do Supabase
-          console.log('🔍 [useFreights] Fretes retornados do Supabase:', {
+          logger.log('🔍 [useFreights] Fretes retornados do Supabase:', {
             count: supabaseFreights?.length || 0,
             hasData: !!supabaseFreights,
           });
@@ -165,7 +148,7 @@ export function useFreights() {
           if (supabaseFreights && supabaseFreights.length > 0) {
             
             // 🔍 DEBUG: Verificar se metadata está vindo do Supabase
-            console.log('🔍 [useFreights] Primeiro frete do Supabase (com metadata):', {
+            logger.log('🔍 [useFreights] Primeiro frete do Supabase (com metadata):', {
               id: supabaseFreights[0].id,
               hasMetadata: !!supabaseFreights[0].metadata,
               metadataKeys: supabaseFreights[0].metadata ? Object.keys(supabaseFreights[0].metadata) : [],
@@ -178,7 +161,7 @@ export function useFreights() {
             // Buscar todos os IDs únicos de publishers
             const publisherIds = [...new Set(supabaseFreights.map(f => f.publisher_id))];
             
-            console.log('📱 [useFreights] Buscando dados de publishers:', publisherIds);
+            logger.log('📱 [useFreights] Buscando dados de publishers:', publisherIds);
             
             // Buscar avatares, NOMES e TELEFONES de PROFILES
             const profilesResult = await supabase
@@ -203,7 +186,7 @@ export function useFreights() {
                 }
                 if (profile.phone) {
                   phoneMap.set(profile.id, profile.phone);
-                  console.log('📱 [useFreights] Telefone encontrado:', { 
+                  logger.log('📱 [useFreights] Telefone encontrado:', { 
                     profileId: profile.id, 
                     phone: profile.phone,
                     name: profile.name
@@ -212,19 +195,19 @@ export function useFreights() {
               });
             }
             
-            console.log('📱 [useFreights] Totais carregados:', {
+            logger.log('📱 [useFreights] Totais carregados:', {
               avatars: avatarMap.size,
               names: nameMap.size,
               phones: phoneMap.size
             });
-            console.log('📱 [useFreights] Mapa de telefones completo:', Array.from(phoneMap.entries()));
+            logger.log('📱 [useFreights] Mapa de telefones completo:', Array.from(phoneMap.entries()));
             
             if (avatarMap.size === 0) {
-              console.warn('⚠️ [useFreights] NENHUM avatar foi carregado! Verifique se as empresas têm avatar_url nas tabelas.');
+              logger.warn('⚠️ [useFreights] NENHUM avatar foi carregado! Verifique se as empresas têm avatar_url nas tabelas.');
             }
             
             if (phoneMap.size === 0) {
-              console.warn('⚠️ [useFreights] NENHUM telefone foi carregado! Verifique se os profiles têm o campo phone preenchido.');
+              logger.warn('⚠️ [useFreights] NENHUM telefone foi carregado! Verifique se os profiles têm o campo phone preenchido.');
             }
             
             // Transformar dados do Supabase para o formato esperado
@@ -331,7 +314,7 @@ export function useFreights() {
           }
         }
       } catch (supabaseErr) {
-        console.warn('⚠️ [useFreights] Erro ao carregar do Supabase, tentando LocalStorage:', supabaseErr);
+        logger.warn('⚠️ [useFreights] Erro ao carregar do Supabase, tentando LocalStorage:', supabaseErr);
       }
       
       // 📦 FALLBACK: Carregar do LocalStorage se Supabase falhar
@@ -385,7 +368,7 @@ export function useFreights() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao carregar fretes';
       setError(message);
-      console.error('❌ [useFreights] Erro ao carregar fretes:', err);
+      logger.error('❌ [useFreights] Erro ao carregar fretes:', err);
       setFreights([]);
     } finally {
       setLoading(false);
@@ -408,11 +391,11 @@ export function useFreights() {
         return { success: true, data: response.data };
       }
       
-      console.error('❌ [useFreights] Erro ao criar frete');
+      logger.error('❌ [useFreights] Erro ao criar frete');
       return { success: false, error: 'Erro ao criar frete' };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao criar frete';
-      console.error('❌ [useFreights] Erro:', err);
+      logger.error('❌ [useFreights] Erro:', err);
       toast.error(message);
       return { success: false, error: message };
     }
@@ -438,7 +421,7 @@ export function useFreights() {
       return { success: false, error: 'Erro ao atualizar frete' };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao atualizar frete';
-      console.error('❌ [useFreights] Erro:', err);
+      logger.error('❌ [useFreights] Erro:', err);
       toast.error(message);
       return { success: false, error: message };
     }
@@ -464,7 +447,7 @@ export function useFreights() {
       return { success: false, error: 'Erro ao deletar frete' };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao deletar frete';
-      console.error('❌ [useFreights] Erro:', err);
+      logger.error('❌ [useFreights] Erro:', err);
       toast.error(message);
       return { success: false, error: message };
     }

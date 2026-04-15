@@ -8,6 +8,8 @@ import { db } from '../db-client';
 import type { DBResponse } from '../db-client';
 import { getSupabaseClient } from '../../supabase/client';
 import { Freight, KeyPatterns, FilterParams, PaginationParams } from '../schema';
+import { mapLocalStatusToSupabase, mapSupabaseStatusToLocal } from '../../freight-status';
+import { logger } from '../../logger';
 
 export class FreightRepository {
   // 🔐 Armazenar userId para operações que precisam de autenticação
@@ -18,7 +20,7 @@ export class FreightRepository {
    */
   setCurrentUserId(userId: string | undefined) {
     this.currentUserId = userId;
-    console.log('🔐 FreightRepository - userId definido:', userId ? '✅' : '❌');
+    logger.log('🔐 FreightRepository - userId definido:', userId ? '✅' : '❌');
   }
 
   /**
@@ -30,28 +32,10 @@ export class FreightRepository {
       const now = new Date().toISOString();
       let createdId: string;
       
-      // ✅ MAPEAMENTO DE STATUS: LocalStorage → Supabase
-      const statusMap: Record<string, string> = {
-        'active': 'active',            // ✅ frete ativo/disponível (SEM MAPEAR!)
-        'draft': 'draft',              // ✅ rascunho
-        'inactive': 'draft',           // ✅ inativo vira rascunho
-        'scheduled': 'scheduled',      // ✅ frete agendado para data futura
-        'in_transit': 'in-transit',    // ✅ underscore → hífen
-        'in-transit': 'in-transit',    // ✅ já correto
-        'completed': 'completed',      // ✅ já correto
-        'delivered': 'completed',      // ✅ entregue = completado
-        'cancelled': 'cancelled',      // ✅ já correto
-        'expired': 'cancelled',        // ✅ expirado = cancelado
-        'pending_confirmation': 'active', // ✅ pendente vira ativo
-        'accepted': 'active',          // ✅ aceito vira ativo
-        'quoted': 'active',            // ✅ cotado vira ativo
-        'open': 'active',              // ✅ open vira active
-      };
-      
-      const mappedStatus = statusMap[freight.status] || 'active';
+      const mappedStatus = mapLocalStatusToSupabase(freight.status);
       
       // ✅ LOG DETALHADO
-      console.log('🔄 CREATE - Mapeamento de status:', {
+      logger.log('🔄 CREATE - Mapeamento de status:', {
         statusOriginal: freight.status,
         statusMapeado: mappedStatus,
       });
@@ -130,17 +114,15 @@ export class FreightRepository {
           .single();
         
         if (supabaseError) {
-          console.error('❌ Erro ao salvar no Supabase:', supabaseError);
-          throw supabaseError;
+          logger.error('❌ Erro ao salvar no Supabase:', supabaseError);
+          return {
+            success: false,
+            error: supabaseError instanceof Error ? supabaseError.message : 'Erro ao salvar frete no Supabase',
+          };
         }
-        
+
         // ✅ Pegar o ID gerado pelo Supabase
         createdId = supabaseData.id;
-        console.log('✅ Frete criado no Supabase:', createdId, 'com status:', mappedStatus);
-        
-      } catch (supabaseError) {
-        console.error('❌ ERRO CRÍTICO ao salvar no Supabase:', supabaseError);
-        throw new Error('Erro ao salvar frete no Supabase: ' + (supabaseError instanceof Error ? supabaseError.message : 'Unknown'));
       }
 
       // 2. CACHEAR NO LOCALSTORAGE (OPCIONAL)
@@ -173,7 +155,7 @@ export class FreightRepository {
         }
       } catch (cacheError) {
         // Não falhar se o cache não funcionar
-        console.warn('⚠️ Erro ao cachear frete:', cacheError);
+        logger.warn('⚠️ Erro ao cachear frete:', cacheError);
       }
 
       return {
@@ -186,7 +168,7 @@ export class FreightRepository {
         },
       };
     } catch (error) {
-      console.error('❌ Erro ao criar frete:', error);
+      logger.error('❌ Erro ao criar frete:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to create freight',
@@ -250,10 +232,7 @@ export class FreightRepository {
         vehicleType: sf.vehicle_types?.[0] || 'Truck',
         category: sf.metadata?.category || 'Carga Geral',
         trailerType: sf.metadata?.trailerType,
-        status: sf.status === 'open' ? 'active' : 
-                sf.status === 'in_transit' ? 'in-transit' :
-                sf.status === 'delivered' ? 'completed' :
-                sf.status,
+        status: mapSupabaseStatusToLocal(sf.status) as any,
         price: sf.metadata?.price || 'A combinar',
         observations: sf.metadata?.observations || sf.description || '',
         pickupDate: sf.pickup_date,
@@ -286,8 +265,8 @@ export class FreightRepository {
   async update(id: string, updates: Partial<Freight>): Promise<DBResponse<Freight>> {
     try {
       // ✅ LOG DO QUE FOI RECEBIDO
-      console.log('🔍 UPDATE RECEBIDO - Freight ID:', id);
-      console.log('🔍 UPDATE RECEBIDO - Updates completo:', JSON.stringify(updates, null, 2));
+      logger.log('🔍 UPDATE RECEBIDO - Freight ID:', id);
+      logger.log('🔍 UPDATE RECEBIDO - Updates completo:', JSON.stringify(updates, null, 2));
       
       // 1. ATUALIZAR NO SUPABASE PRIMEIRO (FONTE PRIMÁRIA)
       try {
@@ -295,43 +274,16 @@ export class FreightRepository {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          // ✅ MAPEAMENTO CORRETO: LocalStorage → Supabase
-          // Supabase permite: draft, active, scheduled, in-transit, completed, cancelled
-          const statusMap: Record<string, string> = {
-            // LocalStorage → Supabase
-            'active': 'active',            // ✅ frete ativo/disponível (SEM MAPEAR!)
-            'draft': 'draft',              // ✅ rascunho
-            'inactive': 'draft',           // ✅ inativo vira rascunho
-            'scheduled': 'scheduled',      // ✅ frete agendado para data futura
-            'in_transit': 'in-transit',    // ✅ underscore → hífen
-            'in-transit': 'in-transit',    // ✅ já correto
-            'completed': 'completed',      // ✅ já correto
-            'delivered': 'completed',      // ✅ entregue = completado
-            'cancelled': 'cancelled',      // ✅ já correto
-            'expired': 'cancelled',        // ✅ expirado = cancelado
-            'pending_confirmation': 'active', // ✅ pendente vira ativo
-            'accepted': 'active',          // ✅ aceito vira ativo
-            'quoted': 'active',            // ✅ cotado vira ativo
-            'open': 'active',              // ✅ open vira active
-          };
-          
           const supabaseUpdates: any = {
             updated_at: new Date().toISOString(),
           };
           
           // Mapear campos se existirem no update
           if (updates.status) {
-            const mappedStatus = statusMap[updates.status];
-            
-            if (!mappedStatus) {
-              console.warn(`⚠️ Status "${updates.status}" não reconhecido, usando "active" como fallback`);
-              supabaseUpdates.status = 'active';
-            } else {
-              supabaseUpdates.status = mappedStatus;
-            }
+            supabaseUpdates.status = mapLocalStatusToSupabase(updates.status);
             
             // ✅ LOG DETALHADO
-            console.log('📊 MAPEAMENTO DE STATUS:', {
+            logger.log('📊 MAPEAMENTO DE STATUS:', {
               statusOriginal: updates.status,
               statusMapeado: supabaseUpdates.status,
               todosOsUpdates: Object.keys(supabaseUpdates)
@@ -376,7 +328,7 @@ export class FreightRepository {
           if (updates.observations) supabaseUpdates.description = updates.observations;
           
           // ✅ LOG COMPLETO ANTES DE ENVIAR
-          console.log('🚀 ENVIANDO UPDATE PARA SUPABASE:', {
+          logger.log('🚀 ENVIANDO UPDATE PARA SUPABASE:', {
             id,
             payload: supabaseUpdates,
             statusFinal: supabaseUpdates.status
@@ -389,26 +341,26 @@ export class FreightRepository {
             .select();
           
           if (supabaseError) {
-            console.error('❌ Erro ao atualizar frete no Supabase:', supabaseError);
-            console.error('❌ Detalhes do erro RLS:', JSON.stringify(supabaseError, null, 2));
-            console.error('❌ Payload enviado:', JSON.stringify(supabaseUpdates, null, 2));
-            console.error('❌ Freight ID:', id);
+            logger.error('❌ Erro ao atualizar frete no Supabase:', supabaseError);
+            logger.error('❌ Detalhes do erro RLS:', JSON.stringify(supabaseError, null, 2));
+            logger.error('❌ Payload enviado:', JSON.stringify(supabaseUpdates, null, 2));
+            logger.error('❌ Freight ID:', id);
             throw supabaseError;
           }
           
           // ✅ VERIFICAR SE O UPDATE REALMENTE AFETOU ALGUMA ROW
           if (!updateData || updateData.length === 0) {
-            console.error('❌ UPDATE não afetou nenhuma row! Possível problema de RLS.');
-            console.error('❌ Freight ID:', id);
-            console.error('❌ Payload enviado:', JSON.stringify(supabaseUpdates, null, 2));
-            console.error('❌ auth.uid() provavelmente diferente do publisher_id');
+            logger.error('❌ UPDATE não afetou nenhuma row! Possível problema de RLS.');
+            logger.error('❌ Freight ID:', id);
+            logger.error('❌ Payload enviado:', JSON.stringify(supabaseUpdates, null, 2));
+            logger.error('❌ auth.uid() provavelmente diferente do publisher_id');
             throw new Error('Nenhuma row foi atualizada. Verifique as permissões (RLS) no Supabase.');
           }
           
-          console.log('✅ Frete atualizado no Supabase:', id, 'Status:', updateData[0]?.status);
+          logger.log('✅ Frete atualizado no Supabase:', id, 'Status:', updateData[0]?.status);
         }
       } catch (supabaseError) {
-        console.error('❌ Erro ao atualizar no Supabase:', supabaseError);
+        logger.error('❌ Erro ao atualizar no Supabase:', supabaseError);
         // ✅ PROPAGAR ERRO para que o chamador saiba que falhou
         return {
           success: false,
@@ -454,7 +406,7 @@ export class FreightRepository {
         };
       }
     } catch (error) {
-      console.error('❌ Erro ao atualizar frete:', error);
+      logger.error('❌ Erro ao atualizar frete:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update freight',
@@ -473,7 +425,7 @@ export class FreightRepository {
       try {
         await this.deleteFromSupabase(id);
       } catch (syncError) {
-        console.error('❌ ERRO ao deletar frete do Supabase:', syncError);
+        logger.error('❌ ERRO ao deletar frete do Supabase:', syncError);
         return {
           success: false,
           error: 'Erro ao deletar frete do banco de dados',
@@ -507,7 +459,7 @@ export class FreightRepository {
 
       return { success: true };
     } catch (error) {
-      console.error('❌ Erro ao deletar frete:', error);
+      logger.error('❌ Erro ao deletar frete:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to delete freight',
@@ -533,7 +485,7 @@ export class FreightRepository {
           .order('created_at', { ascending: false });
         
         if (error) {
-          console.error('❌ Erro ao buscar do Supabase:', error);
+          logger.error('❌ Erro ao buscar do Supabase:', error);
         } else if (supabaseFreights && supabaseFreights.length > 0) {
           // Transformar dados do Supabase para formato local
           freights = supabaseFreights.map(sf => ({
@@ -578,7 +530,7 @@ export class FreightRepository {
           }));
         }
       } catch (supabaseError) {
-        console.error('❌ Erro ao buscar do Supabase:', supabaseError);
+        logger.error('❌ Erro ao buscar do Supabase:', supabaseError);
       }
       
       // 2. FALLBACK: Se Supabase falhar, buscar do LocalStorage
@@ -629,7 +581,7 @@ export class FreightRepository {
         data: paginated,
       };
     } catch (error) {
-      console.error('❌ [freight-repository] Erro em getAll():', error);
+      logger.error('❌ [freight-repository] Erro em getAll():', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to get freights',
@@ -682,7 +634,7 @@ export class FreightRepository {
             .order('created_at', { ascending: false });
           
           if (error) {
-            console.error('❌ Erro ao buscar do Supabase:', error);
+            logger.error('❌ Erro ao buscar do Supabase:', error);
           } else if (supabaseFreights && supabaseFreights.length > 0) {
             const freights = supabaseFreights.map(sf => this.transformSupabaseFreight(sf));
             
@@ -693,7 +645,7 @@ export class FreightRepository {
           }
         }
       } catch (supabaseError) {
-        console.error('❌ Erro ao buscar do Supabase:', supabaseError);
+        logger.error('❌ Erro ao buscar do Supabase:', supabaseError);
       }
       
       const customerKey = KeyPatterns.freightsByCustomer(customerId);
@@ -816,8 +768,8 @@ export class FreightRepository {
       const userId = this.currentUserId || session?.user?.id;
       
       if (!userId) {
-        console.warn('⚠️ Sincronização com Supabase ignorada - nenhum userId disponível');
-        console.warn('💡 Dados salvos localmente. Farão sync quando houver autenticação.');
+        logger.warn('⚠️ Sincronização com Supabase ignorada - nenhum userId disponível');
+        logger.warn('💡 Dados salvos localmente. Farão sync quando houver autenticação.');
         return;
       }
 
@@ -868,7 +820,7 @@ export class FreightRepository {
       };
       
       // ✅ LOG COMPLETO DO PAYLOAD
-      console.log('🚀 SYNC TO SUPABASE - Payload completo:', {
+      logger.log('🚀 SYNC TO SUPABASE - Payload completo:', {
         id: supabaseData.id,
         status: supabaseData.status,
         payloadCompleto: supabaseData
@@ -883,7 +835,7 @@ export class FreightRepository {
         .select();
 
       if (error) {
-        console.error('❌ Erro do Supabase ao sincronizar frete:', {
+        logger.error('❌ Erro do Supabase ao sincronizar frete:', {
           error,
           code: error.code,
           message: error.message,
@@ -893,11 +845,11 @@ export class FreightRepository {
         throw error;
       }
       
-      console.log('✅ Frete sincronizado com Supabase:', freight.id);
+      logger.log('✅ Frete sincronizado com Supabase:', freight.id);
     } catch (error) {
-      console.error('❌ Erro na sincronização com Supabase:', error);
+      logger.error('❌ Erro na sincronização com Supabase:', error);
       // ⚠️ NÃO throw - apenas registra o erro mas continua a operação local
-      console.warn('💾 Dados salvos apenas localmente. Sincronização pendente.');
+      logger.warn('💾 Dados salvos apenas localmente. Sincronização pendente.');
     }
   }
 
@@ -916,8 +868,8 @@ export class FreightRepository {
       const userId = this.currentUserId || session?.user?.id;
       
       if (!userId) {
-        console.warn('⚠️ Deleção do Supabase ignorada - nenhum userId disponível');
-        console.warn('💡 Dados deletados apenas localmente.');
+        logger.warn('⚠️ Deleção do Supabase ignorada - nenhum userId disponível');
+        logger.warn('💡 Dados deletados apenas localmente.');
         return;
       }
 
@@ -927,15 +879,15 @@ export class FreightRepository {
         .eq('id', id);
 
       if (error) {
-        console.error('❌ Erro ao deletar frete do Supabase:', error);
+        logger.error('❌ Erro ao deletar frete do Supabase:', error);
         throw error;
       }
       
-      console.log('✅ Frete deletado do Supabase:', id);
+      logger.log('✅ Frete deletado do Supabase:', id);
     } catch (error) {
-      console.error('❌ Erro ao deletar do Supabase:', error);
+      logger.error('❌ Erro ao deletar do Supabase:', error);
       // ⚠️ NÃO throw - apenas registra o erro
-      console.warn('💾 Dados deletados apenas localmente.');
+      logger.warn('💾 Dados deletados apenas localmente.');
     }
   }
 

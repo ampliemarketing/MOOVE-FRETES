@@ -1628,10 +1628,13 @@ export async function loadAllUserDataFromSupabase(userId: string): Promise<void>
 
 let syncInterval: NodeJS.Timeout | null = null;
 
+/** 10 segundos em minutos, usado como padrão de intervalo do auto-sync */
+export const AUTO_SYNC_INTERVAL_MINUTES = 10 / 60; // ~0.1667 min = 10 s
+
 /**
  * Inicia sincronização automática em background
  */
-export function startAutoSync(userId: string, intervalMinutes: number = 0.166667) { // ✅ 10 segundos = 0.166667 minutos
+export function startAutoSync(userId: string, intervalMinutes: number = AUTO_SYNC_INTERVAL_MINUTES) {
   if (syncInterval) {
     clearInterval(syncInterval);
   }

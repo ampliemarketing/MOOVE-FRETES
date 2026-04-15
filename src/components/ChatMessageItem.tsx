@@ -320,7 +320,7 @@ const ChatMessageItem = memo(({
                   const name = attachment.filename || attachment.name || 'Imagem';
                   return (
                     <img
-                      key={idx}
+                      key={`${message.id}-img-${idx}-${attachment.path || attachment.url || idx}`}
                       src={url}
                       alt={name}
                       className="w-full max-w-xs cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
@@ -342,7 +342,7 @@ const ChatMessageItem = memo(({
                   const name = attachment.filename || attachment.name || 'Documento';
                   return (
                     <div
-                      key={idx}
+                      key={`${message.id}-file-${idx}-${attachment.path || attachment.url || idx}`}
                       className={`flex items-center gap-3 p-3 rounded-lg ${
                         isOwn ? 'bg-white/10' : 'bg-background'
                       }`}

@@ -320,8 +320,8 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
         connectedDrivers = allDrivers.length;
       }
       
-      // ✅ RECEITA MENSAL: Por enquanto valor fixo ou baseado em fretes completados
-      const monthlyRevenue = 0; // TODO: Implementar cálculo de receita baseado em transações
+      // Receita mensal: placeholder até integração com módulo financeiro
+      const monthlyRevenue = 0;
 
       setDashboardStats({
         activeFreights,

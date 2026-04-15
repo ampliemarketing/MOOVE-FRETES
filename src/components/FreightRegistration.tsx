@@ -2227,9 +2227,8 @@ export function FreightRegistration({
             <Button 
               variant="outline"
               onClick={() => {
-                toast.success('Frete salvo como modelo!');
-                // TODO: Implementar lógica de salvar modelo
-              }} 
+                toast.info('Funcionalidade de modelos em breve.');
+              }}
               className="flex items-center gap-2 text-[#6b7280] border-[#d1d5db] hover:bg-[#f9fafb] hover:text-[#111827] hover:border-[#9ca3af]"
             >
               <FileText className="w-4 h-4" />

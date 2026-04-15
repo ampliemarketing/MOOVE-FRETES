@@ -23,9 +23,14 @@ interface UIContextValue {
 
 const UIContext = createContext<UIContextValue | null>(null);
 
+function getStoredDarkMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('maisfrete-dark-mode') === 'true';
+}
+
 export function UIProvider({ children }: { children: React.ReactNode }) {
   const [uiState, setUIState] = useState<UIState>({
-    darkMode: localStorage.getItem('maisfrete-dark-mode') === 'true',
+    darkMode: getStoredDarkMode(),
     activeScreen: 'dashboard',
     connectionStatus: 'online',
     lastSync: null,
