@@ -1763,26 +1763,7 @@ export function FreightRegistration({
                   <Truck className="w-5 h-5 text-[#253663]" />
                   <div className="flex-1">
                     <h2 className="text-base font-medium text-[#111827]">Escolha quantos veículos quiser</h2>
-                    <p className="text-sm text-[#6b7280] mt-0.5">
-                      Marcamos algumas sugestões de veículos de acordo com a espécie da carga.
-                    </p>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="flex items-center gap-2"
-                    onClick={() => {
-                      // Auto-selecionar veículos sugeridos baseado na espécie
-                      if (freightData.species) {
-                        toast.info('Veículos sugeridos selecionados!');
-                      } else {
-                        toast.error('Selecione a espécie da carga primeiro');
-                      }
-                    }}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Selecionar sugeridos
-                  </Button>
                 </div>
               </div>
               <div className="p-6 space-y-8">
@@ -1873,26 +1854,7 @@ export function FreightRegistration({
                   <Package className="w-5 h-5 text-[#253663]" />
                   <div className="flex-1">
                     <h2 className="text-base font-medium text-[#111827]">Escolha quantas carrocerias quiser</h2>
-                    <p className="text-sm text-[#6b7280] mt-0.5">
-                      Marcamos algumas sugestões de carroceria de acordo com a espécie da carga.
-                    </p>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="flex items-center gap-2"
-                    onClick={() => {
-                      // Auto-selecionar carrocerias sugeridas baseado na espécie
-                      if (freightData.species) {
-                        toast.info('Carrocerias sugeridas selecionadas!');
-                      } else {
-                        toast.error('Selecione a espécie da carga primeiro');
-                      }
-                    }}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Selecionar sugeridos
-                  </Button>
                 </div>
               </div>
               <div className="p-6 space-y-8">
