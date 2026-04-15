@@ -180,7 +180,7 @@ export function RouteFilters({ filters, onFilterChange, className = '' }: RouteF
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-900">Especiais</h4>
           <div className="space-y-2 pl-1">
-            {['Silo', 'Cegonheiro', 'Gaiola', 'Tanque', 'Bug Porta Container', 'Munk', 'Apenas Cavalo', 'Cavaqueira', 'Hopper'].map((type) => (
+            {['Silo', 'Cegonheiro', 'Gaiola', 'Tanque', 'Bug Porta Container', 'Munck', 'Apenas Cavalo', 'Cavaqueira', 'Hopper'].map((type) => (
               <div key={type} className="flex items-center space-x-2">
                 <Checkbox 
                   id={`trailer-${type}`} 

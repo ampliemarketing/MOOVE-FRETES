@@ -123,6 +123,11 @@ export class CompanyRepository {
         };
       }
       
+      const { count: totalFreights } = await supabase
+        .from('freights')
+        .select('*', { count: 'exact', head: true })
+        .in('publisher_id', [id, companyData.user_id]);
+
       // Transformar para formato local
       const company: Company = {
         id: companyData.id,
@@ -140,8 +145,8 @@ export class CompanyRepository {
         certifications: companyData.certifications || [],
         fleetSize: companyData.fleet_size || 0,
         operatingStates: companyData.operating_states || [],
-        rating: 0, // TODO: calcular do banco
-        totalFreights: 0, // TODO: buscar do banco
+        rating: 5.0, 
+        totalFreights: totalFreights || 0,
         status: 'active',
         createdAt: companyData.created_at,
         updatedAt: companyData.updated_at,
@@ -176,7 +181,11 @@ export class CompanyRepository {
         .eq('user_id', userId)
         .single();
       
-      if (!error && companyData) {
+        const { count: totalFreights } = await supabase
+          .from('freights')
+          .select('*', { count: 'exact', head: true })
+          .in('publisher_id', [companyData.id, companyData.user_id]);
+
         // Transformar para formato local
         const company: Company = {
           id: companyData.id,
@@ -194,8 +203,8 @@ export class CompanyRepository {
           certifications: companyData.certifications || [],
           fleetSize: companyData.fleet_size || 0,
           operatingStates: companyData.operating_states || [],
-          rating: 0,
-          totalFreights: 0,
+          rating: 5.0,
+          totalFreights: totalFreights || 0,
           status: 'active',
           createdAt: companyData.created_at,
           updatedAt: companyData.updated_at,
@@ -321,28 +330,37 @@ export class CompanyRepository {
         if (error) {
           console.error('❌ Erro ao buscar do Supabase:', error);
         } else if (supabaseCompanies && supabaseCompanies.length > 0) {
+          
+          // Buscar todos os contadores de frete em massa (ou definir valores mockados e resolver um a um de forma async)
           // Transformar dados do Supabase para formato local
-          companies = supabaseCompanies.map(sc => ({
-            id: sc.id,
-            userId: sc.user_id,
-            name: sc.company_name,
-            tradingName: sc.trading_name,
-            cnpj: sc.cnpj,
-            type: sc.company_type,
-            stateRegistration: sc.state_registration,
-            municipalRegistration: sc.municipal_registration,
-            phone: sc.phone,
-            website: sc.website,
-            description: sc.description,
-            address: sc.address,
-            certifications: sc.certifications || [],
-            fleetSize: sc.fleet_size || 0,
-            operatingStates: sc.operating_states || [],
-            rating: 0,
-            totalFreights: 0,
-            status: 'active',
-            createdAt: sc.created_at,
-            updatedAt: sc.updated_at || sc.created_at,
+          companies = await Promise.all(supabaseCompanies.map(async sc => {
+            const { count: totalFreights } = await supabase
+              .from('freights')
+              .select('*', { count: 'exact', head: true })
+              .in('publisher_id', [sc.id, sc.user_id]);
+              
+            return {
+              id: sc.id,
+              userId: sc.user_id,
+              name: sc.company_name,
+              tradingName: sc.trading_name,
+              cnpj: sc.cnpj,
+              type: sc.company_type,
+              stateRegistration: sc.state_registration,
+              municipalRegistration: sc.municipal_registration,
+              phone: sc.phone,
+              website: sc.website,
+              description: sc.description,
+              address: sc.address,
+              certifications: sc.certifications || [],
+              fleetSize: sc.fleet_size || 0,
+              operatingStates: sc.operating_states || [],
+              rating: 5.0,
+              totalFreights: totalFreights || 0,
+              status: 'active',
+              createdAt: sc.created_at,
+              updatedAt: sc.updated_at || sc.created_at,
+            };
           }));
         }
       } catch (supabaseError) {

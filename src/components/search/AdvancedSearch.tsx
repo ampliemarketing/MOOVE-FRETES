@@ -223,12 +223,15 @@ const defaultFilters: LogisticSearchFilters = {
 };
 
 const cargoTypes = [
-  'Eletrônicos', 'Alimentos', 'Materiais de Construção', 'Roupas', 
-  'Móveis', 'Produtos Químicos', 'Medicamentos', 'Combustível'
+  'Carga Geral', 'Granel sólido', 'Granel líquido', 'Granel pressurizada', 
+  'Conteiner', 'Frigorificada ou Aquecida', 'Neogranel', 'Perigosa (Carga Geral)',
+  'Perigosa (Granel sólido)', 'Perigosa (Granel liquido)', 'Perigosa (Container)', 
+  'Perigosa (Frigorificada ou Aquecida)'
 ];
 
 const truckTypes = [
-  'Truck', 'Carreta', 'Bitruck', 'VUC', 'Toco', 'Cavalo Mecânico'
+  '3/4', 'Fiorino', 'Toco', 'VLC', 'Bitruck', 'Truck', 
+  'Bitrem', 'Carreta', 'Carreta LS', 'Rodotrem', 'Vanderléia'
 ];
 
 export function AdvancedSearch() {
