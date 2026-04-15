@@ -184,6 +184,7 @@ export interface Freight {
   // Cargo details
   cargo: string;
   cargoType: string;
+  occupancyType?: 'completa' | 'complemento';
   weight: string;
   volume?: string;
   quantity?: string;

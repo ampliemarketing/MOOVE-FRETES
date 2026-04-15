@@ -82,8 +82,9 @@ interface FreightData {
   // Dados da carga
   product: string;
   species: string;
+  cargoType: string; // "Carga Geral", etc.
   totalWeight: string;
-  cargoType: 'completa' | 'complemento';
+  occupancyType: 'completa' | 'complemento'; // Renamed from cargoType
   volumes: string;
   volumeUnit: string;
   needsCover: boolean;
@@ -160,10 +161,11 @@ export function FreightRegistration({
       responsibleCollaborators: [],
       product: '',
       species: '',
+      cargoType: '',
       totalWeight: '',
-      cargoType: 'completa',
+      occupancyType: 'completa',
       volumes: '',
-      volumeUnit: 'Unidades',
+      volumeUnit: 'Por toneladas',
       needsCover: true,
       needsTracker: false,
       isInsured: true,
@@ -561,7 +563,7 @@ export function FreightRegistration({
           contactPhone: freightData.destinationContactPhone,
         },
         cargo: freightData.product,
-        cargoType: freightData.cargoType || 'completa',
+        cargoType: freightData.cargoType || 'Não informado',
         weight: freightData.totalWeight,
         truckType,
         category,
@@ -574,6 +576,7 @@ export function FreightRegistration({
         // Campos adicionais completos
         product: freightData.product,
         species: freightData.species,
+        occupancyType: freightData.occupancyType,
         volumes: freightData.volumes,
         volumeUnit: freightData.volumeUnit,
         needsCover: freightData.needsCover,
@@ -736,7 +739,7 @@ export function FreightRegistration({
           contactPhone: freightData.destinationContactPhone,
         },
         cargo: freightData.product,
-        cargoType: freightData.cargoType || 'completa',
+        cargoType: freightData.cargoType || 'Não informado',
         weight: freightData.totalWeight,
         truckType,
         category,
@@ -747,6 +750,7 @@ export function FreightRegistration({
         observations: freightData.observations,
         product: freightData.product,
         species: freightData.species,
+        occupancyType: freightData.occupancyType,
         volumes: freightData.volumes,
         volumeUnit: freightData.volumeUnit,
         needsCover: freightData.needsCover,
@@ -882,30 +886,43 @@ export function FreightRegistration({
   ];
 
   const volumeUnits = [
-    'Unidades',
-    'Caixas',
-    'Sacos',
-    'Paletes',
-    'Fardos',
-    'Tambores',
-    'm³'
+    'Por toneladas',
+    'Por quilos'
   ];
 
   const speciesOptions = [
-    'Grãos',
-    'Líquidos',
-    'Cargas secas',
-    'Produtos químicos',
-    'Materiais de construção',
-    'Alimentos processados',
-    'Produtos siderúrgicos',
-    'Madeira',
-    'Papel e celulose',
-    'Produtos têxteis',
-    'Máquinas e equipamentos',
-    'Automóveis e peças',
-    'Produtos farmacêuticos',
-    'Outros'
+    'Animais',
+    'Big Bag',
+    'Bobina',
+    'Caixas',
+    'Container',
+    'Diversos',
+    'Fardos',
+    'Fracionada',
+    'Granel',
+    'Metro Cubico',
+    'Milheiro',
+    'Mudança',
+    'Paletes',
+    'Passageiro',
+    'Sacos',
+    'Tambor',
+    'Unidades'
+  ];
+
+  const cargoTypeOptions = [
+    'Carga Geral',
+    'Granel sólido',
+    'Granel líquido',
+    'Granel pressurizada',
+    'Conteiner',
+    'Frigorificada ou Aquecida',
+    'Neogranel',
+    'Perigosa (Carga Geral)',
+    'Perigosa (Granel sólido)',
+    'Perigosa (Granel liquido)',
+    'Perigosa (Container)',
+    'Perigosa (Frigorificada ou Aquecida)'
   ];
 
   const valueCalculationOptions = [
@@ -1460,6 +1477,21 @@ export function FreightRegistration({
                   />
                 </div>
 
+                {/* Tipo de carga */}
+                <div className="space-y-2">
+                  <Label>Tipo de Carga</Label>
+                  <Select value={freightData.cargoType} onValueChange={(value) => updateFreightData('cargoType', value)}>
+                    <SelectTrigger className="bg-input-background border-input-border">
+                      <SelectValue placeholder="Selecione o tipo de carga" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cargoTypeOptions.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Espécie e Peso total */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -1470,7 +1502,7 @@ export function FreightRegistration({
                       </SelectTrigger>
                       <SelectContent>
                         {speciesOptions.map((species) => (
-                          <SelectItem key={species} value={species.toLowerCase()}>{species}</SelectItem>
+                          <SelectItem key={species} value={species}>{species}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1507,7 +1539,7 @@ export function FreightRegistration({
                       </SelectTrigger>
                       <SelectContent>
                         {volumeUnits.map((unit) => (
-                          <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>
+                          <SelectItem key={unit} value={unit}>{unit}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1520,15 +1552,15 @@ export function FreightRegistration({
                   <div className="grid grid-cols-2 gap-3">
                     <div 
                       className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                        freightData.cargoType === 'completa' ? 'border-[#253663] bg-[#253663]/5 ring-1 ring-[#253663]' : 'border-[#e5e7eb] hover:bg-[#fafafa]'
+                        freightData.occupancyType === 'completa' ? 'border-[#253663] bg-[#253663]/5 ring-1 ring-[#253663]' : 'border-[#e5e7eb] hover:bg-[#fafafa]'
                       }`}
-                      onClick={() => updateFreightData('cargoType', 'completa')}
+                      onClick={() => updateFreightData('occupancyType', 'completa')}
                     >
                       <div className="flex items-center space-x-3">
                         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          freightData.cargoType === 'completa' ? 'border-[#253663]' : 'border-[#d1d5db]'
+                          freightData.occupancyType === 'completa' ? 'border-[#253663]' : 'border-[#d1d5db]'
                         }`}>
-                          {freightData.cargoType === 'completa' && (
+                          {freightData.occupancyType === 'completa' && (
                             <div className="w-2 h-2 rounded-full bg-[#253663]"></div>
                           )}
                         </div>
@@ -1540,15 +1572,15 @@ export function FreightRegistration({
                     </div>
                     <div 
                       className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                        freightData.cargoType === 'complemento' ? 'border-[#253663] bg-[#253663]/5 ring-1 ring-[#253663]' : 'border-[#e5e7eb] hover:bg-[#fafafa]'
+                        freightData.occupancyType === 'complemento' ? 'border-[#253663] bg-[#253663]/5 ring-1 ring-[#253663]' : 'border-[#e5e7eb] hover:bg-[#fafafa]'
                       }`}
-                      onClick={() => updateFreightData('cargoType', 'complemento')}
+                      onClick={() => updateFreightData('occupancyType', 'complemento')}
                     >
                       <div className="flex items-center space-x-3">
                         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          freightData.cargoType === 'complemento' ? 'border-[#253663]' : 'border-[#d1d5db]'
+                          freightData.occupancyType === 'complemento' ? 'border-[#253663]' : 'border-[#d1d5db]'
                         }`}>
-                          {freightData.cargoType === 'complemento' && (
+                          {freightData.occupancyType === 'complemento' && (
                             <div className="w-2 h-2 rounded-full bg-[#253663]"></div>
                           )}
                         </div>

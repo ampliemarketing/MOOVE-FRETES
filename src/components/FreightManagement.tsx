@@ -125,6 +125,7 @@ interface Freight {
   product?: string;
   species?: string;
   cargoType?: string;
+  occupancyType?: 'completa' | 'complemento';
   volumes?: number;
   volumeUnit?: string;
   needsCover?: boolean;
@@ -609,6 +610,7 @@ export function FreightManagement({
       product: apiFreight.product,
       species: apiFreight.species,
       cargoType: apiFreight.cargoType,
+      occupancyType: apiFreight.occupancyType,
       volumes: apiFreight.volumes,
       volumeUnit: apiFreight.volumeUnit,
       needsCover: apiFreight.needsCover,

@@ -61,8 +61,8 @@ export interface Freight {
   publisherPhone?: string; // ✅ ADICIONADO: Telefone da empresa para WhatsApp
   // ✅ CAMPOS ADICIONAIS DO FORMULÁRIO
   product?: string;
-  species?: string;
   cargoType?: string;
+  occupancyType?: 'completa' | 'complemento';
   volumes?: number;
   volumeUnit?: string;
   needsCover?: boolean;
@@ -265,6 +265,7 @@ export function useFreights() {
                 product: f.metadata?.product || undefined,
                 species: f.metadata?.species || undefined,
                 cargoType: f.metadata?.cargoType || undefined,
+                occupancyType: f.metadata?.occupancyType || undefined,
                 volumes: f.metadata?.volumes || undefined,
                 volumeUnit: f.metadata?.volumeUnit || undefined,
                 needsCover: f.metadata?.needsCover || false,

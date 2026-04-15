@@ -104,7 +104,8 @@ interface Freight {
   // Campos adicionais do cadastro
   product?: string;
   species?: string;
-  cargoType?: 'completa' | 'complemento';
+  cargoType?: string;
+  occupancyType?: 'completa' | 'complemento';
   volumes?: string;
   volumeUnit?: string;
   needsCover?: boolean;
@@ -1163,11 +1164,11 @@ ${generateDeepLinkUrl('profile', params.driverId)}
                       </div>
                     </div>
 
-                    {freight.cargoType && (
+                    {freight.occupancyType && (
                       <div className="bg-gray-50 p-3 rounded">
-                        <div className="text-xs text-gray-500 mb-1">Tipo do Frete</div>
+                        <div className="text-xs text-gray-500 mb-1">Ocupação do Veículo</div>
                         <div className="text-sm font-medium text-gray-900">
-                          {freight.cargoType === 'completa' ? 'Carga Completa' : 'Carga Complemento'}
+                          {freight.occupancyType === 'completa' ? 'Carga Completa' : 'Carga Complemento'}
                         </div>
                       </div>
                     )}

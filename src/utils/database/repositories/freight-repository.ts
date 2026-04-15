@@ -82,6 +82,7 @@ export class FreightRepository {
               product: (freight as any).product,
               species: (freight as any).species,
               cargoType: (freight as any).cargoType,
+              occupancyType: (freight as any).occupancyType,
               volumes: (freight as any).volumes,
               volumeUnit: (freight as any).volumeUnit,
               needsCover: (freight as any).needsCover,
@@ -123,6 +124,12 @@ export class FreightRepository {
 
         // ✅ Pegar o ID gerado pelo Supabase
         createdId = supabaseData.id;
+      } catch (supabaseError) {
+        logger.error('❌ Erro inesperado ao salvar no Supabase:', supabaseError);
+        return {
+          success: false,
+          error: supabaseError instanceof Error ? supabaseError.message : 'Erro ao salvar frete no Supabase',
+        };
       }
 
       // 2. CACHEAR NO LOCALSTORAGE (OPCIONAL)
