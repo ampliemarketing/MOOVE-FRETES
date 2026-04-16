@@ -1399,6 +1399,13 @@ ${generateDeepLinkUrl('freight', freight.id)}`;
                         <span className="text-xs font-medium text-primary">
                           {activeCount} filtro{activeCount > 1 ? 's' : ''}
                         </span>
+                        <button
+                          onClick={() => setFreightFilters(initialFiltersState)}
+                          className="ml-0.5 text-primary hover:text-primary/70 transition-colors"
+                          title="Limpar filtros"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
                       </div>
                     );
                   })()}
