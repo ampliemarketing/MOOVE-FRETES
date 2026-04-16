@@ -259,7 +259,7 @@ export class SocialPostRepository {
 
       if (error) throw error;
 
-      await db.remove(KeyPatterns.post(id));
+      await db.del(KeyPatterns.post(id));
 
       return { success: true, data: true };
     } catch (error) {

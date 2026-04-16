@@ -296,7 +296,7 @@ export class PreferencesRepository {
 
       if (error) throw error;
 
-      await db.remove(KeyPatterns.preferences(userId));
+      await db.del(KeyPatterns.preferences(userId));
 
       return { success: true, data: true };
     } catch (error) {

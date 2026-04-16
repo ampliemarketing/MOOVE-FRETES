@@ -321,7 +321,7 @@ export async function clearLocalStorageData(): Promise<void> {
   ];
 
   for (const key of keysToRemove) {
-    await db.remove(key);
+    await db.del(key);
   }
 
   console.log('🗑️ LocalStorage limpo');

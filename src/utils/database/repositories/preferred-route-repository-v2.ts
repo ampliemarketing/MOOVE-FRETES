@@ -77,7 +77,7 @@ export class PreferredRouteRepository {
         .single();
 
       if (error) {
-        console.error('❌ Erro ao criar rota preferida no Supabase:', error);
+        console.error('❌ Erro ao criar rota preferida no Supabase:', error.message, '| code:', error.code, '| details:', error.details);
         throw error;
       }
 
@@ -530,7 +530,7 @@ export class PreferredRouteRepository {
         console.warn('⚠️ Supabase delete failed (may be RLS policy), removing locally:', error.message);
       }
 
-      await db.remove(KeyPatterns.preferredRoute(id));
+      await db.del(KeyPatterns.preferredRoute(id));
 
       return { success: true, data: true };
     } catch (error) {

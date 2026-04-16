@@ -234,7 +234,7 @@ export class ConversationRepository {
       if (error) throw error;
 
       // Clear cache
-      await db.remove(KeyPatterns.chat(id));
+      await db.del(KeyPatterns.chat(id));
 
       return { success: true, data: true };
     } catch (error) {
@@ -555,7 +555,7 @@ export class MessageRepository {
 
       if (error) throw error;
 
-      await db.remove(KeyPatterns.message(messageId));
+      await db.del(KeyPatterns.message(messageId));
 
       return { success: true, data: true };
     } catch (error) {

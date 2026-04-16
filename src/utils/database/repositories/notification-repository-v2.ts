@@ -238,7 +238,7 @@ export class NotificationRepository {
       if (error) throw error;
 
       // Limpar cache de notificações do usuário
-      await db.remove(KeyPatterns.notificationsByUser(userId));
+      await db.del(KeyPatterns.notificationsByUser(userId));
 
       return {
         success: true,
@@ -268,7 +268,7 @@ export class NotificationRepository {
       if (error) throw error;
 
       // 2. LIMPAR CACHE
-      await db.remove(KeyPatterns.notification(id));
+      await db.del(KeyPatterns.notification(id));
 
       return {
         success: true,
@@ -328,7 +328,7 @@ export class NotificationRepository {
       if (error) throw error;
 
       // Limpar cache
-      await db.remove(KeyPatterns.notificationsByUser(userId));
+      await db.del(KeyPatterns.notificationsByUser(userId));
 
       return {
         success: true,
