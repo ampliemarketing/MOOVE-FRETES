@@ -179,8 +179,9 @@ export class CompanyRepository {
         .from('companies')
         .select('*')
         .eq('user_id', userId)
-        .single();
-      
+        .single() as { data: any; error: any };
+
+      if (!error && companyData) {
         const { count: totalFreights } = await supabase
           .from('freights')
           .select('*', { count: 'exact', head: true })
