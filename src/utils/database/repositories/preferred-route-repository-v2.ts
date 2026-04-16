@@ -525,7 +525,10 @@ export class PreferredRouteRepository {
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        // Log but don't abort — RLS or policy issues should not block local cleanup
+        console.warn('⚠️ Supabase delete failed (may be RLS policy), removing locally:', error.message);
+      }
 
       await db.remove(KeyPatterns.preferredRoute(id));
 

@@ -1872,8 +1872,8 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
 
   // Filtered and searched data
   const filteredChats = useMemo(() => {
-    let filtered = chats.filter(chat => 
-      chat.otherUser?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    let filtered = chats.filter(chat =>
+      (chat.otherUser?.name ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     );
     
     // Apply tab filter
@@ -1897,8 +1897,8 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
   const filteredUsers = useMemo(() => {
     // Mostrar TODOS os usuários disponíveis para conversa
     // (não apenas aqueles sem conversa existente)
-    const filtered = users.filter(u => 
-      u.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = users.filter(u =>
+      (u.name ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     );
     
     console.log('📋 [ChatScreen] Usuários filtrados para nova conversa:', {
@@ -1915,7 +1915,7 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
     if (!messageSearchTerm) return messages;
     
     return messages.filter(msg =>
-      msg.content.toLowerCase().includes(messageSearchTerm.toLowerCase())
+      (msg.content ?? '').toLowerCase().includes(messageSearchTerm.toLowerCase())
     );
   }, [messages, messageSearchTerm]);
 

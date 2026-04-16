@@ -311,11 +311,10 @@ export function useMyPreferredRoutes(driverId: string) {
 
   // Deletar rota permanentemente
   const deleteRoute = useCallback(async (routeId: string) => {
+    // Optimistic update: remove da UI imediatamente
+    setRoutes(prev => prev.filter(r => r.id !== routeId));
+
     try {
-      // database.preferredRoutes.delete já gerencia Supabase + localStorage.
-      // Não chamamos o Supabase diretamente aqui para evitar dupla deleção:
-      // a segunda tentativa de deletar uma linha já removida gera erro no
-      // servidor, que fazia o hook exibir toast de erro mesmo após sucesso.
       const deleteResult = await database.preferredRoutes.delete(routeId);
 
       if (!deleteResult.success) {
@@ -323,7 +322,6 @@ export function useMyPreferredRoutes(driverId: string) {
         return { success: false, error: deleteResult.error };
       }
 
-      setRoutes(prev => prev.filter(r => r.id !== routeId));
       toast.success('Rota deletada com sucesso!');
       return { success: true };
     } catch (err) {
