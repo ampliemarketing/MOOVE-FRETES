@@ -1342,9 +1342,23 @@ export async function syncPreferredRoutes(userId: string): Promise<SyncResult> {
   let synced = 0;
 
   try {
-    
+
+    // Resolver drivers.id a partir do user_id (FK exige drivers.id, não auth.uid)
+    const { data: driverRow, error: driverLookupError } = await supabase
+      .from('drivers')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (driverLookupError || !driverRow) {
+      // Usuário não é motorista — pular sync de rotas sem erro
+      return { success: true, synced: 0, errors: [] };
+    }
+
+    const driverId = driverRow.id;
+
     const routes = await database.preferredRoutes.getByDriver(userId);
-    
+
     if (routes.success && routes.data) {
       for (const route of routes.data) {
         try {
@@ -1352,7 +1366,7 @@ export async function syncPreferredRoutes(userId: string): Promise<SyncResult> {
             .from('preferred_routes')
             .upsert({
               id: route.id,
-              driver_id: userId,
+              driver_id: driverId,
               origin_city: route.origin.city,
               origin_state: route.origin.state,
               destination_city: route.destination.city,
