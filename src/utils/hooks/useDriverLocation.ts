@@ -119,6 +119,7 @@ export function useDriverLocation({
         setPermissionDenied(true);
         setError('Permissão de localização negada');
         toast.error('Permissão de localização negada', {
+          id: 'geolocation-permission-denied',
           description: 'Habilite a localização nas configurações do navegador',
         });
       } else if (error.code === 2) { // POSITION_UNAVAILABLE
@@ -183,6 +184,7 @@ export function useDriverLocation({
       } else {
         setPermissionDenied(true);
         toast.error('Permissão de localização negada', {
+          id: 'geolocation-permission-denied',
           description: 'Por favor, habilite a localização nas configurações do navegador',
         });
         return false;

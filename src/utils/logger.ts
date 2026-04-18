@@ -21,13 +21,11 @@ class Logger {
     const prefix = `[${level.toUpperCase()}] [${context}]`;
     switch (level) {
       case 'warn':
-        console.warn(prefix, ...args);
         break;
       case 'error':
         console.error(prefix, ...args);
         break;
       default:
-        console.log(prefix, ...args);
     }
   }
 

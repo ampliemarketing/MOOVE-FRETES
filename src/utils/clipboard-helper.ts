@@ -13,7 +13,6 @@ export async function copyToClipboard(text: string, successMessage: string = 'Co
       return true;
     }
   } catch (e) {
-    console.warn('Clipboard API falhou, tentando fallback...', e);
   }
 
   // Método 2: Fallback com textarea + execCommand
@@ -45,7 +44,6 @@ export async function copyToClipboard(text: string, successMessage: string = 'Co
       return true;
     }
   } catch (e) {
-    console.warn('execCommand fallback falhou:', e);
   }
 
   // Método 3: Último recurso - mostrar prompt para copiar manualmente

@@ -14,12 +14,10 @@ const PRECACHE_URLS = [
 
 // Install event - cache essential assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing MaisFrete Service Worker...');
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[SW] Caching essential assets');
         return cache.addAll(PRECACHE_URLS);
       })
       .then(() => self.skipWaiting())
@@ -28,14 +26,12 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating MaisFrete Service Worker...');
   
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
-            console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -60,7 +56,6 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request)
       .then((cachedResponse) => {
         if (cachedResponse) {
-          console.log('[SW] Serving from cache:', event.request.url);
           return cachedResponse;
         }
 
@@ -83,7 +78,6 @@ self.addEventListener('fetch', (event) => {
 
           return response;
         }).catch((error) => {
-          console.log('[SW] Fetch failed:', error);
           
           // Return offline page if available
           return caches.match('/offline.html').then((offlineResponse) => {
@@ -99,7 +93,6 @@ self.addEventListener('fetch', (event) => {
 
 // Background sync for offline actions
 self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync triggered:', event.tag);
   
   if (event.tag === 'sync-data') {
     event.waitUntil(syncData());
@@ -108,7 +101,6 @@ self.addEventListener('sync', (event) => {
 
 // Push notifications
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification received');
   
   const data = event.data ? event.data.json() : {};
   const title = data.title || 'MaisFrete';
@@ -130,7 +122,6 @@ self.addEventListener('push', (event) => {
 
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.notification.tag);
   
   event.notification.close();
 
@@ -153,31 +144,26 @@ self.addEventListener('notificationclick', (event) => {
 
 // Helper function to sync data
 async function syncData() {
-  console.log('[SW] Syncing offline data...');
   
   try {
     // Get pending actions from IndexedDB or localStorage
     const pendingActions = JSON.parse(localStorage.getItem('maisfrete_pending_actions') || '[]');
     
     if (pendingActions.length === 0) {
-      console.log('[SW] No pending actions to sync');
       return;
     }
 
     // Process pending actions
     for (const action of pendingActions) {
-      console.log('[SW] Processing action:', action.type);
       // Here you would send the action to your backend
       // For demo mode, we just log it
     }
 
     // Clear pending actions
     localStorage.setItem('maisfrete_pending_actions', '[]');
-    console.log('[SW] Sync complete');
   } catch (error) {
     console.error('[SW] Sync failed:', error);
     throw error;
   }
 }
 
-console.log('[SW] MaisFrete Service Worker loaded');

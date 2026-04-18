@@ -19,7 +19,6 @@ export function AutoSyncWrapper({ userId, children }: AutoSyncWrapperProps) {
     syncInterval: 30000, // 30 segundos
     onSyncSuccess: (syncedItems) => {
       if (syncedItems > 0) {
-        console.log(`✅ Auto-sync: ${syncedItems} ${syncedItems === 1 ? 'item sincronizado' : 'itens sincronizados'}`);
       }
     },
     onSyncError: (error) => {
@@ -30,12 +29,12 @@ export function AutoSyncWrapper({ userId, children }: AutoSyncWrapperProps) {
   // Log status changes para debug
   React.useEffect(() => {
     if (syncState.lastSyncTime) {
-      console.log('📊 Status de sincronização:', {
-        lastSync: syncState.lastSyncTime.toLocaleTimeString('pt-BR'),
-        isSyncing: syncState.isSyncing,
-        isOnline: syncState.isOnline,
-        syncedItems: syncState.syncedItemsCount
-      });
+      // [REVISAR] console.log('📊 Status de sincronização:', {
+      // lastSync: syncState.lastSyncTime.toLocaleTimeString('pt-BR'),
+      // isSyncing: syncState.isSyncing,
+      // isOnline: syncState.isOnline,
+      // syncedItems: syncState.syncedItemsCount
+      // });
     }
   }, [syncState.lastSyncTime, syncState.syncedItemsCount]);
 

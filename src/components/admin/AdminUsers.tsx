@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, Ban, Unlock, RotateCcw, UserCog, Shield, Mail } from 'lucide-react';
 import { AdminDataTable } from './AdminDataTable';
-import { mockUsers, type AdminUser } from './admin-mock-data';
+import type { AdminUser } from './admin-mock-data';
+import { fetchAdminUsers, updateUserStatus } from '../../utils/admin-supabase-service';
 import { toast } from 'sonner@2.0.3';
 
 const statusColors: Record<string, string> = {
@@ -33,10 +34,15 @@ const typeColors: Record<string, string> = {
 };
 
 export function AdminUsers() {
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  useEffect(() => {
+    fetchAdminUsers().then((data) => { setUsers(data); setLoading(false); });
+  }, []);
 
   const filteredUsers = users.filter(u => {
     if (filterType !== 'all' && u.userType !== filterType) return false;
@@ -44,8 +50,10 @@ export function AdminUsers() {
     return true;
   });
 
-  const handleBlock = (user: AdminUser) => {
-    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: u.status === 'blocked' ? 'active' : 'blocked' as any } : u));
+  const handleBlock = async (user: AdminUser) => {
+    const newStatus = user.status === 'blocked' ? 'active' : 'blocked';
+    await updateUserStatus(user.id, newStatus as AdminUser['status']);
+    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: newStatus as AdminUser['status'] } : u));
     toast.success(user.status === 'blocked' ? `${user.name} desbloqueado` : `${user.name} bloqueado`);
   };
 
@@ -163,6 +171,8 @@ export function AdminUsers() {
       </button>
     </div>
   );
+
+  if (loading) return <div className="flex items-center justify-center py-12 text-[var(--muted-foreground)]">Carregando usuários...</div>;
 
   return (
     <div className="space-y-4">

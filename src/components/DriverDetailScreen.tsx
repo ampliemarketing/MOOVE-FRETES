@@ -58,12 +58,6 @@ interface DriverDetailScreenProps {
 }
 
 export function DriverDetailScreen({ driver, onBack, user }: DriverDetailScreenProps) {
-  console.log('🎯 [DriverDetailScreen] Componente montado com driver:', {
-    id: driver.id,
-    name: driver.name,
-    rating: driver.rating,
-    reviewCount: driver.reviewCount
-  });
   
   const [activeTab, setActiveTab] = useState('overview');
   const [isFavorited, setIsFavorited] = useState(false);
@@ -74,22 +68,14 @@ export function DriverDetailScreen({ driver, onBack, user }: DriverDetailScreenP
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('🔍 [DriverDetailScreen] Carregando dados do motorista:', driver.id);
         
         // Buscar avaliações
         const ratingsResponse = await database.ratings.getByDriver(driver.id, { limit: 100 });
-        console.log('📊 [DriverDetailScreen] Resposta de avaliações:', {
-          success: ratingsResponse.success,
-          count: ratingsResponse.data?.length || 0,
-          data: ratingsResponse.data
-        });
         
         if (ratingsResponse.success && ratingsResponse.data) {
           setRatings(ratingsResponse.data);
-          console.log('✅ [DriverDetailScreen] Avaliações carregadas:', ratingsResponse.data.length);
         } else {
           setRatings([]);
-          console.log('⚠️ [DriverDetailScreen] Nenhuma avaliação encontrada');
         }
 
         // Buscar fretes completados do motorista
@@ -372,22 +358,14 @@ ${generateDeepLinkUrl('profile', companyId)}
           }}
           currentUser={user}
           onSuccess={async () => {
-            console.log('🎉 [DriverDetailScreen] Avaliação enviada com sucesso! Recarregando...');
             
             // Recarregar avaliações após submissão bem-sucedida
             try {
               const ratingsResponse = await database.ratings.getByDriver(driver.id, { limit: 100 });
-              console.log('📊 [DriverDetailScreen] Resposta após recarregar:', {
-                success: ratingsResponse.success,
-                count: ratingsResponse.data?.length || 0,
-                data: ratingsResponse.data
-              });
               
               if (ratingsResponse.success && ratingsResponse.data) {
                 setRatings(ratingsResponse.data);
-                console.log('✅ [DriverDetailScreen] Avaliações atualizadas! Total:', ratingsResponse.data.length);
               } else {
-                console.log('⚠️ [DriverDetailScreen] Nenhuma avaliação retornada após reload');
               }
             } catch (error) {
               console.error('❌ [DriverDetailScreen] Erro ao recarregar avaliações:', error);

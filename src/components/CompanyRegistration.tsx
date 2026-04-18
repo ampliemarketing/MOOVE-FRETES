@@ -879,7 +879,6 @@ export function CompanyRegistration({ onBack, onComplete }: CompanyRegistrationP
   };
 
   const handleSubmit = async () => {
-    console.log('📤 [CompanyRegistration] Preparando dados para registro...');
     
     // ✅ NÃO fazer upload aqui - será feito APÓS signUp no AuthScreen
     // Os Files serão passados no objeto e uploadados quando o usuário já existir
@@ -891,10 +890,6 @@ export function CompanyRegistration({ onBack, onComplete }: CompanyRegistrationP
       uploads: formData.uploads,
     };
     
-    console.log('✅ [CompanyRegistration] Dados preparados:', {
-      hasUploads: !!formData.uploads,
-      uploadCount: Object.keys(formData.uploads || {}).length
-    });
     
     // Enviando dados para o backend
     onComplete(dataToSubmit);

@@ -97,13 +97,11 @@ export function TrackingEventUpload({ freightId, onEventAdded }: TrackingEventUp
     setUploading(true);
     
     try {
-      console.log('📤 [TrackingEvent] Criando evento de rastreamento...');
       
       // Upload das imagens para o Storage
       let imagePaths: string[] = [];
       
       if (selectedImages.length > 0) {
-        console.log(`📸 [TrackingEvent] Fazendo upload de ${selectedImages.length} imagens...`);
         
         const { uploadMultipleImages } = await import('../utils/storage-helper');
         const results = await uploadMultipleImages(selectedImages);
@@ -119,7 +117,6 @@ export function TrackingEventUpload({ freightId, onEventAdded }: TrackingEventUp
           return;
         }
         
-        console.log(`✅ [TrackingEvent] ${imagePaths.length} imagens uploadadas`);
       }
       
       // Criar evento no banco
@@ -134,7 +131,6 @@ export function TrackingEventUpload({ freightId, onEventAdded }: TrackingEventUp
         created_at: new Date().toISOString(),
       };
       
-      console.log('💾 [TrackingEvent] Salvando evento:', eventData);
       
       const { data, error } = await supabase
         .from('tracking_events')
@@ -147,7 +143,6 @@ export function TrackingEventUpload({ freightId, onEventAdded }: TrackingEventUp
         throw error;
       }
       
-      console.log('✅ [TrackingEvent] Evento criado com sucesso!', data);
       
       toast.success('Evento registrado com sucesso!');
       

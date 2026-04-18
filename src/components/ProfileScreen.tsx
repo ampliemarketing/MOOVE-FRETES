@@ -258,10 +258,10 @@ const mockUserData: UserData = {
     thisMonthValue: 0
   },
   socialStats: {
-    followers: 2847,
-    following: 456,
-    posts: 234,
-    likes: 15680
+    followers: 0,
+    following: 0,
+    posts: 0,
+    likes: 0
   },
   preferences: {
     privacy: {
@@ -309,8 +309,6 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
         const { getSupabaseClient } = await import('../utils/supabase/client');
         const supabase = getSupabaseClient();
         
-        console.log('🔍 [ProfileScreen] Buscando dados do Supabase para:', profileId, isCollaborator ? '(perfil da empresa)' : '(próprio)');
-        console.log('📧 [ProfileScreen] Email do user prop:', user.email || 'VAZIO');
         
         const { data: supabaseUser, error: supabaseError } = await supabase
           .from('profiles')
@@ -321,13 +319,6 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
         if (supabaseError) {
           console.error('❌ [ProfileScreen] Erro ao buscar do Supabase:', supabaseError);
         } else if (supabaseUser) {
-          console.log('✅ [ProfileScreen] Dados do Supabase encontrados:', {
-            name: supabaseUser.name,
-            email: supabaseUser.email, // ✅ ADICIONAR EMAIL AO LOG
-            avatar_url: supabaseUser.avatar_url,
-            cpf: supabaseUser.cpf,
-            phone: supabaseUser.phone
-          });
         }
         
         // Usar dados locais do database ao invés de fetch
@@ -341,13 +332,6 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
           // ✅ SOLUÇÃO 2: Não buscar companies para caminhoneiros (previne erro 406)
           let companyData = null;
           if (profileData.userType === 'transportadora' || profileData.userType === 'embarcador' || profileData.userType === 'agenciador') {
-            console.log('');
-            console.log('═══════════════════════════════════════════════════════════');
-            console.log('🏢 ProfileScreen - Buscando dados da empresa');
-            console.log('═══════════════════════════════════════════════════════════');
-            console.log('👤 User ID:', user.id);
-            console.log('👤 User Type:', profileData.userType);
-            console.log('');
             
             // 🔍 TENTAR BUSCAR DO SUPABASE PRIMEIRO
             try {
@@ -358,15 +342,6 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
                 .single();
                 
               if (!companyError && supabaseCompany) {
-                console.log('✅ Empresa encontrada no Supabase:', {
-                  id: supabaseCompany.id,
-                  name: supabaseCompany.name || supabaseCompany.trading_name,
-                  cnpj: supabaseCompany.cnpj,
-                  email: supabaseCompany.email, // ✅ ADICIONAR EMAIL AO LOG
-                  emailFallback: supabaseUser?.email, // ✅ MOSTRAR FALLBACK
-                  phone: supabaseCompany.phone, // ✅ ADICIONAR PHONE AO LOG
-                  address: supabaseCompany.address // ✅ ADICIONAR ADDRESS AO LOG
-                });
                 
                 // Transformar dados do Supabase para formato local
                 companyData = {
@@ -415,14 +390,10 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
                   documentPaths: supabaseCompany.document_paths || {}
                 };
                 
-                console.log('📧 [ProfileScreen] Email final da empresa:', companyData.email || 'VAZIO');
                 setCompanyDetails(companyData);
               } else if (companyError) {
-                console.log('⚠️ Empresa não encontrada no Supabase, tentando LocalStorage...');
-                console.log('Erro:', companyError.message);
               }
             } catch (error) {
-              console.log('⚠️ Erro ao buscar empresa do Supabase:', error);
             }
             
             // 📦 Se não encontrou no Supabase, buscar do LocalStorage
@@ -431,17 +402,10 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
               
               if (companyResponse.success && companyResponse.data) {
                 companyData = companyResponse.data;
-                console.log('✅ Dados da empresa encontrados no LocalStorage:', {
-                  id: companyData.id,
-                  name: companyData.name,
-                  companyName: companyData.companyName,
-                  cnpj: companyData.cnpj
-                });
                 
                 setCompanyDetails(companyData);
               } else {
                 // 🆕 CRIAR EMPRESA BÁSICA COM DADOS DO USUÁRIO
-                console.log('📝 Criando perfil de empresa temporário com dados do usuário...');
                 if (supabaseUser) {
                   const basicCompanyData = {
                     userId: profileId,
@@ -466,25 +430,15 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
                   
                   companyData = basicCompanyData;
                   setCompanyDetails(basicCompanyData);
-                  console.log('✅ Perfil de empresa temporário criado com sucesso');
                 }
               }
             }
             
-            console.log('═══════════════════════════════════════════════════════════');
-            console.log('');
           }
           
           // 🚚 Buscar dados do motorista se for caminhoneiro
           let driverData = null;
           if (profileData.userType === 'caminhoneiro') {
-            console.log('');
-            console.log('═══════════════════════════════════════════════════════════');
-            console.log('🚚 ProfileScreen - Buscando dados do motorista');
-            console.log('═══════════════════════════════════════════════════════════');
-            console.log('👤 User ID:', profileId);
-            console.log('👤 User Type:', profileData.userType);
-            console.log('');
             
             // 🔍 TENTAR BUSCAR DO SUPABASE PRIMEIRO
             try {
@@ -495,16 +449,6 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
                 .maybeSingle(); // ✅ Fix: Usar maybeSingle() para evitar erro com duplicatas
                 
               if (!driverError && supabaseDriver) {
-                console.log('✅ Motorista encontrado no Supabase:', {
-                  id: supabaseDriver.id,
-                  name: supabaseDriver.name,
-                  cpf: supabaseDriver.cpf,
-                  cnh: supabaseDriver.cnh,
-                  cnh_category: supabaseDriver.cnh_category,
-                  rg: supabaseDriver.rg,
-                  birth_date: supabaseDriver.birth_date,
-                  vehicle_plate: supabaseDriver.vehicle_plate
-                });
                 
                 // Transformar dados do Supabase para formato local
                 driverData = {
@@ -544,11 +488,8 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
                   documentPaths: supabaseDriver.document_paths || {}
                 };
               } else if (driverError) {
-                console.log('⚠️ Motorista não encontrado no Supabase, tentando LocalStorage...');
-                console.log('Erro:', driverError.message);
               }
             } catch (error) {
-              console.log('⚠️ Erro ao buscar motorista do Supabase:', error);
             }
             
             // 📦 Se não encontrou no Supabase, buscar do LocalStorage
@@ -557,20 +498,10 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
               
               if (driverResponse.success && driverResponse.data) {
                 driverData = driverResponse.data;
-                console.log('✅ Dados do motorista encontrados no LocalStorage:', {
-                  id: driverData.id,
-                  name: driverData.name,
-                  cpf: driverData.cpf,
-                  cnh: driverData.cnh,
-                  cnhCategory: driverData.cnhCategory,
-                  profileImage: driverData.profileImage
-                });
               } else {
-                console.log('⚠️ Motorista não encontrado no LocalStorage');
                 
                 // 🆕 Se não encontrou em nenhum lugar, mas tem dados do Supabase user, usar esses dados
                 if (supabaseUser) {
-                  console.log('📝 Usando dados básicos do usuário do Supabase...');
                   driverData = {
                     userId: profileId,
                     name: supabaseUser.name,
@@ -585,13 +516,10 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
               }
             }
             
-            console.log('═══════════════════════════════════════════════════════════');
-            console.log('');
           }
           
           // 📷 Priorizar avatar do Supabase, depois LocalStorage
           const avatarPath = supabaseUser?.avatar_url || driverData?.profileImage || profileData.profile?.avatar || user.avatar || '';
-          console.log('📷 [ProfileScreen] Avatar PATH:', avatarPath ? avatarPath : 'Não encontrado');
           
           // Atualizar dados do perfil com as informações do database
           setUserData(prev => ({
@@ -641,19 +569,20 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
               ...prev.stats,
               averageRating: companyData?.rating || driverData?.rating || profileData.profile?.rating || user.rating || 0,
               totalFreights: profileData.profile?.totalFreights || driverData?.completedTrips || user.totalTrips || 0,
+              punctuality: driverData?.punctuality ?? 0,
+            },
+            socialStats: {
+              ...prev.socialStats,
+              followers: supabaseUser?.followers_count ?? 0,
+              following: supabaseUser?.following_count ?? 0,
             }
           }));
-          
-          // 🔍 LOG PARA DEBUG: Verificar email sendo salvo
-          console.log('📧 [ProfileScreen] Email salvo em userData:', supabaseUser?.email || profileData.email || user.email || 'VAZIO');
-          console.log('🏠 [ProfileScreen] Endereço salvo em userData:', driverData?.address || companyData?.address || 'VAZIO');
-          
+
           // 🏢 Armazenar detalhes completos da empresa
           setCompanyDetails(companyData);
         }
       } catch (error) {
         // Silenciar erro - usar dados do user já carregado
-        console.warn('⚠️ Usando dados do usuário em memória');
       } finally {
         setLoading(false);
       }
@@ -709,7 +638,6 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
       const { getSupabaseClient } = await import('../utils/supabase/client');
       const supabase = getSupabaseClient();
       
-      console.log('🔄 [ProfileScreen] Recarregando dados após edição...');
       
       // Buscar dados atualizados do Supabase (tabela profiles)
       const reloadProfileId = isCollaborator && companyId ? companyId : user.id;
@@ -719,7 +647,6 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
         .eq('id', reloadProfileId)
         .single();
       
-      console.log('📷 [ProfileScreen] Avatar recarregado:', supabaseUser?.avatar_url);
 
       if (userData.userType === 'caminhoneiro') {
         const { data: driverData } = await supabase
@@ -734,6 +661,17 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
             name: driverData.name || supabaseUser.name || prev.name, // ✅ driver.name PRIMEIRO!
             phone: driverData.phone || supabaseUser.phone || prev.phone,
             avatar: driverData.profile_image || supabaseUser.avatar_url || prev.avatar,
+            stats: {
+              ...prev.stats,
+              averageRating: driverData.rating || supabaseUser.rating || prev.stats.averageRating,
+              totalFreights: supabaseUser.total_freights || driverData.completed_trips || prev.stats.totalFreights,
+              punctuality: driverData.punctuality ?? prev.stats.punctuality,
+            },
+            socialStats: {
+              ...prev.socialStats,
+              followers: supabaseUser.followers_count ?? prev.socialStats.followers,
+              following: supabaseUser.following_count ?? prev.socialStats.following,
+            },
             professionalInfo: {
               ...prev.professionalInfo,
               cpf: driverData.cpf,
@@ -744,20 +682,22 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
               cnhExpiry: driverData.cnh_expiry,
               rntrc: driverData.rntrc,
               rntrcExpiry: driverData.rntrc_expiry,
+              vehicleType: driverData.vehicle_type,
               vehiclePlate: driverData.vehicle_plate,
               vehicleModel: driverData.vehicle_model,
               profileImage: driverData.profile_image,
               vehicleYear: driverData.vehicle_year,
               renavam: driverData.renavam,
               anttVehicle: driverData.antt_vehicle,
+              documentPaths: driverData.document_paths || prev.professionalInfo.documentPaths || {},
               address: {
-                cep: driverData.address_cep || '',
-                street: driverData.address_street || '',
-                number: driverData.address_number || '',
-                complement: driverData.address_complement || '',
-                neighborhood: driverData.address_neighborhood || '',
-                city: driverData.address_city || '',
-                state: driverData.address_state || '',
+                cep: driverData.address?.cep || '',
+                street: driverData.address?.street || '',
+                number: driverData.address?.number || '',
+                complement: driverData.address?.complement || '',
+                neighborhood: driverData.address?.neighborhood || '',
+                city: driverData.address?.city || '',
+                state: driverData.address?.state || '',
               },
             },
           }));
@@ -775,21 +715,21 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
             companyName: companyData.company_name,
             cnpj: companyData.cnpj,
             phone: companyData.phone,
-            email: companyData.email,
+            email: companyData.corporate_email,
             corporateEmail: companyData.corporate_email,
             description: companyData.description,
             address: {
-              cep: companyData.address_cep || '',
-              street: companyData.address_street || '',
-              number: companyData.address_number || '',
-              complement: companyData.address_complement || '',
-              neighborhood: companyData.address_neighborhood || '',
-              city: companyData.address_city || '',
-              state: companyData.address_state || ''
+              cep: companyData.address?.cep || '',
+              street: companyData.address?.street || '',
+              number: companyData.address?.number || '',
+              complement: companyData.address?.complement || '',
+              neighborhood: companyData.address?.neighborhood || '',
+              city: companyData.address?.city || '',
+              state: companyData.address?.state || ''
             },
             contact: {
               phone: companyData.phone || '',
-              email: companyData.email || ''
+              email: companyData.corporate_email || ''
             },
             logo: companyData.logo_url,
             representativeName: companyData.representative_name,
@@ -812,11 +752,15 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
             phone: companyData.phone || supabaseUser.phone || prev.phone,
             company: companyData.trading_name || prev.company,
             avatar: companyData.logo_url || supabaseUser.avatar_url || prev.avatar,
+            socialStats: {
+              ...prev.socialStats,
+              followers: supabaseUser.followers_count ?? prev.socialStats.followers,
+              following: supabaseUser.following_count ?? prev.socialStats.following,
+            },
           }));
         }
       }
 
-      console.log('✅ [ProfileScreen] Dados recarregados com sucesso');
     } catch (error) {
       console.error('❌ [ProfileScreen] Erro ao recarregar dados:', error);
     }
@@ -832,7 +776,6 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
   React.useEffect(() => {
     const handleProfileUpdate = async (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('🔥 [ProfileScreen] Perfil atualizado! Recarregando dados...', customEvent.detail);
       await reloadProfileData();
     };
     
@@ -976,16 +919,6 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
   }
 
   // 🔍 DEBUG: Log completo dos dados antes de renderizar
-  console.log('🖼️ [RENDER] userData completo:', {
-    email: userData.email,
-    phone: userData.phone,
-    address: userData.professionalInfo?.address
-  });
-  console.log('🏢 [RENDER] companyDetails completo:', {
-    email: companyDetails?.email,
-    phone: companyDetails?.phone,
-    address: companyDetails?.address
-  });
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-y-auto pb-20">

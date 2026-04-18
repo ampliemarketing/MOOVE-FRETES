@@ -14,12 +14,6 @@ interface AllDriversScreenProps {
 }
 
 export function AllDriversScreen({ user, onOpenChat, initialSelectedId }: AllDriversScreenProps) {
-  console.log('🟡 [AllDriversScreen] Renderizado com props:', {
-    hasOnOpenChat: !!onOpenChat,
-    onOpenChatType: typeof onOpenChat,
-    hasUser: !!user,
-    userId: user?.id
-  });
   
   return (
     <DriversScreen

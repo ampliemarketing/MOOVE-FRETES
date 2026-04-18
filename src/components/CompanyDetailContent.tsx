@@ -103,7 +103,6 @@ export function CompanyDetailContent({ company, user, onSendMessage, onViewFreig
     }
 
     try {
-      console.log(`🔍 Carregando dados da empresa ${company.name} (${company.userId})...`);
 
       // Buscar fretes e avaliações em paralelo
       const [freightsResponse, ratingsResponse] = await Promise.all([
@@ -114,19 +113,15 @@ export function CompanyDetailContent({ company, user, onSendMessage, onViewFreig
       // Processar fretes
       if (freightsResponse.success && freightsResponse.data) {
         setFreights(freightsResponse.data);
-        console.log(`📦 ${freightsResponse.data.length} fretes carregados`);
       } else {
         setFreights([]);
-        console.log('⚠️ Nenhum frete encontrado');
       }
 
       // Processar avaliações
       if (ratingsResponse.success && ratingsResponse.data) {
         setRatings(ratingsResponse.data);
-        console.log(`⭐ ${ratingsResponse.data.length} avaliações carregadas`);
       } else {
         setRatings([]);
-        console.log('⚠️ Nenhuma avaliação encontrada');
       }
 
       if (isRefresh) {

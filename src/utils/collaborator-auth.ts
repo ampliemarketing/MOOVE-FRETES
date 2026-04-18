@@ -56,17 +56,6 @@ export async function createCollaboratorWithAuth(
   }
   
   try {
-    console.log('');
-    console.log('━'.repeat(80));
-    console.log('🔐 CRIAR COLABORADOR COM SUPABASE AUTH');
-    console.log('━'.repeat(80));
-    console.log('📧 Email:', email);
-    console.log('👤 Nome:', name);
-    console.log('📞 Telefone:', phone);
-    console.log('🏢 Empresa ID:', companyId);
-    console.log('👤 Criado por:', createdBy);
-    console.log('━'.repeat(80));
-    console.log('');
     
     // 1. Verificar se email já é colaborador NESTA empresa
     const existingCollaborator = await collaboratorRepository.getByEmail(email, companyId);
@@ -99,7 +88,6 @@ export async function createCollaboratorWithAuth(
       if (authError.message?.includes('already registered') || 
           authError.message?.includes('already been registered') ||
           authError.status === 422) {
-        console.warn('⚠️ Usuário já existe no Supabase Auth, tentando vincular como colaborador...');
         
         // Buscar o user_id do usuário existente pela tabela profiles
         const { data: existingProfile, error: profileError } = await supabase
@@ -118,7 +106,6 @@ export async function createCollaboratorWithAuth(
         }
         
         newUserId = existingProfile.id;
-        console.log('✅ User ID encontrado via profiles:', newUserId);
       } else {
         // Outro erro qualquer
         await restoreAdminSession(adminSession);
@@ -129,7 +116,6 @@ export async function createCollaboratorWithAuth(
       }
     } else if (authData?.user) {
       newUserId = authData.user.id;
-      console.log('✅ Nova conta Supabase Auth criada:', newUserId);
     } else {
       await restoreAdminSession(adminSession);
       return {
@@ -141,7 +127,6 @@ export async function createCollaboratorWithAuth(
     // 3. 🔒 RESTAURAR SESSÃO DO ADMIN IMEDIATAMENTE
     // O signUp pode ter trocado a sessão ativa
     await restoreAdminSession(adminSession);
-    console.log('🔒 Sessão do admin restaurada com sucesso');
     
     // 4. Criar/atualizar perfil na tabela profiles (se não existir)
     if (newUserId) {
@@ -170,13 +155,11 @@ export async function createCollaboratorWithAuth(
             console.error('❌ Erro ao criar profile:', profileInsertError);
             // Não é fatal - o profile pode ser criado no próximo login
           } else {
-            console.log('✅ Profile criado no Supabase');
           }
         } else {
-          console.log('✅ Profile já existe, pulando criação');
         }
       } catch (profileErr) {
-        console.warn('⚠️ Erro ao verificar/criar profile (não fatal):', profileErr);
+        // [REVISAR] console.warn('⚠️ Erro ao verificar/criar profile (não fatal):', profileErr);
       }
     }
     
@@ -200,7 +183,6 @@ export async function createCollaboratorWithAuth(
       };
     }
     
-    console.log('✅ Colaborador criado no Supabase:', collaboratorResult.id);
     
     // 6. FALLBACK: Também salvar no LocalStorage para compatibilidade
     try {
@@ -215,19 +197,11 @@ export async function createCollaboratorWithAuth(
         isSuperAdmin: false,
         isActive: true
       });
-      console.log('✅ Colaborador salvo no LocalStorage (backup)');
+      // [REVISAR] console.log('✅ Colaborador salvo no LocalStorage (backup)');
     } catch (localError) {
-      console.warn('⚠️ Não foi possível salvar no LocalStorage (não crítico)');
+      // [REVISAR] console.warn('⚠️ Não foi possível salvar no LocalStorage (não crítico)');
     }
     
-    console.log('');
-    console.log('━'.repeat(80));
-    console.log('✅ COLABORADOR CRIADO COM SUCESSO');
-    console.log('━'.repeat(80));
-    console.log('🆔 User ID:', newUserId);
-    console.log('🆔 Collaborator ID:', collaboratorResult.id);
-    console.log('━'.repeat(80));
-    console.log('');
     
     return {
       success: true,

@@ -229,7 +229,6 @@ export function FreightDetailScreen({
           })));
         }
       } catch (e) {
-        console.warn('⚠️ Não foi possível carregar contatos do frete:', e);
       }
     };
     if (freight.id) loadContacts();
@@ -252,17 +251,6 @@ export function FreightDetailScreen({
 
   // 🔍 Debug: Verificar se observações estão chegando
   useEffect(() => {
-    console.log('🔍 [FreightDetailScreen] Dados do frete:', {
-      id: freight.id,
-      observations: freight.observations,
-      hasObservations: !!freight.observations,
-      observationsLength: freight.observations?.length || 0,
-      pickupDate: freight.pickupDate,
-      deliveryDate: freight.deliveryDate,
-      hasPickupDate: !!freight.pickupDate,
-      hasDeliveryDate: !!freight.deliveryDate,
-    });
-    console.log('🔍 [FreightDetailScreen] OBJETO COMPLETO DO FRETE:', freight);
   }, [freight]);
 
   // Verificar se pode avaliar quando o frete está concluído
@@ -325,22 +313,21 @@ export function FreightDetailScreen({
     
     try {
       setLoadingCompanyProfile(true);
-      console.log('🔍 [FreightDetailScreen] Buscando perfil da empresa:', freight.customerId);
       
       // Usar fetchCompleteUserProfile ao invés de database.users.getById
       const profile = await fetchCompleteUserProfile(freight.customerId);
       
-      console.log('📦 [FreightDetailScreen] Perfil completo retornado:', {
-        hasProfile: !!profile,
-        id: profile?.id,
-        name: profile?.name,
-        userType: profile?.userType,
-        hasAvatar: !!(profile as any)?.avatar,
-        hasAvatarUrl: !!(profile as any)?.avatarUrl,
-        avatar: (profile as any)?.avatar?.substring(0, 100),
-        avatarUrl: (profile as any)?.avatarUrl?.substring(0, 100),
-        allFields: profile ? Object.keys(profile) : []
-      });
+      // [REVISAR] console.log('📦 [FreightDetailScreen] Perfil completo retornado:', {
+      // hasProfile: !!profile,
+      // id: profile?.id,
+      // name: profile?.name,
+      // userType: profile?.userType,
+      // hasAvatar: !!(profile as any)?.avatar,
+      // hasAvatarUrl: !!(profile as any)?.avatarUrl,
+      // avatar: (profile as any)?.avatar?.substring(0, 100),
+      // avatarUrl: (profile as any)?.avatarUrl?.substring(0, 100),
+      // allFields: profile ? Object.keys(profile) : []
+      // });
       
       if (profile) {
         setCompanyProfile(profile);

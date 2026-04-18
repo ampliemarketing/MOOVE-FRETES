@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, XCircle, RefreshCw, MessageSquare, ArrowRight, DollarSign } from 'lucide-react';
 import { AdminDataTable } from './AdminDataTable';
-import { mockFreights, type AdminFreight } from './admin-mock-data';
+import type { AdminFreight } from './admin-mock-data';
+import { fetchAdminFreights, updateFreightStatus } from '../../utils/admin-supabase-service';
 import { toast } from 'sonner@2.0.3';
 
 const statusColors: Record<string, string> = {
@@ -22,17 +23,24 @@ const statusLabels: Record<string, string> = {
 };
 
 export function AdminFreights() {
-  const [freights, setFreights] = useState(mockFreights);
+  const [freights, setFreights] = useState<AdminFreight[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
+
+  useEffect(() => {
+    fetchAdminFreights().then((data) => { setFreights(data); setLoading(false); });
+  }, []);
 
   const filtered = filterStatus === 'all' ? freights : freights.filter(f => f.status === filterStatus);
 
-  const handleCancel = (f: AdminFreight) => {
+  const handleCancel = async (f: AdminFreight) => {
+    await updateFreightStatus(f.id, 'cancelled');
     setFreights(prev => prev.map(fr => fr.id === f.id ? { ...fr, status: 'cancelled' as const } : fr));
     toast.success(`Frete ${f.code} cancelado pelo admin`);
   };
 
-  const handleChangeStatus = (f: AdminFreight, newStatus: AdminFreight['status']) => {
+  const handleChangeStatus = async (f: AdminFreight, newStatus: AdminFreight['status']) => {
+    await updateFreightStatus(f.id, newStatus);
     setFreights(prev => prev.map(fr => fr.id === f.id ? { ...fr, status: newStatus } : fr));
     toast.success(`Status de ${f.code} alterado para ${statusLabels[newStatus]}`);
   };
@@ -123,6 +131,8 @@ export function AdminFreights() {
       </div>
     </div>
   );
+
+  if (loading) return <div className="flex items-center justify-center py-12 text-[var(--muted-foreground)]">Carregando fretes...</div>;
 
   return (
     <div className="space-y-4">

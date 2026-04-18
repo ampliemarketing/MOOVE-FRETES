@@ -52,8 +52,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner@2.0.3";
-import { useChat } from '../utils/hooks/useChat';
-import type { Conversation, Message } from '../utils/hooks/useChat';
+import type { Message } from '../utils/hooks/useChat';
 import type { User as AppUser } from './contexts/AppContext';
 import { database } from '../utils/database';
 import { getAvatarUrl } from '../utils/storage-helper'; // ✅ IMPORTAR HELPER DE STORAGE
@@ -107,18 +106,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
   const chatIdentityId = companyId || user.id;
   const chatDisplayName = isCollaborator ? (user.collaborator?.companyName || user.name) : user.name;
   
-  console.log('🚀 [ChatScreen] Renderizado! Props:', {
-    userId: user.id,
-    userName: user.name,
-    isCollaborator,
-    chatIdentityId,
-    chatDisplayName,
-    initialUserId,
-    hasInitialMessage: !!initialMessage,
-    hasInitialFreightId: !!initialFreightId,
-  });
-  
-  const { conversations, loading: loadingConversations, createConversation, sendMessage } = useChat();
   
   // State Management
   const [selectedChat, setSelectedChat] = useState<ChatWithDetails | null>(null);
@@ -213,7 +200,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         is_read: false,
       });
       
-      console.log('📬 [Notificação] Criada');
     } catch (error) {
       console.error('❌ [Notificação] Erro:', error);
     }
@@ -241,8 +227,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
       console.error('ChatScreen: Invalid user data');
       return;
     }
-    
-    console.log('🚀 [ChatScreen] Inicializando tela de chat para usuário:', user.id, user.name);
     
     // ✅ Sistema de Presença Online
     const setUserOnline = async () => {
@@ -654,7 +638,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
   useEffect(() => {
     const handleInitialFreight = async () => {
       if (initialFreightId && chats.length > 0) {
-        console.log('🔍 Procurando conversa para o frete:', initialFreightId);
         
         // Primeiro, tentar encontrar uma conversa diretamente vinculada ao freightId
         let existingChat = chats.find(chat => 
@@ -662,32 +645,27 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         );
         
         if (existingChat) {
-          console.log('✅ Conversa encontrada diretamente pelo freightId');
           setSelectedChat(existingChat);
           toast.success('Chat aberto para este frete');
           return;
         }
-        
+
         // Se não encontrar, buscar o frete e tentar pelo dono
         const freightResponse = await database.freights.getById(initialFreightId);
         if (freightResponse.success && freightResponse.data) {
           const freight = freightResponse.data;
-          
+
           // O dono do frete é quem publicou (publisherId para Supabase ou customerId para local)
           const ownerId = (freight as any).publisherId || (freight as any).publisher_id || freight.customerId;
-          
-          console.log('🔍 Procurando chat com o dono do frete:', ownerId);
-          
-          existingChat = chats.find(chat => 
+
+
+          existingChat = chats.find(chat =>
             chat.otherUser?.id === ownerId
           );
-          
+
           if (existingChat) {
-            console.log('✅ Conversa encontrada pelo dono do frete');
             setSelectedChat(existingChat);
-            toast.success('Chat aberto para este frete');
           } else {
-            console.log('📝 Criando nova conversa com o dono do frete');
             const ownerResponse = await database.users.getById(ownerId);
             if (ownerResponse.success && ownerResponse.data) {
               handleStartNewChat(ownerResponse.data.id);
@@ -707,20 +685,11 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
   // Handle initial user - open chat directly with a specific user
   useEffect(() => {
     const handleInitialUser = async () => {
-      console.log('🔍 [ChatScreen useEffect initialUserId] Estado:', {
-        initialUserId,
-        hasInitialUserId: !!initialUserId,
-        processedBefore: processedInitialUserIdRef.current,
-        chatsLength: chats.length,
-        hasSelectedChat: !!selectedChat,
-      });
-      
       // ✅ IMPORTANTE: Processar initialUserId apenas se:
       // 1. initialUserId está definido
       // 2. Ainda não processamos esse initialUserId
       // 3. Não há chat selecionado
       if (initialUserId && processedInitialUserIdRef.current !== initialUserId && !selectedChat) {
-        console.log('✅ [ChatScreen] PROCESSANDO initialUserId:', initialUserId);
         
         // Marcar como processado para evitar loops
         processedInitialUserIdRef.current = initialUserId;
@@ -731,12 +700,10 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         );
         
         if (existingChat) {
-          console.log('✅ [ChatScreen] Conversa existente encontrada:', existingChat.id);
           setSelectedChat(existingChat);
           toast.success('Chat aberto');
         } else {
           // Se não existe, criar nova conversa (mesmo sem outras conversas)
-          console.log('📝 [ChatScreen] Criando nova conversa com o usuário:', initialUserId);
           handleStartNewChat(initialUserId);
         }
       }
@@ -748,7 +715,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
   // Pre-fill message input with initial message when chat is selected
   useEffect(() => {
     if (initialMessage && selectedChat && !messageInput) {
-      console.log('📝 Preenchendo campo de mensagem com detalhes do frete');
       setMessageInput(initialMessage);
       // Auto scroll to message input
       setTimeout(() => {
@@ -854,7 +820,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         isOnline: u.is_online || false,
       }));
       
-      console.log('📤 [ChatScreen] Salvando', transformedUsers.length, 'usuários no estado');
       setUsers(transformedUsers);
     } catch (error) {
       console.error('❌ [ChatScreen] Erro ao carregar usuários:', error);
@@ -886,7 +851,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
     
     if (showLoading) setIsLoadingChats(true);
     try {
-      console.time('⏱️ Load Chats Total');
       
       const supabase = (await import('../utils/supabase/client')).getSupabaseClient();
       
@@ -894,7 +858,7 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
       const [conversationsResult, profilesResult] = await Promise.all([
         supabase
           .from('conversations')
-          .select('id, participant1_id, participant2_id, freight_id, created_at, last_message_at')
+          .select('id, participant1_id, participant2_id, freight_id, created_at, last_message_at, is_pinned, is_muted')
           .or(`participant1_id.eq.${chatIdentityId},participant2_id.eq.${chatIdentityId}`)
           .order('last_message_at', { ascending: false }),
         supabase
@@ -972,8 +936,8 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
             freightId: conv.freight_id,
             unreadCount: {},
             lastMessage: lastMsg || null,
-            isPinned: false,
-            isMuted: false,
+            isPinned: conv.is_pinned ?? false,
+            isMuted: conv.is_muted ?? false,
             isArchived: false,
             createdAt: conv.created_at,
             updatedAt: conv.last_message_at || conv.created_at,
@@ -999,7 +963,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         return timeB - timeA;
       });
       
-      console.timeEnd('⏱️ Load Chats Total');
       setChats(enrichedChats);
     } catch (error) {
       console.error('Error:', error);
@@ -1012,11 +975,8 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
   const loadMessages = async (chatId: string, showLoading = true) => {
     if (isLoadingMessages) return;
     
-    console.log('🔄 Carregando mensagens do chat:', chatId);
-    
     if (showLoading) setIsLoadingMessages(true);
     try {
-      console.time('⏱️ Load Messages');
       
       // ✅ OTIMIZAÇÃO: Carregar apenas 100 mensagens mais recentes COM NOMES
       const supabase = (await import('../utils/supabase/client')).getSupabaseClient();
@@ -1038,14 +998,11 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
       }
       
       if (!supabaseMessages || supabaseMessages.length === 0) {
-        console.log('📭 Nenhuma mensagem encontrada para o chat:', chatId);
         setMessages([]);
         setHasMoreMessages(false);
         if (showLoading) setIsLoadingMessages(false);
         return;
       }
-      
-      console.log(`✅ ${supabaseMessages.length} mensagens carregadas`);
       
       // Reverter ordem (mais antigas primeiro)
       const transformedMessages = supabaseMessages
@@ -1071,7 +1028,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
       setMessages(transformedMessages as MessageWithReactions[]);
       setHasMoreMessages(supabaseMessages.length >= 100);
       
-      console.timeEnd('⏱️ Load Messages');
     } catch (error) {
       console.error('Error:', error);
       if (showLoading) showErrorToast('Erro ao carregar mensagens');
@@ -1192,7 +1148,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
 
       // Process media files
       if (withMedia && mediaFiles.length > 0) {
-        console.log('📤 [ChatScreen] Fazendo upload de', mediaFiles.length, 'anexos para Storage...');
         
         attachments = await Promise.all(
           mediaFiles.map(async (file) => {
@@ -1206,7 +1161,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
               throw new Error('Upload failed');
             }
             
-            console.log('✅ [ChatScreen] Anexo uploadado. PATH:', result.path);
             
             return {
               type: file.type === 'image' ? 'image' : 'document',
@@ -1217,7 +1171,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
           })
         );
         
-        console.log('✅ [ChatScreen] Todos os anexos uploadados com sucesso');
 
         messageType = mediaFiles[0].type === 'image' ? 'image' : 'file';
         
@@ -1295,7 +1248,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
       }
 
       // 🔄 GARANTIR QUE A CONVERSA EXISTE NO SUPABASE ANTES DE ENVIAR MENSAGEM
-      console.log('🔍 Verificando se conversa existe no Supabase antes de enviar...');
       const otherUserId = selectedChat.participants.find(p => p !== chatIdentityId);
       if (otherUserId) {
         try {
@@ -1310,17 +1262,13 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
             .maybeSingle();
           
           if (!existingConv && !checkError) {
-            console.log('⚠️ Conversa não existe no Supabase, criando agora...');
             
             // 🔥 CRÍTICO: Verificar e criar perfis de usuários primeiro
-            console.log('🔍 Verificando se os usuários existem no Supabase...');
             
             // Buscar usuários do LocalStorage
             const currentUserData = JSON.parse(localStorage.getItem(`maisfrete:user:${user.id}`) || '{}');
             const otherUserData = JSON.parse(localStorage.getItem(`maisfrete:user:${otherUserId}`) || '{}');
             
-            console.log('👤 Usuário atual:', currentUserData);
-            console.log('👤 Outro usuário:', otherUserData);
             
             // Verificar/criar perfil do usuário atual
             const { data: user1Exists } = await supabase
@@ -1330,7 +1278,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
               .maybeSingle();
             
             if (!user1Exists && currentUserData.id) {
-              console.log('📝 Criando perfil do usuário atual no Supabase...');
               await supabase.from('profiles').upsert({
                 id: currentUserData.id,
                 email: currentUserData.email,
@@ -1341,7 +1288,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
                 status: currentUserData.status || 'active',
                 created_at: currentUserData.createdAt || new Date().toISOString(),
               }, { onConflict: 'id' });
-              console.log('✅ Perfil do usuário atual criado!');
             }
             
             // Verificar/criar perfil do outro usuário
@@ -1352,7 +1298,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
               .maybeSingle();
             
             if (!user2Exists && otherUserData.id) {
-              console.log('📝 Criando perfil do outro usuário no Supabase...');
               await supabase.from('profiles').upsert({
                 id: otherUserData.id,
                 email: otherUserData.email,
@@ -1363,7 +1308,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
                 status: otherUserData.status || 'active',
                 created_at: otherUserData.createdAt || new Date().toISOString(),
               }, { onConflict: 'id' });
-              console.log('✅ Perfil do outro usuário criado!');
             }
             
             // Agora criar a conversa
@@ -1385,9 +1329,7 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
               return;
             }
             
-            console.log('✅ Conversa criada no Supabase com sucesso!');
           } else if (existingConv) {
-            console.log('✅ Conversa já existe no Supabase');
           }
         } catch (error) {
           console.error('❌ Erro ao verificar/criar conversa:', error);
@@ -1422,7 +1364,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
       }
 
       if (savedMessage) {
-        console.log('✅ Mensagem salva no Supabase:', savedMessage.id);
         
         // Replace optimistic message with real one
         setMessages(prev => prev.map(m => 
@@ -1642,10 +1583,8 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
   };
 
   const handleStartNewChat = async (otherUserId: string) => {
-    console.log('📞 [handleStartNewChat] CHAMADO com otherUserId:', otherUserId);
     setLoading(true);
     try {
-      console.log('🔍 [handleStartNewChat] Iniciando nova conversa com:', otherUserId);
       
       // ✅ CRIAR/BUSCAR CONVERSA APENAS NO SUPABASE (sem LocalStorage)
       const supabase = (await import('../utils/supabase/client')).getSupabaseClient();
@@ -1666,7 +1605,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
       
       // Se não existe, criar nova
       if (!existingConv && !checkError) {
-        console.log('📝 Criando nova conversa no Supabase...');
         const { data: newConv, error: createError } = await supabase
           .from('conversations')
           .insert({
@@ -1687,9 +1625,7 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         }
         
         conversation = newConv;
-        console.log('✅ Conversa criada:', conversation.id);
       } else {
-        console.log('✅ Conversa já existe:', conversation.id);
       }
       
       // Buscar dados do outro usuário do Supabase
@@ -1748,14 +1684,9 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
 
   const handleViewProfile = async (userId: string) => {
     try {
-      console.log('🔍 Carregando perfil completo do usuário:', userId);
       const profile = await fetchCompleteUserProfile(userId);
       
       if (profile) {
-        console.log('✅ Perfil completo carregado:', {
-          name: profile.name,
-          userType: profile.userType
-        });
         setSelectedUserProfile(profile);
         setProfileDialogOpen(true);
       } else {
@@ -1776,14 +1707,15 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         toast.success('Conversa excluída com sucesso');
         setDeleteDialogOpen(false);
         setChatToDelete(null);
-        
+
         if (selectedChat?.id === chatToDelete.id) {
           setSelectedChat(null);
         }
-        
+
         await loadChats();
       } else {
-        toast.error('Erro ao excluir conversa');
+        console.error('❌ [handleDeleteChat] Falha:', response.error);
+        toast.error(response.error || 'Erro ao excluir conversa');
       }
     } catch (error) {
       console.error('Error deleting chat:', error);
@@ -1900,13 +1832,6 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
     const filtered = users.filter(u =>
       (u.name ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     );
-    
-    console.log('📋 [ChatScreen] Usuários filtrados para nova conversa:', {
-      totalUsers: users.length,
-      filtered: filtered.length,
-      searchTerm,
-      chatsCount: chats.length
-    });
     
     return filtered;
   }, [users, searchTerm, chats]);
@@ -2155,21 +2080,36 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
               <div className="flex flex-col items-center justify-center p-8 text-center">
                 <MessageCircle className="w-12 h-12 text-muted-foreground mb-4" />
                 <h3 className="font-medium mb-2">Nenhuma conversa</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {searchTerm ? 'Nenhuma conversa encontrada' : 'Inicie uma nova conversa'}
-                </p>
-                {!searchTerm && (
-                  <Button 
-                    onClick={() => {
-                      setShowNewChat(true);
-                      // ✅ Carregar usuários apenas ao abrir dialog
-                      if (users.length === 0) loadAllUsers();
-                    }} 
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nova Conversa
-                  </Button>
+                {searchTerm ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma conversa encontrada</p>
+                ) : (
+                  <>
+                    {user.user_type === 'motorista' ? (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Encontre uma transportadora para iniciar uma conversa
+                        </p>
+                        <Button size="sm" asChild>
+                          <a href="/empresas">
+                            <Truck className="w-4 h-4 mr-2" />
+                            Ver Transportadoras
+                          </a>
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Encontre um motorista para iniciar uma conversa
+                        </p>
+                        <Button size="sm" asChild>
+                          <a href="/motoristas">
+                            <User className="w-4 h-4 mr-2" />
+                            Ver Motoristas
+                          </a>
+                        </Button>
+                      </>
+                    )}
+                  </>
                 )}
               </div>
             )}

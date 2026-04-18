@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, CheckCircle, XCircle, Pause, Building2, Users, Package } from 'lucide-react';
 import { AdminDataTable } from './AdminDataTable';
-import { mockCompanies, type AdminCompany } from './admin-mock-data';
+import type { AdminCompany } from './admin-mock-data';
+import { fetchAdminCompanies, updateCompanyStatus } from '../../utils/admin-supabase-service';
 import { toast } from 'sonner@2.0.3';
 
 const statusColors: Record<string, string> = {
@@ -21,15 +22,22 @@ const typeLabels: Record<string, string> = {
 };
 
 export function AdminCompanies() {
-  const [companies, setCompanies] = useState(mockCompanies);
+  const [companies, setCompanies] = useState<AdminCompany[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<AdminCompany | null>(null);
 
-  const handleApprove = (c: AdminCompany) => {
+  useEffect(() => {
+    fetchAdminCompanies().then((data) => { setCompanies(data); setLoading(false); });
+  }, []);
+
+  const handleApprove = async (c: AdminCompany) => {
+    await updateCompanyStatus(c.id, 'active');
     setCompanies(prev => prev.map(co => co.id === c.id ? { ...co, status: 'active' as const } : co));
     toast.success(`${c.name} aprovada`);
   };
 
-  const handleReject = (c: AdminCompany) => {
+  const handleReject = async (c: AdminCompany) => {
+    await updateCompanyStatus(c.id, 'blocked');
     setCompanies(prev => prev.map(co => co.id === c.id ? { ...co, status: 'blocked' as const } : co));
     toast.success(`${c.name} rejeitada`);
   };
@@ -97,7 +105,7 @@ export function AdminCompanies() {
             </>
           )}
           {c.status === 'active' && (
-            <button onClick={() => { setCompanies(prev => prev.map(co => co.id === c.id ? { ...co, status: 'blocked' as const } : co)); toast.success('Operações suspensas'); }} className="p-1.5 rounded-[0.5rem] hover:bg-amber-50 text-[var(--muted-foreground)] hover:text-amber-600" title="Suspender">
+            <button onClick={async () => { await updateCompanyStatus(c.id, 'blocked'); setCompanies(prev => prev.map(co => co.id === c.id ? { ...co, status: 'blocked' as const } : co)); toast.success('Operações suspensas'); }} className="p-1.5 rounded-[0.5rem] hover:bg-amber-50 text-[var(--muted-foreground)] hover:text-amber-600" title="Suspender">
               <Pause className="w-4 h-4" />
             </button>
           )}
@@ -105,6 +113,8 @@ export function AdminCompanies() {
       ),
     },
   ];
+
+  if (loading) return <div className="flex items-center justify-center py-12 text-[var(--muted-foreground)]">Carregando empresas...</div>;
 
   return (
     <div className="space-y-4">

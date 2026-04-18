@@ -100,7 +100,6 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.email) {
-          console.log('📧 Email do Auth User:', user.email);
         }
       } catch (error) {
         console.error('Erro ao buscar dados do usuário:', error);
@@ -191,13 +190,7 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
     setLoading(true);
 
     try {
-      console.log('');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('💾 CompleteProfile - SALVANDO TUDO (ETAPA 2)');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('🆔 User ID:', userId);
-      console.log('🎯 User Type:', userType);
-      console.log('');
+      // [REVISAR] console.log('💾 CompleteProfile - SALVANDO TUDO (ETAPA 2)');
 
       // Buscar email do Auth User
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -207,20 +200,17 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
         throw new Error('Email do usuário não encontrado');
       }
 
-      console.log('📧 Email recuperado:', userEmail);
 
       // ✅ ETAPA 1: Upload de avatar (se houver)
       let avatarPath: string | undefined = undefined;
       
       if (profilePhoto) {
-        console.log('📸 Fazendo upload do avatar...');
         try {
           const { uploadAvatar } = await import('../utils/storage-helper');
           const result = await uploadAvatar(userId, profilePhoto);
           
           if (result.success && result.path) {
             avatarPath = result.path;
-            console.log('✅ Avatar uploadado:', avatarPath);
           } else {
             console.error('❌ Erro ao fazer upload do avatar:', result.error);
             toast.warning('Erro ao fazer upload da foto - continuando...');
@@ -246,14 +236,12 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
 
       for (const doc of docsToUpload) {
         if (doc.file) {
-          console.log(`📄 Fazendo upload de ${doc.name}...`);
           try {
             const { uploadDocument } = await import('../utils/storage-helper');
             const result = await uploadDocument(userId, doc.file, doc.key);
             
             if (result.success && result.path) {
               documentPaths[doc.key] = result.path;
-              console.log(`✅ ${doc.name} uploadado:`, result.path);
             } else {
               console.error(`❌ Erro ao fazer upload de ${doc.name}:`, result.error);
             }
@@ -264,7 +252,6 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
       }
 
       // ✅ ETAPA 3: Atualizar Profile completo (AGORA!)
-      console.log('📝 Atualizando profile completo no Supabase...');
       
       const profileData = {
         email: userEmail,
@@ -280,23 +267,7 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
         updated_at: new Date().toISOString()
       };
 
-      console.log('');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('📋 DADOS DO PROFILE (tabela profiles)');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('🆔 User ID:', userId);
-      console.log('📧 Email:', profileData.email);
-      console.log('👤 Tipo de Usuário:', profileData.user_type);
-      console.log('📝 Nome:', profileData.name);
-      console.log('📱 Telefone:', profileData.phone);
-      console.log('🏙️ Cidade:', profileData.city);
-      console.log('🗺️ Estado:', profileData.state);
-      console.log('🆔 CPF:', profileData.cpf || '(vazio)');
-      console.log('🏢 CNPJ:', profileData.cnpj || '(vazio)');
-      console.log('🖼️ Avatar:', profileData.avatar_url || '(sem avatar)');
-      console.log('✅ Status de Verificação:', profileData.verification_status);
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('');
+      // [REVISAR] console.log('📋 DADOS DO PROFILE (tabela profiles)');
 
       const { error: profileError } = await supabase
         .from('profiles')
@@ -308,11 +279,9 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
         throw new Error('Erro ao criar perfil: ' + profileError.message);
       }
 
-      console.log('✅ Profile atualizado com sucesso');
 
       // ✅ ETAPA 4: Criar registro específico (Driver ou Company)
       if (userType === 'caminhoneiro') {
-        console.log('🚚 Criando registro de motorista...');
         
         const driverData = {
           user_id: userId, // ✅ CORRIGIDO: snake_case para Postgres
@@ -345,30 +314,9 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
           updated_at: new Date().toISOString()
         };
 
-        console.log('');
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('🚚 DADOS DO MOTORISTA (tabela drivers)');
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('🆔 User ID:', driverData.user_id);
-        console.log('📝 Nome:', driverData.name);
-        console.log('🆔 CPF:', driverData.cpf);
-        console.log('🎂 Data Nascimento:', driverData.birth_date || '(não informada)');
-        console.log('📱 Telefone:', driverData.phone);
-        console.log('🪪 CNH:', driverData.cnh);
-        console.log('📋 Categoria CNH:', driverData.cnh_category);
-        console.log('📅 Validade CNH:', driverData.cnh_expiry || '(não informada)');
-        console.log('📍 Endereço Completo:', JSON.stringify(driverData.address, null, 2));
-        console.log('🚗 Placa Veículo:', driverData.vehicle_plate);
-        console.log('🚙 Modelo Veículo:', driverData.vehicle_model || '(não informado)');
-        console.log('📅 Ano Veículo:', driverData.vehicle_year || '(não informado)');
-        console.log('🚚 Tipos de Veículo:', driverData.vehicle_types.length > 0 ? driverData.vehicle_types.join(', ') : '(nenhum)');
-        console.log('📦 Tipos de Carroceria:', driverData.body_types.length > 0 ? driverData.body_types.join(', ') : '(nenhum)');
-        console.log('📄 Documentos:', Object.keys(driverData.document_paths).length > 0 ? Object.keys(driverData.document_paths).join(', ') : '(nenhum)');
-        console.log('✅ Disponível:', driverData.available);
-        console.log('⭐ Rating:', driverData.rating);
-        console.log('🎯 Viagens Completas:', driverData.completed_trips);
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('');
+        // [REVISAR] console.log('🚚 DADOS DO MOTORISTA (tabela drivers)');
+        // [REVISAR] console.log('🚚 Tipos de Veículo:', driverData.vehicle_types.length > 0 ? driverData.vehicle_types.join(', ') : '(nenhum)');
+        // [REVISAR] console.log('📦 Tipos de Carroceria:', driverData.body_types.length > 0 ? driverData.body_types.join(', ') : '(nenhum)');
 
         const { error: driverError } = await supabase
           .from('drivers')
@@ -379,10 +327,8 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
           throw new Error('Erro ao salvar dados do motorista: ' + driverError.message);
         }
 
-        console.log('✅ Registro de motorista criado');
         
       } else {
-        console.log('🏢 Criando registro de empresa...');
         
         const companyData = {
           user_id: userId, // ✅ CORRIGIDO: snake_case para Postgres
@@ -408,23 +354,7 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
           updated_at: new Date().toISOString()
         };
 
-        console.log('');
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('🏢 DADOS DA EMPRESA (tabela companies)');
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('🆔 User ID:', companyData.user_id);
-        console.log('🏢 Razão Social:', companyData.company_name);
-        console.log('🏪 Nome Fantasia:', companyData.trading_name);
-        console.log('🆔 CNPJ:', companyData.cnpj);
-        console.log('📋 Tipo de Empresa:', companyData.company_type);
-        console.log('🚛 RNTRC:', companyData.rntrc || '(não informado)');
-        console.log('📱 Telefone:', companyData.phone);
-        console.log('📍 Endereço Completo:', JSON.stringify(companyData.address, null, 2));
-        console.log('👤 Representante Legal:', companyData.representative_name);
-        console.log('🆔 CPF Representante:', companyData.representative_cpf);
-        console.log('📄 Documentos:', Object.keys(companyData.document_paths).length > 0 ? Object.keys(companyData.document_paths).join(', ') : '(nenhum)');
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('');
+        // [REVISAR] console.log('🏢 DADOS DA EMPRESA (tabela companies)');
 
         const { error: companyError } = await supabase
           .from('companies')
@@ -435,23 +365,15 @@ export function CompleteProfile({ userId, userType, onComplete }: CompleteProfil
           throw new Error('Erro ao salvar dados da empresa: ' + companyError.message);
         }
 
-        console.log('✅ Registro de empresa criado');
       }
 
-      console.log('');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('✅ CADASTRO COMPLETO - TUDO SALVO COM SUCESSO!');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('');
 
       toast.success('Cadastro completo! Bem-vindo ao MooveFretes!');
       
       setLoading(false);
       
       // Aguardar 2 segundos para garantir que o Supabase processou os dados antes do reload
-      console.log('⏳ Aguardando 2s antes do reload para garantir consistência dos dados...');
       setTimeout(() => {
-        console.log('🔄 Recarregando aplicação...');
         window.location.reload();
       }, 2000);
       

@@ -162,16 +162,8 @@ export function QuickRegistration({ onComplete, onBack, preSelectedType = null }
     setLoading(true);
 
     try {
-      console.log('');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('🚀 QuickRegistration - CRIANDO AUTHENTICATION USER');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('📧 Email:', email);
-      console.log('🎯 Tipo:', selectedType);
-      console.log('');
 
       // ✅ CRIAR APENAS AUTH USER (SEM PROFILE!)
-      console.log('🔐 Criando Authentication User no Supabase...');
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
@@ -193,13 +185,7 @@ export function QuickRegistration({ onComplete, onBack, preSelectedType = null }
         throw new Error('Usuário não foi criado no Supabase Auth');
       }
 
-      console.log('✅ Authentication User criado:', authData.user.id);
-      console.log('');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('✅ ETAPA 1 COMPLETA - Auth User criado!');
-      console.log('📝 Próximo: Completar perfil (Profile + Driver/Company)');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('');
+      // [REVISAR] console.log('📝 Próximo: Completar perfil (Profile + Driver/Company)');
 
       toast.success('Conta criada! Complete seu perfil agora.');
       

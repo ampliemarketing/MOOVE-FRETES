@@ -7,7 +7,6 @@ import { Separator } from '../ui/separator';
 export interface FreightFiltersState {
   origin: { city: string; state: string };
   destination: { city: string; state: string };
-  radius: string;
   vehicleTypes: string[];
   bodyTypes: string[];
   hasTracker: string;
@@ -19,7 +18,6 @@ export interface FreightFiltersState {
 export const initialFiltersState: FreightFiltersState = {
   origin: { city: '', state: '' },
   destination: { city: '', state: '' },
-  radius: '',
   vehicleTypes: [],
   bodyTypes: [],
   hasTracker: 'ambos',
@@ -61,15 +59,6 @@ export function FreightFilters({ filters, onFilterChange, className = '' }: Frei
     }
   };
 
-  // Helper para checkbox de seleção única toggleável (para Raio, que pode ser opcional)
-  const handleToggleSingleSelect = (key: keyof FreightFiltersState, value: string) => {
-    if (filters[key] === value) {
-      updateFilter(key, ''); // Desmarca se já estiver selecionado
-    } else {
-      updateFilter(key, value);
-    }
-  };
-
   // Estilo customizado para checkboxes "sem cor interna" (outline style)
   const checkboxStyle = "bg-transparent border-gray-300 data-[state=checked]:bg-transparent data-[state=checked]:text-primary data-[state=checked]:border-primary";
 
@@ -95,35 +84,6 @@ export function FreightFilters({ filters, onFilterChange, className = '' }: Frei
             onValueChange={(city, state) => handleCityChange('destination', city, state)}
             placeholder="Escolha seu destino (opcional)"
           />
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Raio (Distância) */}
-      <section className="space-y-3">
-        <div>
-          <h3 className="font-semibold text-base">Raio (Distância)</h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            Busca fretes próximos à sua localização atual ou à origem escolhida acima
-          </p>
-        </div>
-        <div className="space-y-2">
-          {['50Km', '100Km', '200Km'].map((label) => {
-            const value = label.replace('Km', '');
-            const isChecked = filters.radius === value;
-            return (
-              <div key={value} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={`radius-${value}`} 
-                  checked={isChecked}
-                  onCheckedChange={() => handleToggleSingleSelect('radius', value)}
-                  className={checkboxStyle}
-                />
-                <Label htmlFor={`radius-${value}`} className="font-normal text-gray-600">{label}</Label>
-              </div>
-            );
-          })}
         </div>
       </section>
 

@@ -174,13 +174,11 @@ export class ActivityLogRepository {
       }
 
       const created = sqlToActivityLog(data);
-      console.log('✅ Log criado:', created.id);
 
       // 2. CACHE (opcional, mas logs raramente são lidos individualmente)
       try {
         await db.set(`activity_log:${created.id}`, created);
       } catch (cacheError) {
-        console.warn('⚠️ Erro ao cachear log:', cacheError);
       }
 
       return {
@@ -226,7 +224,6 @@ export class ActivityLogRepository {
       if (error) throw error;
 
       const logs = (data || []).map(sqlToActivityLog);
-      console.log(`✅ ${logs.length} logs carregados para empresa ${companyId}`);
 
       return {
         success: true,
@@ -258,7 +255,6 @@ export class ActivityLogRepository {
       if (error) throw error;
 
       const logs = data.map(sqlToActivityLog);
-      console.log(`✅ ${logs.length} logs carregados`);
 
       return {
         success: true,
@@ -377,7 +373,6 @@ export class ActivityLogRepository {
 
       if (error) throw error;
 
-      console.log(`✅ ${data.length} logs antigos removidos`);
 
       return {
         success: true,

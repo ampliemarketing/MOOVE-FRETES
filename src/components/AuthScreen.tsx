@@ -79,11 +79,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
   // Check Supabase connection on mount
   useEffect(() => {
     const checkConnection = async () => {
-      console.log(
-        "🔧 Sistema: Supabase Auth + LocalStorage Data",
-      );
-      console.log("💾 Autenticação: Supabase");
-      console.log("💾 Dados: LocalStorage");
       setConnectionStatus("connected");
     };
 
@@ -98,7 +93,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
       );
       if (savedEmail) {
         setFormData((prev) => ({ ...prev, email: savedEmail }));
-        console.log("✅ Email anterior carregado:", savedEmail);
       }
     } catch (error) {
       console.error("❌ Erro ao carregar email salvo:", error);
@@ -109,12 +103,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
     e.preventDefault();
     setLoading(true);
 
-    console.log("🔐 AuthScreen - Iniciando login...");
-    console.log("📧 Email:", formData.email);
-    console.log(
-      "🔑 Password length:",
-      formData.password.length,
-    );
 
     try {
       // Validação básica
@@ -146,7 +134,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         formData.email.trim(),
         formData.password.trim(),
       );
-      console.log("✅ AuthScreen - Login bem-sucedido!");
 
       // 🔑 Salvar email do último usuário logado
       try {
@@ -154,10 +141,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           LAST_LOGGED_EMAIL_KEY,
           formData.email.trim(),
         );
-        console.log(
-          "💾 Email salvo para próximo login:",
-          formData.email.trim(),
-        );
+        // [REVISAR] console.log(
+        // "💾 Email salvo para próximo login:",
+        // formData.email.trim(),
+        // );
       } catch (saveError) {
         console.error("❌ Erro ao salvar email:", saveError);
         // Não bloquear o login se houver erro ao salvar
@@ -172,22 +159,12 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
       console.error("❌ AuthScreen - Login error:", error);
 
       // 🧹 LIMPAR QUALQUER SESSÃO ANTERIOR EM CASO DE ERRO
-      console.log(
-        "🧹 AuthScreen - Garantindo que não há sessão residual...",
-      );
       try {
         await supabase.auth.signOut();
       } catch (signOutError) {
-        console.log("ℹ️ Não havia sessão para limpar");
       }
 
       // 🔍 Diagnóstico avançado do erro
-      console.log("");
-      console.log("━".repeat(60));
-      console.log("🔍 DIAGNÓSTICO DE ERRO DE LOGIN");
-      console.log("━".repeat(60));
-      console.log("📧 Email tentado:", formData.email);
-      console.log("📝 Mensagem de erro:", errorMessage);
 
       // Verificar se há dados locais para este email
       const localUsers = Object.keys(localStorage)
@@ -210,25 +187,14 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         );
 
       if (localUsers.length > 0) {
-        console.log(
-          "⚠️ Usuário encontrado no LocalStorage mas NÃO no Supabase Auth",
-        );
-        console.log(
-          "💡 Isso significa que o usuário foi criado apenas localmente (modo demo antigo)",
-        );
-        console.log(
-          "✅ SOLUÇÃO: Criar uma nova conta no sistema atual (Supabase Auth)",
-        );
+        // [REVISAR] console.log(
+        // "💡 Isso significa que o usuário foi criado apenas localmente (modo demo antigo)",
+        // );
+        // [REVISAR] console.log(
+        // "✅ SOLUÇÃO: Criar uma nova conta no sistema atual (Supabase Auth)",
+        // );
       } else {
-        console.log(
-          "ℹ️ Usuário não encontrado no LocalStorage",
-        );
-        console.log(
-          "💡 Email/senha podem estar incorretos ou conta não existe",
-        );
       }
-      console.log("━".repeat(60));
-      console.log("");
 
       // Show more helpful message for email confirmation error
       if (
@@ -245,11 +211,9 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
       ) {
         // Mensagem específica baseada no diagnóstico
         if (localUsers.length > 0) {
-          console.log("");
-          console.log(
-            "🚨 PROBLEMA IDENTIFICADO: Conta antiga (apenas LocalStorage)",
-          );
-          console.log("");
+          // [REVISAR] console.log(
+          // "🚨 PROBLEMA IDENTIFICADO: Conta antiga (apenas LocalStorage)",
+          // );
           toast.error("Conta não encontrada no sistema atual", {
             description:
               'Esta conta é do sistema antigo. Por favor, crie uma nova conta clicando em "Criar Conta" abaixo.',
@@ -286,17 +250,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
   // (Real implementation is around line 1086)
   
   const handleRegistrationComplete_REMOVED_DUPLICATE = async (userData: any) => {
-    console.log(
-      "📝 AuthScreen.handleRegistrationComplete - Criando usuário no Supabase e banco local",
-    );
-    console.log("📦 userData recebido:", {
-      email: userData.email,
-      hasPassword: !!userData.password,
-      userType: userData.userType,
-      nome: userData.nome,
-      userId: userData.userId, // ✅ NOVO
-      avatarPath: userData.avatarPath, // ✅ NOVO
-    });
 
     try {
       // ✅ DECLARAR VARIÁVEIS GLOBAIS (usadas por ambos os fluxos)
@@ -310,21 +263,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
 
       if (userData.userId) {
         // ✅ NOVO FLUXO: Auth User JÁ FOI CRIADO na CredentialsRegistration!
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("✅ NOVO FLUXO - Auth User JÁ CRIADO!");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("🆔 User ID:", userData.userId);
-        console.log("📧 Email:", userData.email);
-        console.log(
-          "📸 Avatar Path:",
-          userData.avatarPath || "nenhum",
-        );
-        console.log("");
 
         // Criar objeto authData compatível
         authData = {
@@ -338,26 +276,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         // ✅ Usar avatarPath que já foi uploadado
         avatarPath = userData.avatarPath || undefined;
 
-        console.log(
-          "⏩ Pulando verificação de email, signUp e upload de avatar",
-        );
-        console.log(
-          "✅ Usando avatarPath existente:",
-          avatarPath || "nenhum",
-        );
-        console.log("");
       } else {
         // ⚠️ FLUXO ANTIGO: Criar Auth User agora
-        console.log("");
-        console.log(
-          "⚠️ FLUXO ANTIGO - Criando Auth User agora",
-        );
-        console.log("");
 
         // Step 1: Verificar se email já existe no banco de dados
-        console.log(
-          "🔍 Verificando se email já existe no banco...",
-        );
 
         const { data: existingProfile, error: checkError } =
           await supabase
@@ -386,12 +308,8 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           );
         }
 
-        console.log(
-          "✅ Email disponível - prosseguindo com criação...",
-        );
 
         // Step 2: Create user in Supabase Auth
-        console.log("✅ Criando usuário no Supabase Auth...");
 
         const { data: signUpData, error: authError } =
           await supabase.auth.signUp({
@@ -424,48 +342,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           ) {
             setShowDatabaseError(true);
 
-            console.log("");
-            console.log(
-              "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            );
             console.error(
               "🚨 ERRO DE BANCO DE DADOS DETECTADO",
             );
-            console.log(
-              "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            );
-            console.log("");
-            console.log(
-              '❌ PROBLEMA: A tabela "profiles" não existe no Supabase',
-            );
-            console.log("");
-            console.log("✅ SOLUÇÃO:");
-            console.log(
-              "   1. Abra: https://supabase.com/dashboard/project/urnfkafgauftssvkwffd/sql/new",
-            );
-            console.log(
-              "   2. Copie TODO o SQL do arquivo: /COPIE_E_COLE_ESTE_SQL.txt",
-            );
-            console.log(
-              '   3. Cole no SQL Editor e clique "Run"',
-            );
-            console.log("   4. Recarregue esta página (F5)");
-            console.log("");
-            console.log("📚 GUIAS DISPONÍVEIS:");
-            console.log(
-              "   • /README_ERRO_DATABASE_SOLUCAO_RAPIDA.md",
-            );
-            console.log("   • /EXECUTAR_SQL_AGORA.md");
-            console.log("   • /COPIE_E_COLE_ESTE_SQL.txt");
-            console.log("");
-            console.log(
-              "💡 Um alerta visual foi exibido na tela com instruções.",
-            );
-            console.log("");
-            console.log(
-              "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            );
-            console.log("");
+            // [REVISAR] console.log("   4. Recarregue esta página (F5)");
 
             throw new Error(
               '❌ ERRO: Tabela "profiles" não existe no Supabase!\n\n' +
@@ -486,15 +366,8 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           );
         }
 
-        console.log(
-          "✅ User created in Supabase Auth:",
-          authData.user.email,
-        );
 
         // ⏱️ Aguardar sessão estar completamente ativa
-        console.log(
-          "⏱️ Aguardando sessão estar ativa para uploads...",
-        );
         await new Promise((resolve) =>
           setTimeout(resolve, 300),
         ); // 300ms
@@ -503,31 +376,13 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           data: { session },
         } = await supabase.auth.getSession();
         if (!session) {
-          console.warn(
-            "⚠️ Sessão não detectada após signUp - continuando mesmo assim",
-          );
         } else {
-          console.log(
-            "✅ Sessão ativa confirmada - prosseguindo com uploads",
-          );
         }
 
         // ✅ UPLOAD DE DOCUMENTOS E AVATAR
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log(
-          "📤 AuthScreen - Upload de documentos e avatar",
-        );
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("");
 
         // Upload do avatar (se houver)
         if (userData.profilePhoto) {
-          console.log("📸 Upload do avatar detectado...");
           try {
             const { uploadAvatar } = await import(
               "../utils/storage-helper"
@@ -539,7 +394,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
 
             if (result.success && result.path) {
               avatarPath = result.path; // ✅ PATH, não URL!
-              console.log("✅ Avatar uploadado:", avatarPath);
             } else {
               console.error(
                 "❌ Erro ao fazer upload do avatar:",
@@ -563,9 +417,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           userData.uploads &&
           Object.keys(userData.uploads).length > 0
         ) {
-          console.log(
-            `📄 Upload de ${Object.keys(userData.uploads).length} documentos detectado...`,
-          );
           try {
             const { uploadDocuments } = await import(
               "../utils/storage-helper"
@@ -577,13 +428,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
 
             if (result.success && result.paths) {
               documentPaths = result.paths; // ✅ PATHS, não URLs!
-              console.log(
-                `✅ ${Object.keys(documentPaths).length} documentos uploadados com sucesso`,
-              );
-              console.log(
-                "📋 Paths salvos:",
-                Object.keys(documentPaths),
-              );
             } else {
               console.error(
                 "❌ Erro ao fazer upload dos documentos:",
@@ -602,28 +446,15 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           }
         }
 
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("");
       }
 
       // ════════════════════════════════════════════════════════════
       // PARTE 2: SALVAR PERFIL (SEMPRE RODA!)
       // ════════════════════════════════════════════════════════════
 
-      console.log("");
-      console.log(
-        "═══════════════════════════════════════════════════════════",
-      );
-      console.log(
-        "💾 SALVANDO PERFIL NO BANCO (todos os fluxos)",
-      );
-      console.log(
-        "═══════════════════════════════════════════════════════════",
-      );
-      console.log("");
+      // [REVISAR] console.log(
+      // "💾 SALVANDO PERFIL NO BANCO (todos os fluxos)",
+      // );
 
       // Step 3: Create user in local database
       const { database } = await import("../utils/database");
@@ -669,23 +500,8 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         );
       }
 
-      console.log(
-        "✅ User created in local database:",
-        newUser.data.email,
-      );
 
       // 🔄 Sincronizar perfil com Supabase
-      console.log("");
-      console.log(
-        "═══════════════════════════════════════════════════════════",
-      );
-      console.log(
-        "🔄 AuthScreen - Sincronizando perfil com Supabase",
-      );
-      console.log(
-        "═══════════════════════════════════════════════════════════",
-      );
-      console.log("");
 
       try {
         const supabase = getSupabaseClient();
@@ -717,13 +533,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           updated_at: new Date().toISOString(),
         };
 
-        console.log("📤 Enviando perfil para Supabase:", {
-          id: profilePayload.id,
-          email: profilePayload.email,
-          user_type: profilePayload.user_type,
-          name: profilePayload.name,
-          avatar_url: profilePayload.avatar_url,
-        });
 
         const { data: profileData, error: profileError } =
           await supabase
@@ -738,9 +547,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
             profileError,
           );
         } else {
-          console.log(
-            "✅ Perfil sincronizado com Supabase com sucesso!",
-          );
         }
       } catch (syncError) {
         console.error(
@@ -749,11 +555,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         );
       }
 
-      console.log("");
-      console.log(
-        "═══════════════════════════════════════════════════════════",
-      );
-      console.log("");
 
       // ════════════════════════════════════════════════════════════
       // PARTE 3: SALVAR EMPRESA (se transportadora/agenciador)
@@ -763,17 +564,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         userData.userType === "transportadora" ||
         userData.userType === "agenciador"
       ) {
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log(
-          "🏢 AuthScreen - Criando registro da empresa",
-        );
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("");
 
         const companyData = {
           userId: authData.user.id,
@@ -839,15 +629,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           },
         };
 
-        console.log("📤 Salvando empresa no banco...");
         const companyResult =
           await database.companies.create(companyData);
 
         if (companyResult.success) {
-          console.log(
-            "✅ Empresa criada com sucesso:",
-            companyResult.data?.name,
-          );
 
           // Sincronizar com Supabase
           try {
@@ -863,15 +648,8 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
             );
 
             if (syncResult.success) {
-              console.log(
-                "✅ Empresa sincronizada com Supabase!",
-              );
             }
           } catch (syncError) {
-            console.warn(
-              "⚠️ Erro ao sincronizar empresa:",
-              syncError,
-            );
           }
         } else {
           console.error(
@@ -880,11 +658,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           );
         }
 
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("");
       }
 
       // ════════════════════════════════════════════════════════════
@@ -892,17 +665,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
       // ════════════════════════════════════════════════════════════
 
       if (userData.userType === "caminhoneiro") {
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log(
-          "🚚 AuthScreen - Criando registro do motorista",
-        );
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("");
 
         const driverData = {
           userId: authData.user.id,
@@ -959,15 +721,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           completedTrips: 0,
         };
 
-        console.log("📤 Salvando motorista no banco...");
         const driverResult =
           await database.drivers.create(driverData);
 
         if (driverResult.success) {
-          console.log(
-            "✅ Motorista criado com sucesso:",
-            driverResult.data?.name,
-          );
 
           // Sincronizar com Supabase
           try {
@@ -982,15 +739,8 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
               await syncDriverToSupabase(driverWithUserId);
 
             if (syncResult.success) {
-              console.log(
-                "✅ Motorista sincronizado com Supabase!",
-              );
             }
           } catch (syncError) {
-            console.warn(
-              "⚠️ Erro ao sincronizar motorista:",
-              syncError,
-            );
           }
         } else {
           console.error(
@@ -999,11 +749,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           );
         }
 
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("");
       }
 
       // ════════════════════════════════════════════════════════════
@@ -1020,9 +765,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         userData.email,
       );
       if (inviteCheck.hasPendingInvite && inviteCheck.invite) {
-        console.log(
-          "📧 Convite pendente detectado - aceitando automaticamente...",
-        );
 
         const acceptResult =
           await acceptInviteAfterRegistration(
@@ -1036,10 +778,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
             "Cadastro realizado e convite aceito com sucesso!",
           );
         } else {
-          console.warn(
-            "⚠️ Erro ao aceitar convite:",
-            acceptResult.error,
-          );
           toast.success("Cadastro realizado com sucesso!");
         }
       } else {
@@ -1048,9 +786,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           userData.userType === "transportadora" ||
           userData.userType === "agenciador"
         ) {
-          console.log(
-            "🔐 Criando Super Admin automaticamente...",
-          );
 
           const adminResult =
             await createSuperAdminOnRegistration(
@@ -1060,15 +795,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
             );
 
           if (adminResult.success) {
-            console.log("✅ Super Admin criado com sucesso!");
             toast.success(
               "Cadastro realizado e perfil de administrador configurado!",
             );
           } else {
-            console.warn(
-              "⚠️ Erro ao criar Super Admin:",
-              adminResult.error,
-            );
             toast.success("Cadastro realizado com sucesso!");
           }
         } else {
@@ -1092,17 +822,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
   };
 
   const handleRegistrationComplete = async (userData: any) => {
-    console.log(
-      "📝 AuthScreen.handleRegistrationComplete - Criando usuário no Supabase e banco local",
-    );
-    console.log("📦 userData recebido:", {
-      email: userData.email,
-      hasPassword: !!userData.password,
-      userType: userData.userType,
-      nome: userData.nome,
-      userId: userData.userId, // ✅ NOVO
-      avatarPath: userData.avatarPath, // ✅ NOVO
-    });
 
     try {
       // ✅ VERIFICAR SE AUTH USER JÁ FOI CRIADO (nova arquitetura)
@@ -1111,23 +830,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
 
       if (userData.userId) {
         // ✅ Auth User JÁ FOI CRIADO na CredentialsRegistration!
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log(
-          "✅ Auth User JÁ FOI CRIADO na CredentialsRegistration!",
-        );
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("🆔 User ID:", userData.userId);
-        console.log("📧 Email:", userData.email);
-        console.log(
-          "📸 Avatar Path:",
-          userData.avatarPath || "nenhum",
-        );
-        console.log("");
 
         authUserId = userData.userId;
 
@@ -1141,22 +843,16 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         };
 
         // Pular etapas de verificação e signUp (já foram feitas!)
-        console.log(
-          "⏩ Pulando verificação de email e signUp (já foram feitos)",
-        );
-        console.log("");
+        // [REVISAR] console.log(
+        // "⏩ Pulando verificação de email e signUp (já foram feitos)",
+        // );
       } else {
         // ⚠️ FALLBACK: Fluxo antigo - verificar email e criar Auth User agora
-        console.log("");
-        console.log(
-          "⚠️ userId NÃO encontrado - usando fluxo antigo (criar agora)",
-        );
-        console.log("");
+        // [REVISAR] console.log(
+        // "⚠️ userId NÃO encontrado - usando fluxo antigo (criar agora)",
+        // );
 
         // Step 1: Verificar se email já existe no banco de dados
-        console.log(
-          "🔍 Verificando se email já existe no banco...",
-        );
 
         const { data: existingProfile, error: checkError } =
           await supabase
@@ -1185,12 +881,8 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           );
         }
 
-        console.log(
-          "✅ Email disponível - prosseguindo com criação...",
-        );
 
         // Step 2: Create user in Supabase Auth
-        console.log("✅ Criando usuário no Supabase Auth...");
 
         const { data: signUpData, error: authError } =
           await supabase.auth.signUp({
@@ -1226,48 +918,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
             setShowDatabaseError(true);
 
             // Logs mais claros no console
-            console.log("");
-            console.log(
-              "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            );
             console.error(
               "🚨 ERRO DE BANCO DE DADOS DETECTADO",
             );
-            console.log(
-              "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            );
-            console.log("");
-            console.log(
-              '❌ PROBLEMA: A tabela "profiles" não existe no Supabase',
-            );
-            console.log("");
-            console.log("✅ SOLUÇÃO:");
-            console.log(
-              "   1. Abra: https://supabase.com/dashboard/project/urnfkafgauftssvkwffd/sql/new",
-            );
-            console.log(
-              "   2. Copie TODO o SQL do arquivo: /COPIE_E_COLE_ESTE_SQL.txt",
-            );
-            console.log(
-              '   3. Cole no SQL Editor e clique "Run"',
-            );
-            console.log("   4. Recarregue esta página (F5)");
-            console.log("");
-            console.log("📚 GUIAS DISPONÍVEIS:");
-            console.log(
-              "   • /README_ERRO_DATABASE_SOLUCAO_RAPIDA.md",
-            );
-            console.log("   • /EXECUTAR_SQL_AGORA.md");
-            console.log("   • /COPIE_E_COLE_ESTE_SQL.txt");
-            console.log("");
-            console.log(
-              "💡 Um alerta visual foi exibido na tela com instruções.",
-            );
-            console.log("");
-            console.log(
-              "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            );
-            console.log("");
+            // [REVISAR] console.log("   4. Recarregue esta página (F5)");
 
             throw new Error(
               '❌ ERRO: Tabela "profiles" não existe no Supabase!\n\n' +
@@ -1288,16 +942,9 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           );
         }
 
-        console.log(
-          "✅ User created in Supabase Auth:",
-          authData.user.email,
-        );
 
         // ⏱️ CORREÇÃO ERRO #1: Aguardar sessão estar completamente ativa
         // O signUp retorna os dados, mas a sessão JWT pode não estar propagada para RLS
-        console.log(
-          "⏱️ Aguardando sessão estar ativa para uploads...",
-        );
         await new Promise((resolve) =>
           setTimeout(resolve, 300),
         ); // 300ms
@@ -1307,34 +954,16 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           data: { session },
         } = await supabase.auth.getSession();
         if (!session) {
-          console.warn(
-            "⚠️ Sessão não detectada após signUp - continuando mesmo assim",
-          );
         } else {
-          console.log(
-            "✅ Sessão ativa confirmada - prosseguindo com uploads",
-          );
         }
 
         // ✅ Step 2.5: UPLOAD DE DOCUMENTOS E AVATAR (AGORA COM USUÁRIO AUTENTICADO!)
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log(
-          "📤 AuthScreen - Upload de documentos e avatar",
-        );
-        console.log(
-          "��══════════════════════════════════════════════════════════",
-        );
-        console.log("");
 
         let avatarPath: string | undefined = undefined;
         let documentPaths: Record<string, string> = {};
 
         // Upload do avatar (se houver)
         if (userData.profilePhoto) {
-          console.log("📸 Upload do avatar detectado...");
           try {
             const { uploadAvatar } = await import(
               "../utils/storage-helper"
@@ -1346,7 +975,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
 
             if (result.success && result.path) {
               avatarPath = result.path; // ✅ PATH, não URL!
-              console.log("✅ Avatar uploadado:", avatarPath);
             } else {
               console.error(
                 "❌ Erro ao fazer upload do avatar:",
@@ -1370,9 +998,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           userData.uploads &&
           Object.keys(userData.uploads).length > 0
         ) {
-          console.log(
-            `📄 Upload de ${Object.keys(userData.uploads).length} documentos detectado...`,
-          );
           try {
             const { uploadDocuments } = await import(
               "../utils/storage-helper"
@@ -1384,13 +1009,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
 
             if (result.success && result.paths) {
               documentPaths = result.paths; // ✅ PATHS, não URLs!
-              console.log(
-                `✅ ${Object.keys(documentPaths).length} documentos uploadados com sucesso`,
-              );
-              console.log(
-                "📋 Paths salvos:",
-                Object.keys(documentPaths),
-              );
             } else {
               console.error(
                 "❌ Erro ao fazer upload dos documentos:",
@@ -1411,11 +1029,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           }
         }
 
-        console.log("");
-        console.log(
-          "═══════════════════════════════════════════════════════════",
-        );
-        console.log("");
 
         // Step 3: Create user in local database
         const { database } = await import("../utils/database");
@@ -1456,23 +1069,8 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         });
 
         if (newUser.success && newUser.data) {
-          console.log(
-            "✅ User created in local database:",
-            newUser.data.email,
-          );
 
           // 🔄 Step 3.1: Sincronizar perfil do usuário com Supabase
-          console.log("");
-          console.log(
-            "═══════════════════════════════════════════════════════════",
-          );
-          console.log(
-            "🔄 AuthScreen - Sincronizando perfil com Supabase",
-          );
-          console.log(
-            "═══════════════════════════════════════════════════════════",
-          );
-          console.log("");
 
           try {
             const supabase = getSupabaseClient();
@@ -1505,12 +1103,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
               updated_at: new Date().toISOString(),
             };
 
-            console.log("📤 Enviando perfil para Supabase:", {
-              id: profilePayload.id,
-              email: profilePayload.email,
-              user_type: profilePayload.user_type,
-              name: profilePayload.name,
-            });
 
             const { data: profileData, error: profileError } =
               await supabase
@@ -1530,19 +1122,9 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                 details: profileError.details,
               });
             } else {
-              console.log(
-                "✅ Perfil sincronizado com Supabase com sucesso!",
-              );
-              console.log("📋 Dados salvos:", {
-                user_type: profilePayload.user_type,
-                name: profilePayload.name,
-              });
             }
 
             // 🔄 TAMBÉM SALVAR NA TABELA USERS DO SUPABASE
-            console.log(
-              "📤 Salvando usuário na tabela users do Supabase...",
-            );
             const userPayload = {
               id: authData.user.id,
               email: userData.email,
@@ -1579,9 +1161,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                 userError,
               );
             } else {
-              console.log(
-                "✅ Usuário salvo na tabela profiles do Supabase!",
-              );
             }
           } catch (syncError) {
             console.error(
@@ -1591,48 +1170,12 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
             // Não interromper o fluxo se a sincronização falhar
           }
 
-          console.log("");
-          console.log(
-            "═══════════════════════════════════════════════════════════",
-          );
-          console.log("");
 
           // 🏢 Step 3.5: Create company record for transportadora/agenciador
           if (
             userData.userType === "transportadora" ||
             userData.userType === "agenciador"
           ) {
-            console.log("");
-            console.log(
-              "══════════════════════════════════════════════════════════",
-            );
-            console.log(
-              "🏢 AuthScreen - Criando registro da empresa",
-            );
-            console.log(
-              "═══════════════════════════════════════════════════════════",
-            );
-            console.log("");
-            console.log("📋 userData completo recebido:", {
-              razaoSocial: userData.razaoSocial,
-              nomeFantasia: userData.nomeFantasia,
-              nomeEmpresa: userData.nomeEmpresa,
-              cnpj: userData.cnpj,
-              telefone: userData.telefone,
-              email: userData.email,
-              emailCorporativo: userData.emailCorporativo,
-              cep: userData.cep,
-              endereco: userData.endereco,
-              numero: userData.numero,
-              complemento: userData.complemento,
-              bairro: userData.bairro,
-              cidade: userData.cidade,
-              estado: userData.estado,
-              inscricaoEstadual: userData.inscricaoEstadual,
-              inscricaoMunicipal: userData.inscricaoMunicipal,
-              allKeys: Object.keys(userData).join(", "),
-            });
-            console.log("");
 
             const companyData = {
               userId: authData.user.id,
@@ -1713,46 +1256,14 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
               },
             };
 
-            console.log("📤 companyData que será salvo:", {
-              userId: companyData.userId,
-              name: companyData.name,
-              companyName: companyData.companyName,
-              cnpj: companyData.cnpj,
-              phone: companyData.phone,
-              email: companyData.email,
-              address_street: companyData.address.street,
-              address_city: companyData.address.city,
-              address_state: companyData.address.state,
-              stateRegistration: companyData.stateRegistration,
-              municipalRegistration:
-                companyData.municipalRegistration,
-              representativeName:
-                companyData.representativeName,
-              representativeCpf: companyData.representativeCpf,
-              rntrc: companyData.rntrc,
-            });
-            console.log("");
 
             const companyResult =
               await database.companies.create(companyData);
 
             if (companyResult.success) {
-              console.log(
-                "✅ Empresa criada com sucesso no LocalStorage:",
-                {
-                  id: companyResult.data?.id,
-                  name: companyResult.data?.name,
-                  companyName: companyResult.data?.companyName,
-                  cnpj: companyResult.data?.cnpj,
-                },
-              );
-              console.log("");
 
               // 🔄 Sincronizar empresa com Supabase
               try {
-                console.log(
-                  "🔄 Sincronizando empresa com Supabase...",
-                );
                 const { syncCompanyToSupabase } = await import(
                   "../utils/supabase-sync"
                 );
@@ -1768,20 +1279,9 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                 );
 
                 if (syncResult.success) {
-                  console.log(
-                    "✅ Empresa sincronizada com Supabase com sucesso!",
-                  );
                 } else {
-                  console.warn(
-                    "⚠️ Erro ao sincronizar empresa com Supabase:",
-                    syncResult.error,
-                  );
                 }
               } catch (syncError) {
-                console.warn(
-                  "⚠️ Erro ao sincronizar empresa com Supabase:",
-                  syncError,
-                );
                 // Não interromper o fluxo se a sincronização falhar
               }
             } else {
@@ -1791,50 +1291,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
               );
             }
 
-            console.log("");
-            console.log(
-              "═══════════════════════════════════════════════════════════",
-            );
-            console.log("");
           }
 
           // 🚚 Step 3.6: Create driver record for caminhoneiro
           if (userData.userType === "caminhoneiro") {
-            console.log("");
-            console.log(
-              "═══════════════════════════════════════════════════════════",
-            );
-            console.log(
-              "🚚 AuthScreen - Criando registro do motorista",
-            );
-            console.log(
-              "═══════════════════════════════════════════════════════════",
-            );
-            console.log("");
-            console.log("📋 userData completo recebido:", {
-              nome: userData.nome,
-              cpf: userData.cpf,
-              rg: userData.rg,
-              dataNascimento: userData.dataNascimento,
-              cnh: userData.cnh,
-              categoriaCNH: userData.categoriaCNH,
-              validadeCNH: userData.validadeCNH,
-              rntrc: userData.rntrc,
-              validadeRNTRC: userData.validadeRNTRC,
-              telefone: userData.telefone,
-              celular: userData.celular,
-              tiposVeiculos: userData.tiposVeiculos,
-              tipoVeiculo: userData.tipoVeiculo,
-              marcaModelo: userData.marcaModelo,
-              placaVeiculo: userData.placaVeiculo,
-              modeloVeiculo: userData.modeloVeiculo,
-              anoVeiculo: userData.anoVeiculo,
-              capacidadeVeiculo: userData.capacidadeVeiculo,
-              renavam: userData.renavam,
-              anttVeiculo: userData.anttVeiculo,
-              allKeys: Object.keys(userData).join(", "),
-            });
-            console.log("");
 
             const driverData = {
               userId: authData.user.id,
@@ -1895,40 +1355,14 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
               completedTrips: 0,
             };
 
-            console.log("📤 driverData que será salvo:", {
-              userId: driverData.userId,
-              name: driverData.name,
-              cpf: driverData.cpf,
-              cnh: driverData.cnh,
-              cnhCategory: driverData.cnhCategory,
-              phone: driverData.phone,
-              vehicle: driverData.vehicle,
-              profileImage: driverData.profileImage, // ✅ Log
-              documentPaths: driverData.documentPaths
-                ? Object.keys(driverData.documentPaths)
-                : null, // ✅ Log
-            });
-            console.log("");
 
             const driverResult =
               await database.drivers.create(driverData);
 
             if (driverResult.success) {
-              console.log(
-                "✅ Motorista criado com sucesso no LocalStorage:",
-                {
-                  id: driverResult.data?.id,
-                  name: driverResult.data?.name,
-                  cnh: driverResult.data?.cnh,
-                },
-              );
-              console.log("");
 
               // 🔄 Sincronizar motorista com Supabase
               try {
-                console.log(
-                  "🔄 Sincronizando motorista com Supabase...",
-                );
                 const { syncDriverToSupabase } = await import(
                   "../utils/supabase-sync"
                 );
@@ -1943,20 +1377,9 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                   await syncDriverToSupabase(driverWithUserId);
 
                 if (syncResult.success) {
-                  console.log(
-                    "✅ Motorista sincronizado com Supabase com sucesso!",
-                  );
                 } else {
-                  console.warn(
-                    "⚠️ Erro ao sincronizar motorista com Supabase:",
-                    syncResult.error,
-                  );
                 }
               } catch (syncError) {
-                console.warn(
-                  "⚠️ Erro ao sincronizar motorista com Supabase:",
-                  syncError,
-                );
                 // Não interromper o fluxo se a sincronização falhar
               }
             } else {
@@ -1966,11 +1389,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
               );
             }
 
-            console.log("");
-            console.log(
-              "═══════════════════════════════════════════════════════════",
-            );
-            console.log("");
           }
 
           // Step 4: Check for pending invite and accept it
@@ -1987,9 +1405,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
             inviteCheck.hasPendingInvite &&
             inviteCheck.invite
           ) {
-            console.log(
-              "📧 Convite pendente detectado - aceitando automaticamente...",
-            );
 
             const acceptResult =
               await acceptInviteAfterRegistration(
@@ -2003,10 +1418,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                 "Cadastro realizado e convite aceito com sucesso!",
               );
             } else {
-              console.warn(
-                "⚠️ Erro ao aceitar convite:",
-                acceptResult.error,
-              );
               toast.success("Cadastro realizado com sucesso!");
             }
           } else {
@@ -2015,9 +1426,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
               userData.userType === "transportadora" ||
               userData.userType === "agenciador"
             ) {
-              console.log(
-                "🔐 Criando Super Admin automaticamente...",
-              );
 
               const adminResult =
                 await createSuperAdminOnRegistration(
@@ -2027,17 +1435,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                 );
 
               if (adminResult.success) {
-                console.log(
-                  "✅ Super Admin criado com sucesso!",
-                );
                 toast.success(
                   "Cadastro realizado e perfil de administrador configurado!",
                 );
               } else {
-                console.warn(
-                  "⚠️ Erro ao criar Super Admin:",
-                  adminResult.error,
-                );
                 toast.success(
                   "Cadastro realizado com sucesso!",
                 );
@@ -2085,10 +1486,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
     setResetLoading(true);
 
     try {
-      console.log(
-        "📧 Solicitando recuperação de senha para:",
-        resetEmail,
-      );
 
       const { error } =
         await supabase.auth.resetPasswordForEmail(resetEmail, {
@@ -2103,9 +1500,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         throw error;
       }
 
-      console.log(
-        "✅ Email de recuperação enviado com sucesso!",
-      );
       toast.success(
         "Email de recuperação enviado! Verifique sua caixa de entrada.",
         {

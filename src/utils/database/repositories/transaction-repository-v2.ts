@@ -50,7 +50,6 @@ export class TransactionRepository {
       }
 
       const created = sqlToTransaction(data);
-      console.log('✅ Transação criada no Supabase:', created.id);
 
       // 2. CACHEAR NO LOCALSTORAGE (opcional)
       try {
@@ -79,7 +78,6 @@ export class TransactionRepository {
           await db.set(freightKey, freightTransactions);
         }
       } catch (cacheError) {
-        console.warn('⚠️ Erro ao cachear transação:', cacheError);
       }
 
       return {
@@ -158,7 +156,6 @@ export class TransactionRepository {
       }
 
       const transactions = data.map(sqlToTransaction);
-      console.log(`✅ ${transactions.length} transações carregadas do Supabase`);
 
       // 2. ATUALIZAR CACHE (opcional)
       try {
@@ -169,7 +166,6 @@ export class TransactionRepository {
         }
         await db.set(KeyPatterns.transactionsByUser(userId), transactionIds);
       } catch (cacheError) {
-        console.warn('⚠️ Erro ao cachear transações:', cacheError);
       }
 
       return {
@@ -260,7 +256,6 @@ export class TransactionRepository {
       try {
         await db.set(KeyPatterns.transaction(id), updated);
       } catch (cacheError) {
-        console.warn('⚠️ Erro ao atualizar cache:', cacheError);
       }
 
       return {

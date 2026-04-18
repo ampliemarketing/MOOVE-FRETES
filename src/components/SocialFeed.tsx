@@ -4,7 +4,9 @@ import { toast } from 'sonner@2.0.3';
 import { usePosts } from '../utils/hooks/usePosts';
 import type { Post } from '../utils/hooks/usePosts';
 import { database } from '../utils/database';
-import { uploadMultipleImages, getFreightImageUrl, getAvatarUrl } from '../utils/storage-helper'; // ✅ IMPORTAR getAvatarUrl
+import { uploadMultipleImages, getFreightImageUrl, getAvatarUrl } from '../utils/storage-helper';
+import { LoadingSpinner } from './LoadingSpinner';
+import { Alert } from './ui/enhanced-components';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
@@ -38,7 +40,7 @@ import {
   Hash,
   AtSign,
   Upload,
-  Loader2
+  RefreshCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 export function SocialFeed() {
@@ -52,7 +54,7 @@ export function SocialFeed() {
   // ✅ CONVERTER avatar PATH → URL dinamicamente
   const userAvatarUrl = React.useMemo(() => getAvatarUrl(user?.profile?.avatar), [user?.profile?.avatar]);
   
-  const { posts, loading, createPost, likePost, commentPost } = usePosts();
+  const { posts, loading, error, loadPosts, createPost, likePost, commentPost } = usePosts();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -184,7 +186,6 @@ export function SocialFeed() {
       let imagePaths: string[] = [];
       
       if (uploadedFiles.length > 0) {
-        console.log('📤 [SocialFeed] Uploading', uploadedFiles.length, 'images to Storage...');
         
         // Upload direto dos Files para Storage
         const results = await uploadMultipleImages(uploadedFiles, 'posts');
@@ -200,7 +201,6 @@ export function SocialFeed() {
           return;
         }
         
-        console.log('✅ [SocialFeed] Images uploaded successfully:', imagePaths.length);
       }
 
       // ✅ SALVAR PATHS NO BANCO (NÃO URLs!)
@@ -579,6 +579,7 @@ export function SocialFeed() {
             </Card>
 
             {/* Posts */}
+            {loading && <LoadingSpinner message="Carregando feed..." />}
             <AnimatePresence>
               {posts.map((post) => (
                 <motion.div
@@ -775,7 +776,16 @@ export function SocialFeed() {
               ))}
             </AnimatePresence>
 
-            {posts.length === 0 && (
+            {!loading && error && (
+              <Alert
+                type="error"
+                title="Falha ao carregar o feed"
+                message={error}
+                action={{ label: 'Tentar novamente', onClick: loadPosts }}
+              />
+            )}
+
+            {!loading && !error && posts.length === 0 && (
               <Card>
                 <CardContent className="p-12 text-center">
                   <Sparkles className="w-16 h-16 text-muted-foreground mx-auto mb-4" />

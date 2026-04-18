@@ -39,7 +39,8 @@ import {
   Send,
   PackageCheck,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ChevronRight
 } from 'lucide-react';
 import { FaWhatsapp, FaTruck } from "react-icons/fa";
 import { MdOutlineCancel, MdOutlineEdit } from "react-icons/md";
@@ -262,7 +263,6 @@ export function FreightManagement({
   // 🔄 Listener para recarregar fretes quando uma cotação é aceita
   React.useEffect(() => {
     const handleFreightsUpdate = () => {
-      console.log('🔄 Evento freights-updated recebido - recarregando fretes...');
       loadFreights();
     };
     
@@ -293,7 +293,6 @@ export function FreightManagement({
   // 👁️ Navegar para detalhes automaticamente quando selectedFreightId for passado
   React.useEffect(() => {
     if (selectedFreightId) {
-      console.log('👁️ Navegando para detalhes do frete:', selectedFreightId);
       navigate(`/fretes/${selectedFreightId}`, { replace: true });
     }
   }, [selectedFreightId, navigate]);
@@ -303,12 +302,21 @@ export function FreightManagement({
     if (user && user.id && user.userType === 'caminhoneiro') {
       const loadDriverAvailability = async () => {
         const availability = await database.getDriverAvailability(user.id);
-        
+
         if (availability) {
           setIsAvailable(availability.isAvailable);
           // ✅ SOLUÇÃO: Verificação defensiva para evitar null
-          setCurrentLocation(availability.location || { city: '', state: '' });
+          const loc = availability.location || { city: '', state: '' };
+          setCurrentLocation(loc);
           setAvailabilityExpiry(availability.expiresAt ? new Date(availability.expiresAt) : null);
+
+          // Solicitar localização/disponibilidade se motorista não estiver ativo
+          if (!availability.isAvailable) {
+            setTimeout(() => setShowLocationSearch(true), 800);
+          }
+        } else {
+          // Nenhum registro de disponibilidade ainda — pedir localização
+          setTimeout(() => setShowLocationSearch(true), 800);
         }
       };
       loadDriverAvailability();
@@ -329,6 +337,7 @@ export function FreightManagement({
           expiresAt: null
         });
         toast.info('Sua disponibilidade expirou após 24 horas');
+        setShowLocationSearch(true);
       }
     }, 60000); // Verificar a cada minuto
     
@@ -351,12 +360,12 @@ export function FreightManagement({
     const newAvailability = !isAvailable;
     const expiryDate = newAvailability ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null; // 24 horas
     
-    console.log('🔄 [toggleAvailability] Atualizando disponibilidade:', {
-      userId: user.id,
-      newAvailability,
-      currentLocation,
-      expiryDate: expiryDate?.toISOString()
-    });
+    // [REVISAR] console.log('🔄 [toggleAvailability] Atualizando disponibilidade:', {
+    // userId: user.id,
+    // newAvailability,
+    // currentLocation,
+    // expiryDate: expiryDate?.toISOString()
+    // });
     
     try {
       const result = await database.updateDriverAvailability(user.id, {
@@ -365,7 +374,6 @@ export function FreightManagement({
         expiresAt: expiryDate?.toISOString() || null
       });
       
-      console.log('✅ [toggleAvailability] Resultado:', result);
       
       if (result.success) {
         setIsAvailable(newAvailability);
@@ -426,7 +434,6 @@ export function FreightManagement({
       return;
     }
     
-    console.log('📍 Atualizando localização:', { city, state, userId: user.id });
     setCurrentLocation({ city, state });
     // ❌ NÃO fechar o diálogo aqui - deixar o botão "Confirmar" fazer isso
     
@@ -442,7 +449,6 @@ export function FreightManagement({
       
       if (result.success) {
         // ✅ Toast de confirmação foi movido para o botão "Confirmar"
-        console.log('✅ Localização salva no banco de dados');
       } else {
         toast.error('Erro ao sincronizar: ' + (result.error || 'Erro desconhecido'));
         console.error('Erro ao atualizar localização:', result.error);
@@ -483,27 +489,27 @@ export function FreightManagement({
     );
     
     // 🔍 DEBUG: Verificar se companyLogo está presente
-    console.log('🖼️ [FreightManagement] Verificando companyLogo nos fretes:', {
-      total: apiFreights.length,
-      withLogo: apiFreights.filter(f => f.companyLogo).length,
-      sample: apiFreights.slice(0, 2).map(f => ({
-        id: f.id.substring(0, 8),
-        hasLogo: !!f.companyLogo,
-        logoPreview: f.companyLogo?.substring(0, 50)
-      }))
-    });
+    // [REVISAR] console.log('🖼️ [FreightManagement] Verificando companyLogo nos fretes:', {
+    // total: apiFreights.length,
+    // withLogo: apiFreights.filter(f => f.companyLogo).length,
+    // sample: apiFreights.slice(0, 2).map(f => ({
+    // id: f.id.substring(0, 8),
+    // hasLogo: !!f.companyLogo,
+    // logoPreview: f.companyLogo?.substring(0, 50)
+    // }))
+    // });
     
-    console.log('📦 Fretes disponíveis em "Todos os Fretes":', {
-      total: apiFreights.length,
-      filtered: filtered.length,
-      inactiveCount: apiFreights.filter(f => f.status === 'inactive').length,
-      inactiveExcluidos: apiFreights.filter(f => f.status === 'inactive').map(f => ({
-        id: f.id,
-        origin: formatLocationSlash(f.origin),
-        destination: formatLocationSlash(f.destination),
-        userId: f.userId
-      }))
-    });
+    // [REVISAR] console.log('📦 Fretes disponíveis em "Todos os Fretes":', {
+    // total: apiFreights.length,
+    // filtered: filtered.length,
+    // inactiveCount: apiFreights.filter(f => f.status === 'inactive').length,
+    // inactiveExcluidos: apiFreights.filter(f => f.status === 'inactive').map(f => ({
+    // id: f.id,
+    // origin: formatLocationSlash(f.origin),
+    // destination: formatLocationSlash(f.destination),
+    // userId: f.userId
+    // }))
+    // });
     
     return filtered;
   }, [apiFreights, user.userType, user.id, resolvedCompanyId]);
@@ -718,37 +724,6 @@ export function FreightManagement({
       if (freightFilters.origin.state && freight.origin && freight.origin.state !== freightFilters.origin.state) return false;
       if (freightFilters.destination.state && freight.destination && freight.destination.state !== freightFilters.destination.state) return false;
       
-      // Filtro de Raio (Distância)
-      // Usar a origem do filtro OU a localização atual do motorista como referência
-      if (freightFilters.radius) {
-        const radiusKm = parseInt(freightFilters.radius);
-        let referenceCity = '';
-        let referenceState = '';
-        
-        // Prioridade: 1) Origem especificada no filtro, 2) Localização atual do motorista
-        if (freightFilters.origin.city && freightFilters.origin.state) {
-          referenceCity = freightFilters.origin.city;
-          referenceState = freightFilters.origin.state;
-        } else if (user.currentLocation?.city && user.currentLocation?.state) {
-          referenceCity = user.currentLocation.city;
-          referenceState = user.currentLocation.state;
-        }
-        
-        // Se temos uma cidade de referência, aplicar o filtro de raio
-        if (referenceCity && referenceState && isValidLocation(freight.origin) && isValidLocation(freight.destination)) {
-          // Verificar se a origem OU destino do frete está dentro do raio da cidade de referência
-          const originMatches = freight.origin.city?.toLowerCase() === referenceCity.toLowerCase() && 
-                               freight.origin.state === referenceState;
-          const destinationMatches = freight.destination.city?.toLowerCase() === referenceCity.toLowerCase() && 
-                                    freight.destination.state === referenceState;
-          
-          // Se nenhum dos dois corresponder exatamente, filtrar fora
-          // Nota: Esta é uma implementação simplificada. Em produção, usaria cálculo de distância real
-          // com coordenadas geográficas (lat/lng) e a fórmula de Haversine
-          if (!originMatches && !destinationMatches) return false;
-        }
-      }
-      
       // Filtro de Veículo
       if (freightFilters.vehicleTypes.length > 0) {
         if (!freightFilters.vehicleTypes.includes(freight.truckType)) return false;
@@ -808,7 +783,7 @@ export function FreightManagement({
       if (priorityA !== priorityB) return priorityA - priorityB;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [freights, viewMode, resolvedCompanyId, searchTerm, freightFilters, activeFilter, user.currentLocation]);
+  }, [freights, viewMode, resolvedCompanyId, searchTerm, freightFilters, activeFilter]);
   
   // 🔍 DEBUG: Verificar fretes filtrados (desabilitado para reduzir logs)
   // React.useEffect(() => {
@@ -1238,57 +1213,68 @@ ${generateDeepLinkUrl('freight', freight.id)}`;
                     {/* Indicador de disponibilidade - apenas para motoristas */}
                     {user.userType === 'caminhoneiro' && (
                       <div className="flex items-center gap-2 shrink-0">
-                        {/* Toggle de disponibilidade */}
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
+                        {!isAvailable ? (
+                          /* Estado inativo: CTA clara para informar localização */
+                          <button
+                            onClick={() => setShowLocationSearch(true)}
+                            className="flex items-center gap-2 px-3 h-10 rounded-lg border border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-all"
+                          >
+                            <MapPin className="w-4 h-4" />
+                            <span className="text-xs font-medium whitespace-nowrap">
+                              {currentLocation?.city
+                                ? `Ativar em ${currentLocation.city}, ${currentLocation.state}`
+                                : 'Informar localização'}
+                            </span>
+                            <ChevronRight className="w-3 h-3 opacity-60" />
+                          </button>
+                        ) : (
+                          <>
+                            {/* Toggle de disponibilidade */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={toggleAvailability}
+                                    className="flex items-center gap-2 px-3 h-10 rounded-lg border bg-green-50 border-green-500 text-green-700 transition-all"
+                                  >
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                    <span className="text-xs font-medium whitespace-nowrap">Disponível para fretes</span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Clique para ficar indisponível</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            {/* Pílula unificada: localização + countdown */}
+                            <div className="flex items-center h-10 rounded-lg border border-gray-200 bg-white overflow-hidden divide-x divide-gray-200">
                               <button
-                                onClick={toggleAvailability}
-                                className={`flex items-center gap-2 px-3 h-10 rounded-lg border transition-all ${
-                                  isAvailable 
-                                    ? 'bg-green-50 border-green-500 text-green-700' 
-                                    : 'bg-gray-50 border-gray-300 text-gray-500 hover:bg-gray-100'
-                                }`}
+                                onClick={() => setShowLocationSearch(true)}
+                                className="flex items-center gap-1.5 px-3 h-full hover:bg-gray-50 transition-colors"
                               >
-                                <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                                <span className="text-xs font-medium whitespace-nowrap">
-                                  {isAvailable ? 'Disponível para fretes' : 'Indisponível'}
+                                <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                                <span className="text-xs text-gray-600 whitespace-nowrap">
+                                  {currentLocation?.city
+                                    ? `${currentLocation.city}, ${currentLocation.state}`
+                                    : 'Definir localização'}
                                 </span>
                               </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{isAvailable ? 'Clique para ficar indisponível' : 'Clique para ficar disponível'}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-
-                        {/* Campo de localização */}
-                        {isAvailable && (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setShowLocationSearch(true)}
-                              className="flex items-center gap-2 px-3 h-10 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-all"
-                            >
-                              <MapPin className="w-4 h-4 text-gray-500" />
-                              <span className="text-xs text-gray-700">
-                                {currentLocation?.city 
-                                  ? `${currentLocation.city}, ${currentLocation.state}` 
-                                  : 'Definir localização'}
-                              </span>
-                            </button>
-                            
-                            {availabilityExpiry && (
-                              <AvailabilityCountdown 
-                                expiresAt={availabilityExpiry}
-                                onExpired={() => {
-                                  setIsAvailable(false);
-                                  setAvailabilityExpiry(null);
-                                  toast.info('Sua disponibilidade expirou após 24 horas');
-                                }}
-                                onRenew={renewAvailability}
-                              />
-                            )}
-                          </div>
+                              {availabilityExpiry && (
+                                <AvailabilityCountdown
+                                  expiresAt={availabilityExpiry}
+                                  onExpired={() => {
+                                    setIsAvailable(false);
+                                    setAvailabilityExpiry(null);
+                                    toast.info('Sua disponibilidade expirou após 24 horas');
+                                    setShowLocationSearch(true);
+                                  }}
+                                  onRenew={renewAvailability}
+                                  inline
+                                />
+                              )}
+                            </div>
+                          </>
                         )}
                       </div>
                     )}
@@ -1694,11 +1680,6 @@ ${generateDeepLinkUrl('freight', freight.id)}`;
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          console.log('🔍 [FreightManagement] Abrindo Motoristas Próximos para frete:', {
-                            id: freight.id,
-                            origin: freight.origin,
-                            freight_full: freight
-                          });
                           setNearbyDriversFreight(freight);
                           setShowNearbyDrivers(true);
                         }}
@@ -1921,7 +1902,7 @@ https://moovefretes.com.br`;
               Informe onde você está no momento para que as empresas possam encontrar você mais facilmente.
               {!isAvailable && (
                 <span className="block mt-2 text-[#253663] font-medium">
-                  ✅ Ao confirmar, você ficará disponível para receber fretes por 24 horas.
+                  Ao confirmar, você ficará disponível para receber fretes por 24 horas.
                 </span>
               )}
             </DialogDescription>
@@ -1949,11 +1930,11 @@ https://moovefretes.com.br`;
                   if (!isAvailable && user?.id) {
                     const expiryDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
                     
-                    console.log('✅ [LocationModal] Marcando motorista como disponível:', {
-                      userId: user.id,
-                      currentLocation,
-                      expiryDate: expiryDate.toISOString()
-                    });
+                    // [REVISAR] console.log('✅ [LocationModal] Marcando motorista como disponível:', {
+                    // userId: user.id,
+                    // currentLocation,
+                    // expiryDate: expiryDate.toISOString()
+                    // });
                     
                     try {
                       const result = await database.updateDriverAvailability(
@@ -1965,7 +1946,6 @@ https://moovefretes.com.br`;
                         }
                       );
                       
-                      console.log('✅ [LocationModal] Resultado:', result);
                       
                       if (result.success) {
                         setIsAvailable(true);

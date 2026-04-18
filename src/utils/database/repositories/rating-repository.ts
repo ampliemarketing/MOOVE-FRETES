@@ -54,11 +54,11 @@ export class RatingRepository {
       if (error && error.code === '42703') {
         // Coluna não existe, schema antigo
         this.schemaVersion = 'old';
-        console.log('📊 Detectado schema ANTIGO de ratings (rater_id, rated_id, rating)');
+        // [REVISAR] console.log('📊 Detectado schema ANTIGO de ratings (rater_id, rated_id, rating)');
       } else {
         // Coluna existe, schema novo
         this.schemaVersion = 'new';
-        console.log('📊 Detectado schema NOVO de ratings (evaluator_id, target_id, overall_rating)');
+        // [REVISAR] console.log('📊 Detectado schema NOVO de ratings (evaluator_id, target_id, overall_rating)');
       }
 
       return this.schemaVersion;
@@ -118,7 +118,6 @@ export class RatingRepository {
         }
       } catch (checkError: any) {
         // Se falhar a verificação, continuar com inserção (melhor duplicar que perder dado)
-        console.warn('⚠️ Não foi possível verificar duplicatas - continuando com inserção');
       }
 
       // Preparar dados - usando nomes de colunas NOVOS após migração
@@ -153,7 +152,6 @@ export class RatingRepository {
           error.message?.includes('relation \"users\" does not exist') ||
           error.message?.includes('does not exist')
         ) {
-          console.warn('⚠️ Erro de schema no Supabase ao inserir avaliação - salvando apenas no LocalStorage');
           console.error('Detalhes do erro:', {
             code: error.code,
             message: error.message,
@@ -193,7 +191,6 @@ export class RatingRepository {
         error.message?.includes('does not exist') ||
         error.message?.includes('permission denied')
       ) {
-        console.warn('⚠️ Falha ao salvar avaliação no Supabase - salvando no LocalStorage');
         return this.createLocalOnly(rating);
       }
       
@@ -239,7 +236,6 @@ export class RatingRepository {
       ratings.push(newRating);
       localStorage.setItem(storageKey, JSON.stringify(ratings));
 
-      console.log('✅ Avaliação salva no LocalStorage:', newRating.id);
 
       // 🆕 Atualizar média de rating do target no LocalStorage
       this.updateTargetAverageRatingLocal(rating.targetId);
@@ -295,25 +291,16 @@ export class RatingRepository {
    * Buscar todas as avaliações recebidas por um usuário
    */
   async getByTarget(targetId: string): Promise<DatabaseResponse<Rating[]>> {
-    console.group('🔍 [RatingRepository] getByTarget');
-    console.log('📥 Parâmetro targetId:', targetId);
     
     try {
       const supabase = this.getClient();
-      console.log('🔌 Supabase client:', supabase ? 'DISPONÍVEL' : 'NULL - usando LocalStorage');
       
       if (!supabase) {
         // Buscar do LocalStorage
-        console.log('📦 Buscando do LocalStorage...');
         const result = this.getByTargetLocal(targetId);
-        console.groupEnd();
         return result;
       }
 
-      console.log('🚀 Executando query no Supabase:', {
-        table: 'ratings',
-        filter: { target_id: targetId }
-      });
       
       const { data, error } = await supabase
         .from('ratings')
@@ -321,12 +308,6 @@ export class RatingRepository {
         .eq('target_id', targetId)
         .order('created_at', { ascending: false });
 
-      console.log('📦 Resposta do Supabase:', {
-        hasError: !!error,
-        error: error?.message,
-        dataLength: data?.length || 0,
-        rawData: data
-      });
 
       if (error) {
         console.error('❌ Erro no Supabase:', error);
@@ -334,11 +315,6 @@ export class RatingRepository {
       }
 
       const converted = data?.map(this.convertFromSupabase) || [];
-      console.log('✅ Dados convertidos:', {
-        count: converted.length,
-        converted: converted
-      });
-      console.groupEnd();
 
       return {
         success: true,
@@ -346,10 +322,8 @@ export class RatingRepository {
       };
     } catch (error: any) {
       console.error('❌ Erro ao buscar avaliações do target:', error);
-      console.log('🔄 Tentando fallback para LocalStorage...');
       // Fallback para LocalStorage se Supabase falhar
       const result = this.getByTargetLocal(targetId);
-      console.groupEnd();
       return result;
     }
   }
@@ -358,37 +332,26 @@ export class RatingRepository {
    * Buscar avaliações do LocalStorage
    */
   private getByTargetLocal(targetId: string): DatabaseResponse<Rating[]> {
-    console.group('📦 [RatingRepository] getByTargetLocal');
-    console.log('🔑 targetId:', targetId);
     
     try {
       const storageKey = 'maisfrete_ratings';
       const existing = localStorage.getItem(storageKey);
-      console.log('💾 LocalStorage key:', storageKey);
-      console.log('📄 LocalStorage data:', existing ? 'EXISTE' : 'VAZIO');
       
       const ratings: Rating[] = existing ? JSON.parse(existing) : [];
-      console.log('📊 Total de ratings no LocalStorage:', ratings.length);
       
       if (ratings.length > 0) {
-        console.log('📋 Todas as avaliações no LocalStorage:', ratings.map(r => ({
-          id: r.id,
-          targetId: r.targetId,
-          evaluatorName: r.evaluatorName,
-          overallRating: r.overallRating
-        })));
+        // [REVISAR] console.log('📋 Todas as avaliações no LocalStorage:', ratings.map(r => ({
+        // id: r.id,
+        // targetId: r.targetId,
+        // evaluatorName: r.evaluatorName,
+        // overallRating: r.overallRating
+        // })));
       }
       
       const filtered = ratings
         .filter(r => r.targetId === targetId)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      console.log('✅ Avaliações filtradas para targetId:', {
-        targetId,
-        count: filtered.length,
-        filtered: filtered
-      });
-      console.groupEnd();
 
       return {
         success: true,
@@ -396,7 +359,6 @@ export class RatingRepository {
       };
     } catch (error) {
       console.error('❌ Erro ao buscar avaliações do LocalStorage:', error);
-      console.groupEnd();
       return {
         success: true,
         data: []
@@ -691,18 +653,16 @@ export class RatingRepository {
             error.message?.includes('does not exist') ||
             error.message?.includes('permission denied')
           ) {
-            console.warn('⚠️ Não foi possível atualizar rating médio no Supabase - usando apenas LocalStorage');
-            console.log(`📊 Rating calculado (LocalStorage): ${stats.averageRating} (${stats.totalRatings} avaliações)`);
+            // [REVISAR] console.log(`📊 Rating calculado (LocalStorage): ${stats.averageRating} (${stats.totalRatings} avaliações)`);
             return; // Continuar normalmente, apenas não atualiza no Supabase
           }
           throw error; // Re-lançar outros erros inesperados
         }
 
-        console.log(`✅ Rating médio atualizado para ${targetId}: ${stats.averageRating}`);
       } catch (updateError: any) {
         // Fallback adicional: se algo der errado, apenas logar e continuar
-        console.warn('⚠️ Erro ao atualizar rating no Supabase (continuando normalmente):', updateError.message || updateError);
-        console.log(`📊 Rating calculado (LocalStorage): ${stats.averageRating} (${stats.totalRatings} avaliações)`);
+        // [REVISAR] console.warn('⚠️ Erro ao atualizar rating no Supabase (continuando normalmente):', updateError.message || updateError);
+        // [REVISAR] console.log(`📊 Rating calculado (LocalStorage): ${stats.averageRating} (${stats.totalRatings} avaliações)`);
         return;
       }
     } catch (error: any) {
@@ -746,7 +706,6 @@ export class RatingRepository {
         }
       }
 
-      console.log(`✅ Rating médio atualizado no LocalStorage para ${targetId}: ${averageRating} (${totalRatings} avaliações)`);
     } catch (error: any) {
       console.error('Erro ao atualizar rating médio no LocalStorage:', error);
     }
@@ -789,7 +748,6 @@ export class RatingRepository {
       if (error) {
         // Se a coluna não existe, verificar no LocalStorage
         if (error.code === '42703') {
-          console.warn('⚠️ Schema ratings desatualizado - verificando no LocalStorage');
           return this.hasEvaluatedLocal(freightId, evaluatorId, targetId);
         }
         throw error;

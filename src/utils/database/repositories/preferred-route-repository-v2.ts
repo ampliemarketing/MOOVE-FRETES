@@ -82,7 +82,6 @@ export class PreferredRouteRepository {
       }
 
       const created = sqlToPreferredRoute(data);
-      console.log('✅ Rota preferida criada no Supabase:', created.id);
 
       // 2. CACHE (com ID gerado pelo Supabase)
       await db.set(KeyPatterns.preferredRoute(created.id), created);
@@ -143,7 +142,6 @@ export class PreferredRouteRepository {
     try {
       const supabase = getSupabaseClient();
       
-      console.log('🔍 Buscando rotas para driverId:', driverId);
       
       // ✅ SOLUÇÃO DEFINITIVA: Query única com JOIN (sem selecionar drivers.id para evitar ambiguidade)
       // Isso evita problemas de RLS na tabela drivers
@@ -169,7 +167,6 @@ export class PreferredRouteRepository {
         return sqlToPreferredRoute(routeData);
       });
       
-      console.log(`✅ ${routes.length} rotas carregadas para user_id ${driverId}`);
 
       // Cache
       for (const route of routes) {
@@ -204,7 +201,6 @@ export class PreferredRouteRepository {
     try {
       const supabase = getSupabaseClient();
       
-      console.log('🔍 Buscando rotas ativas para driverId:', driverId);
       
       // ✅ SOLUÇÃO DEFINITIVA: Query única com JOIN (sem selecionar drivers.id para evitar ambiguidade)
       const { data, error } = await supabase
@@ -230,7 +226,6 @@ export class PreferredRouteRepository {
         return sqlToPreferredRoute(routeData);
       });
       
-      console.log(`✅ ${routes.length} rotas ativas carregadas para user_id ${driverId}`);
 
       // Cache
       for (const route of routes) {
@@ -320,7 +315,6 @@ export class PreferredRouteRepository {
       if (error) throw error;
 
       const routes = data.map(sqlToPreferredRoute);
-      console.log(`✅ ${routes.length} rotas encontradas`);
 
       return {
         success: true,
@@ -527,7 +521,7 @@ export class PreferredRouteRepository {
 
       if (error) {
         // Log but don't abort — RLS or policy issues should not block local cleanup
-        console.warn('⚠️ Supabase delete failed (may be RLS policy), removing locally:', error.message);
+        // [REVISAR] console.warn('⚠️ Supabase delete failed (may be RLS policy), removing locally:', error.message);
       }
 
       await db.del(KeyPatterns.preferredRoute(id));

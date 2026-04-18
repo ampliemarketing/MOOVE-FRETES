@@ -162,7 +162,6 @@ export async function loadUserProfileFromSupabase(userId: string): Promise<User 
     // 🚚 Se for caminhoneiro, carregar dados adicionais da tabela drivers
     if (data.user_type === 'caminhoneiro') {
       try {
-        console.log('🚚 [loadUserProfileFromSupabase] Carregando dados do driver...');
         
         const { data: driverData, error: driverError } = await supabase
           .from('drivers')
@@ -181,7 +180,6 @@ export async function loadUserProfileFromSupabase(userId: string): Promise<User 
         }
         
         if (driverData) {
-          console.log('✅ [loadUserProfileFromSupabase] Driver data recebido:', driverData);
           
           // Adicionar current_location ao user
           if (driverData.current_location) {
@@ -190,15 +188,12 @@ export async function loadUserProfileFromSupabase(userId: string): Promise<User 
           
           // ✅ NOVO: Adicionar address (contém city, state, etc)
           if (driverData.address) {
-            console.log('✅ [loadUserProfileFromSupabase] Address encontrado:', driverData.address);
             user.address = driverData.address;
             // Também preencher location a partir da cidade/estado se disponível
             if (driverData.address.city && driverData.address.state) {
               user.location = `${driverData.address.city}, ${driverData.address.state}`;
-              console.log('✅ [loadUserProfileFromSupabase] Location preenchido:', user.location);
             }
           } else {
-            console.warn('⚠️ [loadUserProfileFromSupabase] Address NÃO encontrado no driver!');
           }
           
           // Adicionar rotas preferidas
@@ -225,7 +220,6 @@ export async function loadUserProfileFromSupabase(userId: string): Promise<User 
             user.availabilityExpiresAt = driverData.availability_expires_at;
           }
         } else {
-          console.warn('⚠️ [loadUserProfileFromSupabase] Driver data NULL - nenhum registro encontrado!');
         }
       } catch (driverError) {
         console.error('⚠️ [loadUserProfileFromSupabase] Exceção ao carregar motorista:', driverError);
@@ -250,8 +244,6 @@ export async function checkProfileComplete(userId: string): Promise<{
   missingData?: string[];
 } | null> {
   try {
-    console.log('');
-    console.log('🔍 [checkProfileComplete] Verificando perfil para user:', userId);
     
     // Como o cadastro unificado cria perfil + driver/company de uma vez,
     // apenas verificamos se o profile existe
@@ -261,12 +253,8 @@ export async function checkProfileComplete(userId: string): Promise<{
       .eq('id', userId)
       .single();
     
-    console.log('📋 [checkProfileComplete] Profile encontrado:', profile ? 'SIM' : 'NÃO');
     
     if (profileError || !profile) {
-      console.log('⚠️ [checkProfileComplete] Profile não encontrado - INCOMPLETO');
-      console.log('💡 Usuário precisa completar o cadastro unificado');
-      console.log('');
       return {
         isComplete: false,
         missingData: ['profile']
@@ -274,8 +262,6 @@ export async function checkProfileComplete(userId: string): Promise<{
     }
 
     // Se o profile existe, o cadastro unificado foi concluído com sucesso
-    console.log('✅ [checkProfileComplete] PERFIL COMPLETO!');
-    console.log('');
     return {
       isComplete: true,
       userType: profile.user_type
@@ -1639,13 +1625,9 @@ export function startAutoSync(userId: string, intervalMinutes: number = AUTO_SYN
     clearInterval(syncInterval);
   }
   
-  console.log('✅ Sincronização automática REATIVADA com proteção anti-duplicatas');
-  console.log(`🔄 Sincronizando a cada ${intervalMinutes >= 1 ? intervalMinutes + ' minutos' : (intervalMinutes * 60) + ' segundos'}`);
-  console.log('━'.repeat(60));
   
   // ✅ Fazer sincronização inicial
   syncAllUserData(userId).then(result => {
-    console.log('✅ Sincronização inicial concluída:', result.totalSynced, 'itens');
   }).catch(error => {
     console.error('❌ Erro na sincronização inicial:', error);
   });
@@ -1654,7 +1636,7 @@ export function startAutoSync(userId: string, intervalMinutes: number = AUTO_SYN
   syncInterval = setInterval(() => {
     syncAllUserData(userId).then(result => {
       if (result.totalSynced > 0) {
-        console.log('✅ Auto-sync:', result.totalSynced, 'item(s) sincronizado(s)');
+        // [REVISAR] console.log('✅ Auto-sync:', result.totalSynced, 'item(s) sincronizado(s)');
       }
     }).catch(error => {
       console.error('❌ Erro no auto-sync:', error);

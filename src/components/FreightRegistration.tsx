@@ -433,7 +433,6 @@ export function FreightRegistration({
         });
         if (result.success && result.data) {
           savedId = result.data.id;
-          console.log('✅ Contato salvo para reutilização:', savedId);
           // Atualizar lista de contatos salvos se é novo
           const alreadyInList = savedContacts.some(sc => sc.savedContactId === savedId);
           if (!alreadyInList) {
@@ -449,7 +448,6 @@ export function FreightRegistration({
           }
         }
       } catch (e) {
-        console.warn('⚠️ Não foi possível salvar contato para reutilização:', e);
       }
     }
 
@@ -514,8 +512,6 @@ export function FreightRegistration({
 
   const handleSubmit = async () => {
     try {
-      console.log(isEditing ? '🚀 Iniciando edição de frete...' : '🚀 Iniciando criação de frete...');
-      console.log('📦 Dados do frete:', freightData);
       
       // Determinar tipo de veículo baseado nas seleções
       const allVehicles = [
@@ -534,8 +530,6 @@ export function FreightRegistration({
       const truckType = allVehicles[0] || allTrailers[0] || 'Não especificado';
       const category = allTrailers[0] || 'Carga Geral';
       
-      console.log('🚛 Tipo de veículo:', truckType);
-      console.log('📋 Categoria:', category);
       
       // Determinar nível de exposição baseado no tipo de frete
       const exposureLevel = 
@@ -543,7 +537,6 @@ export function FreightRegistration({
         freightData.freightType === 'plus' ? 'Média exposição' :
         'Baixa exposição';
       
-      console.log('📊 Nível de exposição:', exposureLevel);
       
       const freightPayload = {
         customerId: resolvedOwnerId,
@@ -614,7 +607,6 @@ export function FreightRegistration({
         additionalCargoDetails: freightData.additionalCargoDetails,
       };
       
-      console.log('📤 Payload para ' + (isEditing ? 'edição' : 'criação') + ':', freightPayload);
       
       let result;
       if (isEditing && freightId) {
@@ -625,7 +617,6 @@ export function FreightRegistration({
         result = await database.freights.create(freightPayload);
       }
       
-      console.log('📥 Resultado da ' + (isEditing ? 'edição' : 'criação') + ':', result);
       
       if (result.success) {
         // Salvar contatos responsáveis na tabela freight_responsible_contacts
@@ -645,7 +636,6 @@ export function FreightRegistration({
                 sourceId: (c as any).savedContactId || (c.source === 'collaborator' ? c.id : null),
               }))
             );
-            console.log('✅ Contatos responsáveis salvos para frete:', createdFreightId);
           } catch (contactError) {
             console.error('⚠️ Erro ao salvar contatos responsáveis:', contactError);
             // Não falhar a criação do frete por isso
@@ -677,7 +667,6 @@ export function FreightRegistration({
           read: false,
         });
         
-        console.log(`✅ Frete ${isEditing ? 'atualizado' : 'criado'} com sucesso! ID:`, result.data?.id);
         
         onComplete?.();
       } else {
@@ -692,7 +681,6 @@ export function FreightRegistration({
 
   const handleSchedule = async () => {
     try {
-      console.log('📅 Iniciando agendamento de frete...');
       
       // Validar data de agendamento
       if (!freightData.scheduledDate) {
@@ -2234,7 +2222,6 @@ export function FreightRegistration({
               <Button 
                 variant="outline"
                 onClick={() => {
-                  console.log('🔘 Botão Agendar Frete clicado!');
                   handleSchedule();
                 }} 
                 className="flex items-center gap-2 text-[#6b7280] border-[#d1d5db] hover:bg-[#f9fafb] hover:text-[#111827] hover:border-[#9ca3af]"
@@ -2246,7 +2233,6 @@ export function FreightRegistration({
               {/* Botão Publicar Frete */}
               <Button 
                 onClick={() => {
-                  console.log(`🔘 Botão ${isEditing ? 'Atualizar' : 'Publicar'} Frete clicado!`);
                   handleSubmit();
                 }} 
                 className="flex items-center gap-2 bg-[#253663] hover:bg-[#1a2847] text-white px-6 h-10"

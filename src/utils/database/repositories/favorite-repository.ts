@@ -149,11 +149,9 @@ export class FavoriteRepository {
    */
   async getUserFavorites(userId: string): Promise<DatabaseResponse<string[]>> {
     try {
-      console.log('🔍 [FavoriteRepository] Buscando favoritos para userId:', userId);
       
       const supabase = this.getClient();
       if (!supabase) {
-        console.warn('⚠️ [FavoriteRepository] Supabase não disponível');
         return {
           success: true,
           data: []
@@ -171,10 +169,10 @@ export class FavoriteRepository {
         throw error;
       }
 
-      console.log('📊 [FavoriteRepository] Favoritos encontrados:', {
-        count: data?.length || 0,
-        driverIds: data?.map(f => f.driver_id)
-      });
+      // [REVISAR] console.log('📊 [FavoriteRepository] Favoritos encontrados:', {
+      // count: data?.length || 0,
+      // driverIds: data?.map(f => f.driver_id)
+      // });
 
       return {
         success: true,

@@ -15,7 +15,6 @@ const globalForSupabase = globalThis as unknown as {
 export function getSupabaseClient() {
   if (!globalForSupabase.supabaseInstance) {
     if (!globalForSupabase.supabaseInstanceCreated) {
-      console.log('🔧 Creating Supabase client singleton instance');
       globalForSupabase.supabaseInstanceCreated = true;
     }
     

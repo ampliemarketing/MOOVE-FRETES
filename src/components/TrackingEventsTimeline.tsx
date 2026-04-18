@@ -40,7 +40,6 @@ export function TrackingEventsTimeline({ freightId, refreshTrigger }: TrackingEv
 
   const loadEvents = async () => {
     try {
-      console.log('📋 [TrackingTimeline] Carregando eventos do frete:', freightId);
       
       const { supabase } = await import('../utils/supabase/client');
       
@@ -55,7 +54,6 @@ export function TrackingEventsTimeline({ freightId, refreshTrigger }: TrackingEv
         return;
       }
       
-      console.log(`✅ [TrackingTimeline] ${data?.length || 0} eventos carregados`);
       setEvents(data || []);
       
     } catch (error) {

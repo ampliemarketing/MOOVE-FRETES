@@ -106,7 +106,6 @@ export class ConversationRepository {
       if (error) throw error;
 
       const created = sqlToConversation(data);
-      console.log('✅ Conversa criada no Supabase:', created.id);
 
       // Cache
       await db.set(KeyPatterns.chat(created.id), created);
@@ -174,7 +173,6 @@ export class ConversationRepository {
       if (error) throw error;
 
       const conversations = data.map(sqlToConversation);
-      console.log(`✅ ${conversations.length} conversas carregadas`);
 
       // Cache
       for (const conv of conversations) {
@@ -221,23 +219,39 @@ export class ConversationRepository {
   async delete(id: string): Promise<DBResponse<boolean>> {
     try {
       const supabase = getSupabaseClient();
-      
-      // Delete messages first
-      await supabase.from('messages').delete().eq('conversation_id', id);
-      
-      // Delete conversation
-      const { error } = await supabase
+
+      // Delete messages first (ignore error — may cascade or have no messages)
+      const { error: msgError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('conversation_id', id);
+
+      if (msgError) {
+      }
+
+      // Delete conversation and verify via .select() — RLS silently returns 0 rows when blocked
+      const { data: deleted, error } = await supabase
         .from('conversations')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
 
       if (error) throw error;
+
+      if (!deleted || deleted.length === 0) {
+        console.error('❌ [Chat delete] Nenhuma linha deletada — verifique as políticas RLS da tabela conversations');
+        return {
+          success: false,
+          error: 'Não foi possível excluir a conversa. Sem permissão ou conversa não encontrada.',
+        };
+      }
 
       // Clear cache
       await db.del(KeyPatterns.chat(id));
 
       return { success: true, data: true };
     } catch (error) {
+      console.error('❌ [Chat delete] Erro:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to delete conversation',
@@ -266,13 +280,46 @@ export class ConversationRepository {
       
       if (error) throw error;
       
-      console.log('✅ Chat marcado como lido:', chatId);
       return { success: true };
     } catch (error) {
       console.error('❌ Erro ao marcar chat como lido:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to reset unread' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to reset unread'
+      };
+    }
+  }
+
+  async pin(conversationId: string, isPinned: boolean): Promise<DBResponse<boolean>> {
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from('conversations')
+        .update({ is_pinned: isPinned })
+        .eq('id', conversationId);
+      if (error) throw error;
+      return { success: true, data: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to pin conversation',
+      };
+    }
+  }
+
+  async mute(conversationId: string, isMuted: boolean): Promise<DBResponse<boolean>> {
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from('conversations')
+        .update({ is_muted: isMuted })
+        .eq('id', conversationId);
+      if (error) throw error;
+      return { success: true, data: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to mute conversation',
       };
     }
   }
@@ -313,7 +360,6 @@ export class MessageRepository {
       if (error) throw error;
 
       const created = sqlToMessage(data);
-      console.log('✅ Mensagem enviada:', created.id);
 
       // 2. ATUALIZAR CONVERSA (last_message_at)
       await supabase
@@ -356,7 +402,6 @@ export class MessageRepository {
       if (error) throw error;
 
       const messages = data.map(sqlToMessage);
-      console.log(`✅ ${messages.length} mensagens carregadas`);
 
       // Cache
       for (const msg of messages) {

@@ -207,25 +207,17 @@ export function MyRoutesScreen({ user, onNavigateToChat, onNavigateToQuote }: My
     const whatsappUrl = `https://wa.me/55${phone}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
     
-    console.log('📱 [WhatsApp] Abrindo:', { phone, message });
   };
 
   // ✅ MARCAR ENTREGA COMO CONCLUÍDA (Motorista)
   const handleMarkAsCompleted = async (route: MyRoute) => {
     try {
-      console.log('🚚 [MyRoutesScreen] Marcando entrega como concluída:', {
-        routeId: route.id,
-        freightId: route.freightId,
-        currentStatus: route.status,
-        quoteStatus: route.quoteStatus
-      });
       
       // Atualizar o frete para status "completed" diretamente
       const result = await database.freights.update(route.freightId, {
         status: 'completed' as any
       });
 
-      console.log('🔄 [MyRoutesScreen] Resultado da atualização:', result);
 
       if (result.success) {
         toast.success('Entrega marcada como concluída com sucesso!');
@@ -245,7 +237,6 @@ export function MyRoutesScreen({ user, onNavigateToChat, onNavigateToQuote }: My
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Recarregar lista
-        console.log('🔄 [MyRoutesScreen] Recarregando rotas...');
         await reload();
         
         // ✅ MUDAR AUTOMATICAMENTE PARA ABA "CONCLUÍDAS"

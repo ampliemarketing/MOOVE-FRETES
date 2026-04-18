@@ -41,11 +41,9 @@ export async function migrateAllData(userId: string): Promise<MigrationResult> {
     totalMigrated: 0,
   };
 
-  console.log('🔄 Iniciando migração de dados para', userId);
 
   // 1. Migrate Drivers
   try {
-    console.log('📦 Migrando motoristas...');
     const driversMigrated = await migrateDrivers(userId);
     result.drivers = driversMigrated;
     result.totalMigrated += driversMigrated;
@@ -57,7 +55,6 @@ export async function migrateAllData(userId: string): Promise<MigrationResult> {
 
   // 2. Migrate Freights
   try {
-    console.log('📦 Migrando fretes...');
     const freightsMigrated = await migrateFreights(userId);
     result.freights = freightsMigrated;
     result.totalMigrated += freightsMigrated;
@@ -69,7 +66,6 @@ export async function migrateAllData(userId: string): Promise<MigrationResult> {
 
   // 3. Migrate Notifications
   try {
-    console.log('📦 Migrando notificações...');
     const notificationsMigrated = await migrateNotifications(userId);
     result.notifications = notificationsMigrated;
     result.totalMigrated += notificationsMigrated;
@@ -81,7 +77,6 @@ export async function migrateAllData(userId: string): Promise<MigrationResult> {
 
   // 4. Migrate Conversations & Messages
   try {
-    console.log('📦 Migrando conversas e mensagens...');
     const { conversations, messages } = await migrateChats(userId);
     result.conversations = conversations;
     result.messages = messages;
@@ -94,7 +89,6 @@ export async function migrateAllData(userId: string): Promise<MigrationResult> {
 
   // 5. Migrate Preferred Routes
   try {
-    console.log('📦 Migrando rotas preferidas...');
     const routesMigrated = await migratePreferredRoutes(userId);
     result.preferredRoutes = routesMigrated;
     result.totalMigrated += routesMigrated;
@@ -106,7 +100,6 @@ export async function migrateAllData(userId: string): Promise<MigrationResult> {
 
   // 6. Migrate Social Posts
   try {
-    console.log('📦 Migrando posts sociais...');
     const postsMigrated = await migrateSocialPosts(userId);
     result.socialPosts = postsMigrated;
     result.totalMigrated += postsMigrated;
@@ -118,7 +111,6 @@ export async function migrateAllData(userId: string): Promise<MigrationResult> {
 
   result.totalItems = result.totalMigrated + result.errors.length;
 
-  console.log('✅ Migração concluída:', result);
   return result;
 }
 
@@ -324,7 +316,6 @@ export async function clearLocalStorageData(): Promise<void> {
     await db.del(key);
   }
 
-  console.log('🗑️ LocalStorage limpo');
 }
 
 /**

@@ -11,7 +11,6 @@ export function registerServiceWorker(): void {
           scope: '/',
         });
 
-        console.log('✅ Service Worker registrado:', registration.scope);
 
         // Check for updates
         registration.addEventListener('updatefound', () => {
@@ -19,7 +18,6 @@ export function registerServiceWorker(): void {
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('🔄 Nova versão disponível! Recarregue a página.');
                 // You can show a toast here to inform the user
               }
             });
@@ -30,7 +28,6 @@ export function registerServiceWorker(): void {
       }
     });
   } else {
-    console.log('⚠️ Service Workers não suportados neste navegador');
   }
 }
 
@@ -82,11 +79,9 @@ export function setupInstallPrompt(
     e.preventDefault();
     deferredPrompt = e as BeforeInstallPromptEvent;
     onPromptReady(true);
-    console.log('📲 App pode ser instalado');
   });
 
   window.addEventListener('appinstalled', () => {
-    console.log('✅ App instalado com sucesso');
     deferredPrompt = null;
     onPromptReady(false);
   });
@@ -97,13 +92,11 @@ export function setupInstallPrompt(
  */
 export async function showInstallPrompt(): Promise<boolean> {
   if (!deferredPrompt) {
-    console.log('⚠️ Prompt de instalação não disponível');
     return false;
   }
 
   deferredPrompt.prompt();
   const { outcome } = await deferredPrompt.userChoice;
-  console.log(`📲 Resultado da instalação: ${outcome}`);
 
   deferredPrompt = null;
   return outcome === 'accepted';
@@ -114,7 +107,6 @@ export async function showInstallPrompt(): Promise<boolean> {
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!('Notification' in window)) {
-    console.log('⚠️ Notificações não suportadas');
     return 'denied';
   }
 
@@ -124,7 +116,6 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 
   if (Notification.permission !== 'denied') {
     const permission = await Notification.requestPermission();
-    console.log(`🔔 Permissão de notificação: ${permission}`);
     return permission;
   }
 

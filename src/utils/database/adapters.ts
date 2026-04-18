@@ -181,11 +181,6 @@ export function driverToSQL(driver: Driver): DriverInsert {
   };
   
   // 🔍 DEBUG: Logging para ver se availability_expires_at está sendo incluído
-  console.log('🔄 [driverToSQL] Convertendo Driver para SQL:', {
-    hasAvailabilityExpiresAt: !!(driver as any).availabilityExpiresAt,
-    availabilityExpiresAt: (driver as any).availabilityExpiresAt,
-    sqlAvailabilityExpiresAt: sqlData.availability_expires_at
-  });
   
   return sqlData;
 }

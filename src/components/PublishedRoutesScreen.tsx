@@ -14,27 +14,16 @@ interface PublishedRoutesScreenProps {
 }
 
 export function PublishedRoutesScreen({ user, onOpenChat }: PublishedRoutesScreenProps) {
-  console.log('🚀 [PublishedRoutesScreen] Renderizado com:', {
-    hasOnOpenChat: !!onOpenChat,
-    userId: user.id,
-    userName: user.name,
-  });
   
   return (
     <div className="h-full bg-background">
       <AvailableDriversTab 
         currentUser={user} 
         onOpenChat={(driverId, driverName, prefilledMessage) => {
-          console.log('📞 [PublishedRoutesScreen] onOpenChat chamado no wrapper!', {
-            hasParentCallback: !!onOpenChat,
-            driverId,
-            driverName,
-          });
           
           if (onOpenChat) {
             onOpenChat(driverId, driverName, prefilledMessage);
           } else {
-            console.warn('⚠️ [PublishedRoutesScreen] onOpenChat não está definido!');
             toast.info('Abrindo chat...');
           }
         }}

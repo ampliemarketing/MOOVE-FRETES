@@ -26,12 +26,10 @@ export function subscribeToMessages(
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
-        console.log('📨 Nova mensagem:', payload.new);
         callback(payload.new);
       }
     )
     .subscribe((status) => {
-      console.log(`📡 Messages subscription status: ${status}`);
     });
 
   return channel;
@@ -57,7 +55,6 @@ export function subscribeToMessageUpdates(
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
-        console.log('📬 Mensagem atualizada:', payload.new);
         callback(payload.new);
       }
     )
@@ -86,12 +83,10 @@ export function subscribeToNotifications(
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        console.log('🔔 Nova notificação:', payload.new);
         callback(payload.new);
       }
     )
     .subscribe((status) => {
-      console.log(`📡 Notifications subscription status: ${status}`);
     });
 
   return channel;
@@ -117,7 +112,6 @@ export function subscribeToFreightUpdates(
         filter: `id=eq.${freightId}`,
       },
       (payload) => {
-        console.log('🚚 Frete atualizado:', payload.new);
         callback(payload.new);
       }
     )
@@ -154,7 +148,6 @@ export function subscribeToFreightsByRoute(
           freight.destination_state === destinationState &&
           freight.status === 'active'
         ) {
-          console.log('🚚 Novo frete na rota:', freight);
           callback(freight);
         }
       }
@@ -189,7 +182,6 @@ export function subscribeToDriverAvailability(
         
         // Filter by location
         if (location?.city === city && location?.state === state && driver.available) {
-          console.log('👷 Motorista disponível:', driver);
           callback(driver);
         }
       }
@@ -219,7 +211,6 @@ export function subscribeToRatings(
         filter: `target_id=eq.${targetId}`,
       },
       (payload) => {
-        console.log('⭐ Nova avaliação:', payload.new);
         callback(payload.new);
       }
     )
@@ -251,7 +242,6 @@ export function subscribeToTransactions(
         
         // Filter by user (payer or receiver)
         if (transaction.payer_id === userId || transaction.receiver_id === userId) {
-          console.log('💰 Transação atualizada:', transaction);
           callback(transaction);
         }
       }
@@ -284,7 +274,6 @@ export function subscribeToConversations(
         
         // Filter by participant
         if (conversation.participant1_id === userId || conversation.participant2_id === userId) {
-          console.log('💬 Conversa atualizada:', conversation);
           callback(conversation);
         }
       }
@@ -316,7 +305,6 @@ export function subscribeToSocialFeed(
         
         // Only public posts
         if (post.visibility === 'public') {
-          console.log('📱 Novo post:', post);
           callback(post);
         }
       }
@@ -346,7 +334,6 @@ export function subscribeToPostUpdates(
         filter: `post_id=eq.${postId}`,
       },
       (payload) => {
-        console.log('👍 Nova curtida:', payload.new);
         callback({ type: 'like', payload: payload.new });
       }
     )
@@ -359,7 +346,6 @@ export function subscribeToPostUpdates(
         filter: `post_id=eq.${postId}`,
       },
       (payload) => {
-        console.log('💬 Novo comentário:', payload.new);
         callback({ type: 'comment', payload: payload.new });
       }
     )
@@ -374,7 +360,6 @@ export function subscribeToPostUpdates(
 export async function unsubscribe(channel: RealtimeChannel): Promise<void> {
   if (channel) {
     await channel.unsubscribe();
-    console.log('📡 Channel unsubscribed');
   }
 }
 
@@ -384,7 +369,6 @@ export async function unsubscribe(channel: RealtimeChannel): Promise<void> {
 export async function unsubscribeAll(): Promise<void> {
   const supabase = getSupabaseClient();
   await supabase.removeAllChannels();
-  console.log('📡 All channels unsubscribed');
 }
 
 /**

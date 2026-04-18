@@ -235,7 +235,6 @@ export const database = {
     },
     
     async getById(id: string): Promise<UnifiedUser | null> {
-      console.log('🔍 [UnifiedUsers.getById] Buscando usuário:', id);
       
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
@@ -254,11 +253,6 @@ export const database = {
         return null;
       }
       
-      console.log('✅ [UnifiedUsers.getById] Usuário encontrado:', {
-        id: data.id,
-        name: data.name,
-        userType: data.user_type
-      });
       
       return data as UnifiedUser;
     },
@@ -576,9 +570,9 @@ try {
 /*
 // 1. Buscar usuário completo (profiles + companies + drivers)
 const user = await database.unifiedUsers.getById(userId);
-console.log('Nome:', userHelpers.getDisplayName(user));
-console.log('Email:', userHelpers.getPrimaryEmail(user));
-console.log('Endereço:', addressHelpers.formatAddress(user.full_address));
+// [REVISAR] console.log('Nome:', userHelpers.getDisplayName(user));
+// [REVISAR] console.log('Email:', userHelpers.getPrimaryEmail(user));
+// [REVISAR] console.log('Endereço:', addressHelpers.formatAddress(user.full_address));
 
 // 2. Atualizar profile
 await database.profiles.update(userId, {

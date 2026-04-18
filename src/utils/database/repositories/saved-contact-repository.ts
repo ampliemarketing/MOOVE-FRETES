@@ -92,7 +92,6 @@ export class SavedContactRepository {
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Contato salvo criado:', data.id);
       return { success: true, data };
     } catch (error) {
       console.error('❌ Erro ao criar contato salvo:', error);
@@ -297,7 +296,6 @@ export class FreightContactRepository {
         return { success: false, error: error.message };
       }
 
-      console.log(`✅ ${data.length} contatos vinculados ao frete ${freightId}`);
       return { success: true, data: data || [] };
     } catch (error) {
       return {

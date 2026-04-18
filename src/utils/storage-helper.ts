@@ -121,7 +121,6 @@ export async function uploadAvatar(
     // PATH: userId/avatar_timestamp.ext
     const filePath = `${userId}/avatar_${timestamp}.${fileExt}`;
 
-    console.log('📤 [Storage] Uploading avatar:', filePath);
 
     const { error } = await supabase.storage
       .from('avatars')
@@ -129,7 +128,6 @@ export async function uploadAvatar(
 
     if (error) throw error;
 
-    console.log('✅ [Storage] Avatar uploaded successfully');
 
     // ⚠️ RETORNAR PATH, NÃO URL!
     return {
@@ -163,7 +161,6 @@ export async function uploadDocuments(
     const uploadedPaths: Record<string, string> = {};
     const errors: string[] = [];
 
-    console.log(`📤 [Storage] Uploading ${Object.keys(files).length} documents...`);
 
     for (const [docKey, file] of Object.entries(files)) {
       if (!file) continue;
@@ -182,7 +179,6 @@ export async function uploadDocuments(
       // PATH: ownerId/docKey_timestamp_random.ext
       const filePath = `${ownerId}/${docKey}_${timestamp}_${random}.${fileExt}`;
 
-      console.log(`📄 [Storage] Uploading ${docKey}:`, filePath);
 
       const { error } = await supabase.storage
         .from('documents')
@@ -193,7 +189,6 @@ export async function uploadDocuments(
         console.error(`❌ [Storage] Failed to upload ${docKey}:`, error);
       } else {
         uploadedPaths[docKey] = filePath;
-        console.log(`✅ [Storage] ${docKey} uploaded successfully`);
       }
     }
 
@@ -204,7 +199,6 @@ export async function uploadDocuments(
       };
     }
 
-    console.log(`✅ [Storage] Documents uploaded: ${Object.keys(uploadedPaths).length}/${Object.keys(files).length}`);
 
     return {
       success: true,
@@ -235,7 +229,6 @@ export async function uploadMultipleImages(
   const supabase = getSupabaseClient();
   const results: UploadResult[] = [];
 
-  console.log(`📤 [Storage] Uploading ${files.length} images...`);
 
   for (const file of files) {
     try {
@@ -265,7 +258,6 @@ export async function uploadMultipleImages(
         path: filePath,
       });
 
-      console.log('✅ [Storage] Image uploaded:', filePath);
     } catch (error) {
       results.push({
         success: false,
@@ -275,7 +267,6 @@ export async function uploadMultipleImages(
   }
 
   const successCount = results.filter(r => r.success).length;
-  console.log(`✅ [Storage] Uploaded ${successCount}/${files.length} images`);
 
   return results;
 }
@@ -320,7 +311,6 @@ export async function uploadChatAttachment(
     // PATH: conversationId/timestamp_filename
     const filePath = `${conversationId}/${timestamp}_${safeFilename}`;
 
-    console.log('📤 [Storage] Uploading chat attachment:', filePath);
 
     const { error } = await supabase.storage
       .from('chat-attachments')
@@ -328,7 +318,6 @@ export async function uploadChatAttachment(
 
     if (error) throw error;
 
-    console.log('✅ [Storage] Chat attachment uploaded successfully');
 
     return {
       success: true,
@@ -430,10 +419,7 @@ export function getAvatarUrl(path: string | null | undefined): string | null {
  */
 if (typeof window !== 'undefined') {
   (window as any).debugAvatarCache = () => {
-    console.group('🖼️ Cache de Avatares');
-    console.log('📊 Tamanho:', urlCache.size);
-    console.log('💾 Primeiras 10 entradas:', Array.from(urlCache.entries()).slice(0, 10));
-    console.groupEnd();
+    // [REVISAR] console.log('💾 Primeiras 10 entradas:', Array.from(urlCache.entries()).slice(0, 10));
   };
 }
 
@@ -510,7 +496,6 @@ export async function uploadRegistrationDocuments(
     };
   }
   
-  console.log(`📤 [Storage] Uploading ${Object.keys(validFiles).length} registration documents...`);
   
   // Usar uploadDocuments que já existe
   return uploadDocuments(userId, validFiles);
@@ -529,7 +514,6 @@ export async function deleteFile(
 
     if (error) throw error;
 
-    console.log(`🗑️ [Storage] File deleted: ${bucket}/${path}`);
     return { success: true };
   } catch (error) {
     console.error('❌ [Storage] Delete error:', error);

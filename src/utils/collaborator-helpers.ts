@@ -99,7 +99,6 @@ export async function createSuperAdminOnRegistration(
   companyId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('🔐 Criando Super Admin no registro...', { userId, companyId });
     
     // Criar Super Admin automaticamente
     const collaboratorResult = await database.collaborators.create({
@@ -122,7 +121,6 @@ export async function createSuperAdminOnRegistration(
       };
     }
 
-    console.log('✅ Super Admin criado com sucesso no registro!');
     return { success: true };
   } catch (error) {
     console.error('❌ Erro ao criar Super Admin no registro:', error);
@@ -158,7 +156,6 @@ export async function checkPendingInvite(email: string): Promise<{
     try {
       // Verificar se as variáveis de ambiente estão configuradas
       if (!SERVER_URL || SERVER_URL === 'http://localhost:54321/functions/v1') {
-        console.log('ℹ️ Edge Functions não configuradas - pulando verificação de convite no Supabase');
         return { hasPendingInvite: false };
       }
 
@@ -179,7 +176,7 @@ export async function checkPendingInvite(email: string): Promise<{
       }
     } catch (error) {
       // Silenciar erro de fetch - não é crítico
-      console.log('ℹ️ Não foi possível verificar convites no Supabase (continuando normalmente)');
+      // [REVISAR] console.log('ℹ️ Não foi possível verificar convites no Supabase (continuando normalmente)');
     }
 
     return { hasPendingInvite: false };
@@ -201,7 +198,6 @@ export async function acceptInviteAfterRegistration(
   accessToken: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`📧 Aceitando convite para: ${invite.email}`);
 
     // Accept via Supabase
     const response = await fetch(`${SERVER_URL}/collaborators/invites/${invite.id}/accept`, {
@@ -222,7 +218,6 @@ export async function acceptInviteAfterRegistration(
     const data = await response.json();
     
     if (data.success) {
-      console.log('✅ Convite aceito com sucesso!');
       
       // Update local storage
       invite.status = 'accepted';
@@ -252,7 +247,6 @@ export async function notifyCollaboratorInvited(
 ): Promise<void> {
   try {
     if (!ownerId) {
-      console.warn('⚠️ notifyCollaboratorInvited: ownerId não fornecido, pulando notificação');
       return;
     }
     // Create notification for company owner
@@ -285,7 +279,6 @@ export async function notifyCollaboratorRemoved(
 ): Promise<void> {
   try {
     if (!ownerId) {
-      console.warn('⚠️ notifyCollaboratorRemoved: ownerId não fornecido, pulando notificação');
       return;
     }
     await database.notifications.create({
@@ -319,7 +312,6 @@ export async function notifyRoleChanged(
 ): Promise<void> {
   try {
     if (!ownerId) {
-      console.warn('⚠️ notifyRoleChanged: ownerId não fornecido, pulando notificação');
       return;
     }
     await database.notifications.create({

@@ -51,6 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       rating: profile.rating || 0,
       totalTrips: profile.totalFreights || 0,
       location: profile.location || '',
+      avatar: profile.profile?.avatar || profile.avatar,
+      profile: profile.profile,
       currentLocation: profile.currentLocation,
       preferredRoutes: profile.preferredRoutes,
       vehicleTypes: profile.vehicleTypes,

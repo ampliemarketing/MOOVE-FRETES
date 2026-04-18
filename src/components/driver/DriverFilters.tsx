@@ -8,7 +8,6 @@ import { Heart } from 'lucide-react';
 export interface DriverFiltersState {
   location: { city: string; state: string };
   destination: { city: string; state: string };
-  radius: string;
   vehicleTypes: string[];
   trailerTypes: string[];
   availability: string;
@@ -20,7 +19,6 @@ export interface DriverFiltersState {
 export const initialDriverFiltersState: DriverFiltersState = {
   location: { city: '', state: '' },
   destination: { city: '', state: '' },
-  radius: '',
   vehicleTypes: [],
   trailerTypes: [],
   availability: 'todos',
@@ -51,26 +49,12 @@ export function DriverFilters({ filters, onFilterChange, className = '', favorit
   };
 
   const handleCityChange = (key: 'location' | 'destination', city: string, state: string) => {
-    if (key === 'location' && !city) {
-      // Ao limpar a origem, resetar o raio também
-      onFilterChange({ ...filters, [key]: { city, state }, radius: '' });
-    } else {
-      updateFilter(key, { city, state });
-    }
+    updateFilter(key, { city, state });
   };
 
   // Helper para checkbox de seleção única (comportamento de Radio Button)
   const handleSingleSelect = (key: keyof DriverFiltersState, value: string) => {
     if (filters[key] !== value) {
-      updateFilter(key, value);
-    }
-  };
-
-  // Helper para checkbox de seleção única toggleável (para Raio, que pode ser opcional)
-  const handleToggleSingleSelect = (key: keyof DriverFiltersState, value: string) => {
-    if (filters[key] === value) {
-      updateFilter(key, ''); // Desmarca se já estiver selecionado
-    } else {
       updateFilter(key, value);
     }
   };
@@ -100,35 +84,6 @@ export function DriverFilters({ filters, onFilterChange, className = '', favorit
             onValueChange={(city, state) => handleCityChange('destination', city, state)}
             placeholder="Escolha o destino (opcional)"
           />
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Raio (Distância) */}
-      <section className="space-y-3">
-        <h3 className="font-semibold text-base">Raio (Distância)</h3>
-        {!filters.location.city && (
-          <p className="text-xs text-muted-foreground">Selecione uma origem acima para ativar o filtro de raio.</p>
-        )}
-        <div className="space-y-2">
-          {['50Km', '100Km', '200Km'].map((label) => {
-            const value = label.replace('Km', '');
-            const isChecked = filters.radius === value;
-            const isDisabled = !filters.location.city;
-            return (
-              <div key={value} className={`flex items-center space-x-2 ${isDisabled ? 'opacity-40' : ''}`}>
-                <Checkbox 
-                  id={`radius-${value}`} 
-                  checked={isChecked}
-                  onCheckedChange={() => !isDisabled && handleToggleSingleSelect('radius', value)}
-                  className={checkboxStyle}
-                  disabled={isDisabled}
-                />
-                <Label htmlFor={`radius-${value}`} className="font-normal text-gray-600">{label}</Label>
-              </div>
-            );
-          })}
         </div>
       </section>
 

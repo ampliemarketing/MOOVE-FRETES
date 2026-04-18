@@ -54,7 +54,6 @@ export function validateFreight(freight: any, logInvalid: boolean = true): Valid
   // 1. Verificar se freight existe
   if (!freight) {
     if (logInvalid) {
-      console.warn('⚠️ [validateFreight] Frete null/undefined');
     }
     return null;
   }
@@ -62,7 +61,6 @@ export function validateFreight(freight: any, logInvalid: boolean = true): Valid
   // 2. Verificar ID
   if (!freight.id) {
     if (logInvalid) {
-      console.warn('⚠️ [validateFreight] Frete sem ID:', freight);
     }
     return null;
   }
@@ -70,10 +68,6 @@ export function validateFreight(freight: any, logInvalid: boolean = true): Valid
   // 3. Validar origem
   if (!isValidLocation(freight.origin)) {
     if (logInvalid) {
-      console.warn('⚠️ [validateFreight] Frete com origem inválida:', {
-        id: freight.id,
-        origin: freight.origin
-      });
     }
     return null;
   }
@@ -81,10 +75,6 @@ export function validateFreight(freight: any, logInvalid: boolean = true): Valid
   // 4. Validar destino
   if (!isValidLocation(freight.destination)) {
     if (logInvalid) {
-      console.warn('⚠️ [validateFreight] Frete com destino inválido:', {
-        id: freight.id,
-        destination: freight.destination
-      });
     }
     return null;
   }
@@ -95,9 +85,6 @@ export function validateFreight(freight: any, logInvalid: boolean = true): Valid
   
   if (!normalizedOrigin || !normalizedDestination) {
     if (logInvalid) {
-      console.warn('⚠️ [validateFreight] Erro ao normalizar localização:', {
-        id: freight.id
-      });
     }
     return null;
   }
@@ -135,7 +122,6 @@ export function validateFreights(freights: any[] | null | undefined, logInvalid:
   // ✅ PROTEÇÃO: Input null/undefined
   if (freights == null) {
     if (logInvalid) {
-      console.info('ℹ️ [validateFreights] Array de fretes é null/undefined - retornando array vazio');
     }
     return [];
   }
@@ -149,7 +135,6 @@ export function validateFreights(freights: any[] | null | undefined, logInvalid:
   // ✅ PROTEÇÃO: Array vazio (sistema sem dados)
   if (freights.length === 0) {
     if (logInvalid) {
-      console.info('ℹ️ [validateFreights] Array de fretes está vazio - sistema sem dados');
     }
     return [];
   }
@@ -162,15 +147,15 @@ export function validateFreights(freights: any[] | null | undefined, logInvalid:
   // Logar estatísticas
   const invalidCount = freights.length - validated.length;
   if (logInvalid && invalidCount > 0) {
-    console.warn(
-      `⚠️ [validateFreights] ${invalidCount} frete(s) inválido(s) filtrado(s) de ${freights.length} total`,
-      {
-        total: freights.length,
-        valid: validated.length,
-        invalid: invalidCount,
-        percentage: ((invalidCount / freights.length) * 100).toFixed(1) + '%'
-      }
-    );
+    // [REVISAR] console.warn(
+    // `⚠️ [validateFreights] ${invalidCount} frete(s) inválido(s) filtrado(s) de ${freights.length} total`,
+    // {
+    // total: freights.length,
+    // valid: validated.length,
+    // invalid: invalidCount,
+    // percentage: ((invalidCount / freights.length) * 100).toFixed(1) + '%'
+    // }
+    // );
     
     // Detalhar problemas encontrados
     const invalidFreights = freights.filter(f => !validateFreight(f, false));
@@ -181,7 +166,6 @@ export function validateFreights(freights: any[] | null | undefined, logInvalid:
       nullUndefined: invalidFreights.filter(f => !f).length
     };
     
-    console.warn('📊 [validateFreights] Detalhes dos problemas:', issues);
   }
   
   return validated;
@@ -197,34 +181,24 @@ export function validateFreights(freights: any[] | null | undefined, logInvalid:
 export function validateRoute(route: any, logInvalid: boolean = true): ValidatedRoute | null {
   if (!route) {
     if (logInvalid) {
-      console.warn('⚠️ [validateRoute] Rota null/undefined');
     }
     return null;
   }
   
   if (!route.id) {
     if (logInvalid) {
-      console.warn('⚠️ [validateRoute] Rota sem ID:', route);
     }
     return null;
   }
   
   if (!isValidLocation(route.origin)) {
     if (logInvalid) {
-      console.warn('⚠️ [validateRoute] Rota com origem inválida:', {
-        id: route.id,
-        origin: route.origin
-      });
     }
     return null;
   }
   
   if (!isValidLocation(route.destination)) {
     if (logInvalid) {
-      console.warn('⚠️ [validateRoute] Rota com destino inválido:', {
-        id: route.id,
-        destination: route.destination
-      });
     }
     return null;
   }
@@ -254,7 +228,6 @@ export function validateRoutes(routes: any[] | null | undefined, logInvalid: boo
   // ✅ PROTEÇÃO: Input null/undefined
   if (routes == null) {
     if (logInvalid) {
-      console.info('ℹ️ [validateRoutes] Array de rotas é null/undefined - retornando array vazio');
     }
     return [];
   }
@@ -268,7 +241,6 @@ export function validateRoutes(routes: any[] | null | undefined, logInvalid: boo
   // ✅ PROTEÇÃO: Array vazio (sistema sem dados)
   if (routes.length === 0) {
     if (logInvalid) {
-      console.info('ℹ️ [validateRoutes] Array de rotas está vazio - sistema sem dados');
     }
     return [];
   }
@@ -279,9 +251,9 @@ export function validateRoutes(routes: any[] | null | undefined, logInvalid: boo
   
   const invalidCount = routes.length - validated.length;
   if (logInvalid && invalidCount > 0) {
-    console.warn(
-      `⚠️ [validateRoutes] ${invalidCount} rota(s) inválida(s) filtrada(s) de ${routes.length} total`
-    );
+    // [REVISAR] console.warn(
+    // `⚠️ [validateRoutes] ${invalidCount} rota(s) inválida(s) filtrada(s) de ${routes.length} total`
+    // );
   }
   
   return validated;

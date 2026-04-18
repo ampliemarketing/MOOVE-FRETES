@@ -27,7 +27,6 @@ export function useNotifications(overrideUserId?: string) {
 
   const loadNotifications = useCallback(async () => {
     try {
-      console.log('🔔 Carregando notificações...');
       setLoading(true);
       setError(null);
       
@@ -37,14 +36,12 @@ export function useNotifications(overrideUserId?: string) {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          console.log('✅ Usuário autenticado, carregando do Supabase...');
           
           // ✅ Usar overrideUserId (companyId) se disponível, senão session.user.id
           const targetUserId = overrideUserId || session.user.id;
           const response = await database.notifications.getByUserId(targetUserId);
           
           if (response.success && response.data) {
-            console.log('✅ Notificações carregadas do Supabase:', response.data.length);
             setNotifications(response.data);
             setUnreadCount(response.data.filter(n => !n.read).length);
             setLoading(false);
@@ -52,7 +49,6 @@ export function useNotifications(overrideUserId?: string) {
           }
         }
       } catch (supabaseErr) {
-        console.warn('⚠️ Erro ao carregar do Supabase, tentando LocalStorage:', supabaseErr);
       }
       
       // 📦 FALLBACK: Carregar do LocalStorage
@@ -70,17 +66,15 @@ export function useNotifications(overrideUserId?: string) {
       const response = await database.notifications.getByUserId(currentUser.id);
       
       if (response.success && response.data) {
-        console.log('✅ Notificações carregadas do LocalStorage:', response.data.length);
         setNotifications(response.data);
         setUnreadCount(response.data.filter(n => !n.read).length);
       } else {
-        console.log('⚠️ Nenhuma notificação encontrada');
         setNotifications([]);
         setUnreadCount(0);
       }
     } catch (err) {
       // Silent fail - notifications are optional and errors should not be visible
-      console.log('⚠️ Erro ao carregar notificações (silencioso):', err);
+      // [REVISAR] console.log('⚠️ Erro ao carregar notificações (silencioso):', err);
       setNotifications([]);
       setUnreadCount(0);
       setError(null);

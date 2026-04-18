@@ -142,11 +142,6 @@ export function useAllActivePreferredRoutes() {
       
       // ✅ VERIFICAR SESSÃO
       const { data: sessionData } = await supabase.auth.getSession();
-      console.log('🔐 [useAllActivePreferredRoutes] Sessão:', {
-        hasSession: !!sessionData?.session,
-        userId: sessionData?.session?.user?.id,
-        userEmail: sessionData?.session?.user?.email,
-      });
       
       // ✅ BUSCAR ROTAS COM JOIN para incluir user_id do motorista
       const { data: routesData, error: routesError, count } = await supabase
@@ -160,13 +155,6 @@ export function useAllActivePreferredRoutes() {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       
-      console.log('📊 [useAllActivePreferredRoutes] Resultado da query:', {
-        hasError: !!routesError,
-        error: routesError,
-        dataLength: routesData?.length || 0,
-        count: count,
-        firstRoute: routesData?.[0],
-      });
       
       if (routesError) {
         logger.error('useAllActivePreferredRoutes', 'Erro ao carregar do Supabase:', routesError);
@@ -184,7 +172,6 @@ export function useAllActivePreferredRoutes() {
       
       if (!routesData || routesData.length === 0) {
         logger.info('useAllActivePreferredRoutes', 'Nenhuma rota ativa encontrada no Supabase');
-        console.log('⚠️ [useAllActivePreferredRoutes] Sem rotas - count no banco:', count);
         setRoutes([]);
         setError(null);
         setLoading(false);

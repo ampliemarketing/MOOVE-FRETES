@@ -50,7 +50,6 @@ export class SocialPostRepository {
       if (error) throw error;
 
       const created = sqlToSocialPost(data);
-      console.log('✅ Post criado no Supabase:', created.id);
 
       // 2. CACHE
       await db.set(KeyPatterns.post(created.id), created);
@@ -145,7 +144,6 @@ export class SocialPostRepository {
         return post;
       });
 
-      console.log(`✅ ${posts.length} posts carregados do feed`);
 
       return {
         success: true,

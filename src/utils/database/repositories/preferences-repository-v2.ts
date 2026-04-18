@@ -101,7 +101,6 @@ export class PreferencesRepository {
       if (error) throw error;
 
       const created = sqlToUserPreferences(data);
-      console.log('✅ Preferências criadas:', created.id);
 
       await db.set(KeyPatterns.preferences(userId), created);
 

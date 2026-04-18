@@ -24,7 +24,6 @@ export function NotificationProvider({ children, userId }: NotificationProviderP
   // ✅ Listener para eventos de notificação criadas pelo hook global
   useEffect(() => {
     const handleNotificationCreated = (event: CustomEvent) => {
-      console.log('📬 [NotificationProvider] Nova notificação detectada:', event.detail);
       
       // Forçar recarregamento das notificações
       if (typeof window !== 'undefined') {
@@ -43,7 +42,6 @@ export function NotificationProvider({ children, userId }: NotificationProviderP
 
     if (typeof window !== 'undefined') {
       window.addEventListener('notification-created', handleNotificationCreated as EventListener);
-      console.log('👂 [NotificationProvider] Escutando eventos de notificação');
     }
 
     return () => {

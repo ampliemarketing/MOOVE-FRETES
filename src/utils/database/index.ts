@@ -111,4 +111,3 @@ import { database as unifiedDatabase } from '../unified-database';
 (database as any).profiles = unifiedDatabase.profiles;
 
 // Garantir que o objeto está completamente inicializado antes de exportar
-console.log('✅ [database/index.ts] Database object initialized with keys:', Object.keys(database));

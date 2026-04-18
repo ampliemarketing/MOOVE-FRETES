@@ -184,8 +184,8 @@ export function AppLayout() {
     },
     { id: 'all-drivers', label: 'Todos os Motoristas', icon: Users },
     { id: 'published-routes', label: 'Rotas Publicadas', icon: Navigation },
-    { id: 'chat', label: 'Chat', icon: MessageSquare },
-    { id: 'social', label: 'Rede Social', icon: Heart }
+    { id: 'chat', label: 'Chat', icon: MessageSquare }
+    // { id: 'social', label: 'Rede Social', icon: Heart } // temporariamente removido
   ];
 
   // Get current page title
@@ -222,21 +222,19 @@ export function AppLayout() {
               <img src={logoMaisFrete} alt="MaisFrete" className="h-8 w-auto object-contain" />
             </div>
 
-            <div className="flex items-center gap-2 lg:ml-4">
-              {pageTitle && (() => {
-                const { Icon, label } = pageTitle;
-                return (
-                  <>
-                    <Icon className="w-5 h-5 text-primary" />
-                    <h1 className="font-medium">{label}</h1>
-                    <PageHelpModal pageId={activeMenuId} />
-                  </>
-                );
-              })()}
-            </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {pageTitle && (() => {
+              const { Icon, label } = pageTitle;
+              return (
+                <div className="flex items-center gap-2 mr-1">
+                  <PageHelpModal pageId={activeMenuId} />
+                  <Icon className="w-5 h-5 text-primary" />
+                  <h1 className="font-medium hidden sm:block">{label}</h1>
+                </div>
+              );
+            })()}
             <Button
               variant="ghost"
               size="icon"
@@ -368,10 +366,11 @@ export function AppLayout() {
             <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isDesktopSidebarCollapsed ? 'px-2' : 'px-4'}`}>
               {menuItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = activeMenuId === item.id;
                 const isFreightMenu = item.id === 'freight-management';
                 const isDriversMenu = item.id === 'drivers';
                 const freightSubActive = isFreightSubItemActive(location.pathname);
+                const isActive = activeMenuId === item.id
+                  || (isFreightMenu && freightSubActive);
                 const driversSubActive = isDriversSubItemActive(location.pathname);
 
                 const subItemsToSkip = ['my-freights', 'all-freights', 'all-drivers', 'published-routes'];

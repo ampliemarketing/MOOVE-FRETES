@@ -56,7 +56,6 @@ export function AvailableDriversTab({ currentUser, onOpenChat }: AvailableDriver
   const [filters, setFilters] = React.useState({
     origin: '', // Armazena "Cidade, UF" completo
     destination: '', // Armazena "Cidade, UF" completo
-    radius: '',
     vehicleTypes: [] as string[],
     trailerTypes: [] as string[],
     minRating: '',
@@ -95,13 +94,6 @@ export function AvailableDriversTab({ currentUser, onOpenChat }: AvailableDriver
             const driverProfile = driverResponse.success ? driverResponse.data : null;
 
             // 🔍 DEBUG: Log detalhado do avatar
-            console.log(`🖼️ [AvailableDriversTab] Motorista ${user.name}:`, {
-              hasDriverProfile: !!driverProfile,
-              driverAvatarUrl: driverProfile?.avatarUrl,
-              userProfileAvatar: user.profile?.avatar,
-              resolvedAvatar: driverProfile?.avatarUrl || user.profile?.avatar,
-              allDriverFields: driverProfile ? Object.keys(driverProfile) : []
-            });
 
             return {
               driverId,
@@ -273,7 +265,6 @@ ${generateDeepLinkUrl('profile', companyId)}
   const routesWithUrls = React.useMemo(() => {
     if (filteredRoutes.length === 0) return [];
     
-    console.log('🔄 [AvailableDriversTab] Pré-processando URLs para', filteredRoutes.length, 'rotas');
     
     return filteredRoutes.map(route => {
       const driver = driversInfo[route.driverId];
@@ -303,7 +294,6 @@ ${generateDeepLinkUrl('profile', companyId)}
     setFilters({
       origin: '',
       destination: '',
-      radius: '',
       vehicleTypes: [],
       trailerTypes: [],
       minRating: '',
@@ -316,10 +306,9 @@ ${generateDeepLinkUrl('profile', companyId)}
       (!Array.isArray(v) && v !== '')
     );
 
-  const activeFiltersCount = 
+  const activeFiltersCount =
     (filters.origin ? 1 : 0) +
     (filters.destination ? 1 : 0) +
-    (filters.radius ? 1 : 0) +
     filters.vehicleTypes.length +
     filters.trailerTypes.length +
     (filters.minRating ? 1 : 0);
@@ -333,9 +322,9 @@ ${generateDeepLinkUrl('profile', companyId)}
     setFilters({ ...filters, [key]: newList });
   };
 
-  const handleToggleSingleSelect = (key: 'radius' | 'minRating', value: string) => {
+  const handleToggleSingleSelect = (key: 'minRating', value: string) => {
     if (filters[key] === value) {
-      setFilters({ ...filters, [key]: '' }); // Desmarca se já estiver selecionado
+      setFilters({ ...filters, [key]: '' });
     } else {
       setFilters({ ...filters, [key]: value });
     }
@@ -540,30 +529,6 @@ ${generateDeepLinkUrl('profile', companyId)}
                   placeholder="Digite a cidade de destino"
                 />
               </div>
-
-              <Separator />
-
-              {/* Raio (Distância) */}
-              <section className="space-y-3">
-                <h3 className="font-semibold text-sm">Raio (Distância)</h3>
-                <div className="space-y-2">
-                  {['50Km', '100Km', '200Km'].map((label) => {
-                    const value = label.replace('Km', '');
-                    const isChecked = filters.radius === value;
-                    return (
-                      <div key={value} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`radius-${value}`} 
-                          checked={isChecked}
-                          onCheckedChange={() => handleToggleSingleSelect('radius', value)}
-                          className={checkboxStyle}
-                        />
-                        <Label htmlFor={`radius-${value}`} className="font-normal text-sm text-gray-600">{label}</Label>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
 
               <Separator />
 
@@ -849,7 +814,7 @@ ${generateDeepLinkUrl('profile', companyId)}
                                     alt={driver.name}
                                     className="w-12 h-12 rounded-full object-cover bg-gray-100 ring-2 ring-transparent group-hover/avatar:ring-primary/40 transition-all"
                                     onError={(e) => {
-                                      console.warn('❌ Erro ao carregar avatar do motorista:', driver.avatar?.substring(0, 50));
+                                      // [REVISAR] console.warn('❌ Erro ao carregar avatar do motorista:', driver.avatar?.substring(0, 50));
                                       e.currentTarget.style.display = 'none';
                                       if (e.currentTarget.nextElementSibling) {
                                         (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
@@ -920,12 +885,6 @@ ${generateDeepLinkUrl('profile', companyId)}
                             <div className="flex flex-col gap-2 flex-shrink-0">
                               <Button
                                 onClick={() => {
-                                  console.log('💬 [AvailableDriversTab] Botão Chat clicado!', {
-                                    hasOnOpenChat: !!onOpenChat,
-                                    driverId: driver.id,
-                                    driverName: driver.name,
-                                    routeId: route.id,
-                                  });
                                   
                                   if (onOpenChat) {
                                     // Criar mensagem pré-pronta sobre a rota
@@ -937,15 +896,14 @@ ${generateDeepLinkUrl('profile', companyId)}
                                     
                                     const prefilledMessage = `*Olá, vi sua rota ${formatLocation(route.origin)}/${formatLocation(route.destination)}.*\n\nTenho um *frete que pode te interessar.*\n\n📦 *Rota:*\n${generateDeepLinkUrl('route', route.id)}\n\n🚛 *Seu perfil:*\n${generateDeepLinkUrl('profile', driver.id)}\n\nPodemos conversar? 🚚`;
                                     
-                                    console.log('📤 [AvailableDriversTab] Chamando onOpenChat com:', {
-                                      driverId: driver.id,
-                                      driverName: driver.name,
-                                      messagePreview: prefilledMessage.substring(0, 100) + '...',
-                                    });
+                                    // [REVISAR] console.log('📤 [AvailableDriversTab] Chamando onOpenChat com:', {
+                                    // driverId: driver.id,
+                                    // driverName: driver.name,
+                                    // messagePreview: prefilledMessage.substring(0, 100) + '...',
+                                    // });
                                     
                                     onOpenChat(driver.id, driver.name, prefilledMessage);
                                   } else {
-                                    console.warn('⚠️ [AvailableDriversTab] onOpenChat não definido!');
                                     toast.info('Abrindo chat...');
                                   }
                                 }}

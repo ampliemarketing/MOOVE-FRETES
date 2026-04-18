@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, User, Package, Building2, DollarSign, Shield, Navigation } from 'lucide-react';
 import { AdminDataTable } from './AdminDataTable';
-import { mockLogs, type AdminLog } from './admin-mock-data';
+import type { AdminLog } from './admin-mock-data';
+import { fetchAdminLogs } from '../../utils/admin-supabase-service';
 
 const categoryIcons: Record<string, React.ElementType> = {
   auth: Shield,
@@ -24,8 +25,13 @@ const categoryColors: Record<string, string> = {
 };
 
 export function AdminLogs() {
-  const [logs] = useState(mockLogs);
+  const [logs, setLogs] = useState<AdminLog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState('all');
+
+  useEffect(() => {
+    fetchAdminLogs().then((data) => { setLogs(data); setLoading(false); });
+  }, []);
 
   const filtered = filterCategory === 'all' ? logs : logs.filter(l => l.category === filterCategory);
   const categories = [...new Set(logs.map(l => l.category))];
@@ -104,6 +110,8 @@ export function AdminLogs() {
       ))}
     </div>
   );
+
+  if (loading) return <div className="flex items-center justify-center py-12 text-[var(--muted-foreground)]">Carregando logs...</div>;
 
   return (
     <div className="space-y-4">

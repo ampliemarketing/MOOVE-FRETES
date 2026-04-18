@@ -87,9 +87,12 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
   const [state, setState] = useState('');
 
   // Específico - Caminhoneiro
+  const [rg, setRg] = useState('');
   const [cnh, setCnh] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
   const [cnhValidity, setCnhValidity] = useState('');
+  const [rntrc, setRntrc] = useState('');
+  const [rntrcValidity, setRntrcValidity] = useState('');
   const [vehiclePlate, setVehiclePlate] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
   const [vehicleYear, setVehicleYear] = useState('');
@@ -100,33 +103,35 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
   const [cnpj, setCnpj] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [tradeName, setTradeName] = useState('');
-  const [rntrc, setRntrc] = useState('');
+  const [companyRntrc, setCompanyRntrc] = useState('');
+  const [companyRntrcValidity, setCompanyRntrcValidity] = useState('');
   const [representativeName, setRepresentativeName] = useState('');
   const [representativeCpf, setRepresentativeCpf] = useState('');
+  const [representativeRg, setRepresentativeRg] = useState('');
+  const [representativeRole, setRepresentativeRole] = useState('');
+  const [stateRegistration, setStateRegistration] = useState('');
+  const [municipalRegistration, setMunicipalRegistration] = useState('');
+  const [isentoIE, setIsentoIE] = useState(false);
 
-  // Documentos
+  // Documentos - Caminhoneiro
+  const [rgDoc, setRgDoc] = useState<File | null>(null);
+  const [cpfDoc, setCpfDoc] = useState<File | null>(null);
   const [cnhDoc, setCnhDoc] = useState<File | null>(null);
+  const [rntrcDoc, setRntrcDoc] = useState<File | null>(null);
   const [vehicleDoc, setVehicleDoc] = useState<File | null>(null);
+  const [addressDoc, setAddressDoc] = useState<File | null>(null);
+  const [selfieDoc, setSelfieDoc] = useState<File | null>(null);
+
+  // Documentos - Empresa
   const [cnpjDoc, setCnpjDoc] = useState<File | null>(null);
   const [contractDoc, setContractDoc] = useState<File | null>(null);
 
-  const steps: { id: Step; label: string; icon: any }[] = (() => {
-    if (userType === 'caminhoneiro') {
-      return [
-        { id: 'credentials', label: 'Dados Pessoais', icon: User },
-        { id: 'address', label: 'Endereço', icon: MapPin },
-        { id: 'specific', label: 'Empresa', icon: Building },
-        { id: 'documents', label: 'Documentos', icon: FileText }
-      ];
-    } else {
-      return [
-        { id: 'credentials', label: 'Dados Pessoais', icon: User },
-        { id: 'address', label: 'Endereço', icon: MapPin },
-        { id: 'specific', label: 'Empresa', icon: Building },
-        { id: 'documents', label: 'Documentos', icon: FileText }
-      ];
-    }
-  })();
+  const steps: { id: Step; label: string; icon: any }[] = [
+    { id: 'credentials', label: 'Dados Pessoais', icon: User },
+    { id: 'address', label: 'Endereço', icon: MapPin },
+    { id: 'specific', label: userType === 'caminhoneiro' ? 'Veículo' : 'Empresa', icon: userType === 'caminhoneiro' ? Truck : Building },
+    { id: 'documents', label: 'Documentos', icon: FileText }
+  ];
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
@@ -259,33 +264,26 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
 
   // Validações por step
   function isCredentialsStepValid() {
+    const base =
+      name.trim().length > 0 &&
+      phone.replace(/\D/g, '').length >= 10 &&
+      isEmailValid() &&
+      emailAvailable === true &&
+      passwordStrength?.isStrong &&
+      isPasswordMatch() &&
+      acceptedTerms;
+
     if (userType === 'caminhoneiro') {
-      return (
-        name.trim().length > 0 &&
-        phone.replace(/\D/g, '').length >= 10 &&
-        isEmailValid() &&
-        emailAvailable === true &&
-        passwordStrength?.isStrong &&
-        isPasswordMatch() &&
-        acceptedTerms
-      );
-    } else {
-      return (
-        name.trim().length > 0 &&
-        phone.replace(/\D/g, '').length >= 10 &&
-        isEmailValid() &&
-        emailAvailable === true &&
-        passwordStrength?.isStrong &&
-        isPasswordMatch() &&
-        acceptedTerms
-      );
+      return base && profilePhoto !== null;
     }
+    return base;
   }
 
   function isAddressStepValid() {
-    return cep.replace(/\D/g, '').length === 8 && 
-           street.trim().length > 0 && 
+    return cep.replace(/\D/g, '').length === 8 &&
+           street.trim().length > 0 &&
            number.trim().length > 0 &&
+           neighborhood.trim().length > 0 &&
            city.trim().length > 0 &&
            state.trim().length > 0;
   }
@@ -293,16 +291,50 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
   function isSpecificStepValid() {
     if (userType === 'caminhoneiro') {
       return cpf.replace(/\D/g, '').length === 11 &&
+             rg.trim().length > 0 &&
+             birthDate.trim().length > 0 &&
              cnh.trim().length > 0 &&
              cnhCategory.trim().length > 0 &&
-             vehiclePlate.trim().length > 0;
+             cnhValidity.trim().length > 0 &&
+             rntrc.trim().length > 0 &&
+             rntrcValidity.trim().length > 0 &&
+             vehiclePlate.trim().length > 0 &&
+             vehicleModel.trim().length > 0 &&
+             vehicleYear.trim().length > 0 &&
+             vehicleTypes.length > 0 &&
+             bodyTypes.length > 0;
     } else {
-      return cnpj.replace(/\D/g, '').length === 14 &&
-             companyName.trim().length > 0 &&
-             representativeName.trim().length > 0 &&
-             representativeCpf.replace(/\D/g, '').length === 11;
+      const baseValid =
+        cnpj.replace(/\D/g, '').length === 14 &&
+        companyName.trim().length > 0 &&
+        representativeName.trim().length > 0 &&
+        representativeCpf.replace(/\D/g, '').length === 11 &&
+        representativeRg.trim().length > 0 &&
+        representativeRole.trim().length > 0 &&
+        (isentoIE || stateRegistration.trim().length > 0);
+      if (userType === 'transportadora') {
+        return baseValid && companyRntrc.trim().length > 0 && companyRntrcValidity.trim().length > 0;
+      }
+      return baseValid;
     }
   };
+
+  function isDocumentsStepValid() {
+    if (userType === 'caminhoneiro') {
+      return rgDoc !== null &&
+             cpfDoc !== null &&
+             cnhDoc !== null &&
+             rntrcDoc !== null &&
+             vehicleDoc !== null &&
+             addressDoc !== null &&
+             selfieDoc !== null;
+    }
+    const companyBase = cnpjDoc !== null && contractDoc !== null && addressDoc !== null;
+    if (userType === 'transportadora') {
+      return companyBase && rntrcDoc !== null;
+    }
+    return companyBase;
+  }
 
   function canProceedToNextStep() {
     switch (currentStep) {
@@ -313,7 +345,7 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
       case 'specific':
         return isSpecificStepValid();
       case 'documents':
-        return true;
+        return isDocumentsStepValid();
       default:
         return false;
     }
@@ -343,12 +375,8 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
     let authUserId: string | null = null;
 
     try {
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('🔐 UnifiedRegistration - CRIANDO AUTH USER');
-      console.log('═══════════════════════════════════════════════════════════');
 
       // Verificação preventiva: checar se usuário já existe
-      console.log('🔍 Verificando se usuário já existe...');
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('id, email')
@@ -361,11 +389,9 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
       }
       
       if (existingProfile) {
-        console.log('⚠️ Usuário já existe com este email:', existingProfile.id);
         throw new Error('Este email já está cadastrado. Faça login ou use outro email.');
       }
       
-      console.log('✅ Email disponível para cadastro');
 
       // Criar Auth User
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -385,20 +411,15 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
 
       const userId = authData.user.id;
       authUserId = userId; // Guardar ID para possível rollback
-      console.log('✅ Auth User criado:', userId);
-      console.log('📧 Email:', email.trim().toLowerCase());
+      // [REVISAR] console.log('📧 Email:', email.trim().toLowerCase());
 
       // Aguardar sessão e sincronização do Supabase Auth
-      console.log('⏳ Aguardando sincronização do Auth...');
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       // Atualizar dados no Authentication Users (display_name e phone)
-      console.log('📝 Atualizando dados no Authentication Users...');
       const displayName = userType === 'caminhoneiro' ? name.trim() : companyName.trim();
       const phoneFormatted = phone.replace(/\D/g, '');
       
-      console.log('📛 Display Name:', displayName);
-      console.log('📱 Phone:', phoneFormatted);
       
       const { error: updateAuthError } = await supabase.auth.updateUser({
         data: {
@@ -409,10 +430,8 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
       });
 
       if (updateAuthError) {
-        console.warn('⚠️ Aviso ao atualizar dados do Auth User:', updateAuthError);
         // Não bloquear o cadastro se falhar, apenas logar o aviso
       } else {
-        console.log('✅ Dados do Auth User atualizados com sucesso');
       }
 
       // Upload de avatar
@@ -423,7 +442,6 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           const result = await uploadAvatar(userId, profilePhoto);
           if (result.success && result.path) {
             avatarPath = result.path;
-            console.log('✅ Avatar uploadado:', avatarPath);
           }
         } catch (error) {
           console.error('❌ Erro ao fazer upload do avatar:', error);
@@ -432,14 +450,21 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
 
       // Upload de documentos
       const documentPaths: Record<string, string> = {};
-      const docsToUpload = userType === 'caminhoneiro' 
+      const docsToUpload = userType === 'caminhoneiro'
         ? [
+            { file: rgDoc, key: 'rg', name: 'RG' },
+            { file: cpfDoc, key: 'cpf', name: 'CPF' },
             { file: cnhDoc, key: 'cnh', name: 'CNH' },
-            { file: vehicleDoc, key: 'vehicleDocument', name: 'CRLV' }
+            { file: rntrcDoc, key: 'rntrc', name: 'RNTRC' },
+            { file: vehicleDoc, key: 'vehicleDocument', name: 'CRLV' },
+            { file: addressDoc, key: 'addressProof', name: 'Comprovante de Endereço' },
+            { file: selfieDoc, key: 'selfie', name: 'Selfie com RG' }
           ]
         : [
             { file: cnpjDoc, key: 'cnpjDocument', name: 'CNPJ' },
-            { file: contractDoc, key: 'contractSocial', name: 'Contrato Social' }
+            { file: contractDoc, key: 'contractSocial', name: 'Contrato Social' },
+            { file: addressDoc, key: 'addressProof', name: 'Comprovante de Endereço' },
+            { file: rntrcDoc, key: 'rntrc', name: 'RNTRC' }
           ];
 
       for (const doc of docsToUpload) {
@@ -449,7 +474,6 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
             const result = await uploadDocument(userId, doc.file, doc.key);
             if (result.success && result.path) {
               documentPaths[doc.key] = result.path;
-              console.log(`✅ ${doc.name} uploadado:`, result.path);
             }
           } catch (error) {
             console.error(`❌ Erro ao fazer upload de ${doc.name}:`, error);
@@ -458,11 +482,9 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
       }
 
       // Aguardar antes de criar profile
-      console.log('⏳ Aguardando antes de criar profile...');
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Criar Profile
-      console.log('📝 Criando profile...');
       const profileData = {
         id: userId,
         email: email.trim().toLowerCase(),
@@ -490,15 +512,6 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
         updated_at: new Date().toISOString()
       };
 
-      console.log('📊 Dados do Profile:', {
-        id: profileData.id,
-        email: profileData.email,
-        user_type: profileData.user_type,
-        name: profileData.name,
-        phone: profileData.phone,
-        city: profileData.city,
-        state: profileData.state
-      });
 
       // Usar UPSERT (insert or update) porque o Supabase tem um trigger que
       // cria automaticamente um registro básico na tabela profiles ao criar auth.user
@@ -514,15 +527,13 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
         throw new Error('Erro ao salvar perfil: ' + profileError.message);
       }
 
-      console.log('✅ Profile salvo com sucesso (upsert)');
+      // [REVISAR] console.log('✅ Profile salvo com sucesso (upsert)');
 
       // Aguardar antes de criar registro específico
-      console.log('⏳ Aguardando antes de criar registro específico...');
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Criar registro específico
       if (userType === 'caminhoneiro') {
-        console.log('📝 Salvando registro de motorista...');
         
         const driverData = {
           user_id: userId,
@@ -556,8 +567,9 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           preferred_routes: [],
           profile_image: avatarPath || null,
           current_location: null,
-          rntrc: null,
-          rntrc_expiry: null,
+          rg: rg.trim() || null,
+          rntrc: rntrc.trim() || null,
+          rntrc_expiry: rntrcValidity || null,
           vehicle_type: vehicleTypes.length > 0 ? vehicleTypes[0] : null,
           vehicle_capacity: null,
           trailer_type: null,
@@ -568,16 +580,6 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           updated_at: new Date().toISOString()
         };
 
-        console.log('📊 Dados do Driver:', {
-          user_id: driverData.user_id,
-          name: driverData.name,
-          cpf: driverData.cpf,
-          phone: driverData.phone,
-          cnh: driverData.cnh,
-          cnh_category: driverData.cnh_category,
-          vehicle_plate: driverData.vehicle_plate,
-          address: driverData.address
-        });
 
         // Usar UPSERT para evitar problemas com triggers ou tentativas duplicadas
         const { error: driverError } = await supabase
@@ -592,9 +594,8 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           throw new Error('Erro ao salvar dados do motorista: ' + driverError.message);
         }
 
-        console.log('✅ Registro de motorista salvo com sucesso (upsert)');
+        // [REVISAR] console.log('✅ Registro de motorista salvo com sucesso (upsert)');
       } else {
-        console.log('📝 Salvando registro de empresa...');
         
         const companyData = {
           user_id: userId,
@@ -602,8 +603,7 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           cnpj: cnpj.replace(/\D/g, '') || null,
           trading_name: tradeName.trim() || companyName.trim() || null,
           company_type: userType,
-          rntrc: rntrc.trim() || null,
-          rntrc_expiry: null,
+          rntrc: companyRntrc.trim() || null,
           phone: phone.replace(/\D/g, '') || null,
           corporate_email: email.trim().toLowerCase() || null, // ✅ CORRIGIDO: coluna 'email' não existe, usar corporate_email
           website: null,
@@ -621,11 +621,12 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           representative_cpf: representativeCpf.replace(/\D/g, '') || null,
           representative_email: email.trim().toLowerCase() || null,
           representative_phone: phone.replace(/\D/g, '') || null,
-          representative_role: 'Representante Legal',
-          representative_rg: null,
+          representative_role: representativeRole.trim() || 'Representante Legal',
+          representative_rg: representativeRg.trim() || null,
           representative_cnh: null,
-          state_registration: null,
-          municipal_registration: null,
+          state_registration: isentoIE ? 'ISENTO' : (stateRegistration.trim() || null),
+          municipal_registration: municipalRegistration.trim() || null,
+          rntrc_expiry: companyRntrcValidity || null,
           certifications: [],
           fleet_size: 0,
           operating_states: [state.trim()],
@@ -637,17 +638,6 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           updated_at: new Date().toISOString()
         };
 
-        console.log('📊 Dados da Company:', {
-          user_id: companyData.user_id,
-          company_name: companyData.company_name,
-          cnpj: companyData.cnpj,
-          company_type: companyData.company_type,
-          corporate_email: companyData.corporate_email, // ✅ CORRIGIDO: usar corporate_email
-          phone: companyData.phone,
-          representative_name: companyData.representative_name,
-          representative_cpf: companyData.representative_cpf,
-          address: companyData.address
-        });
 
         // Usar UPSERT para evitar problemas com triggers ou tentativas duplicadas
         const { error: companyError } = await supabase
@@ -662,22 +652,13 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           throw new Error('Erro ao salvar dados da empresa: ' + companyError.message);
         }
 
-        console.log('✅ Registro de empresa salvo com sucesso (upsert)');
+        // [REVISAR] console.log('✅ Registro de empresa salvo com sucesso (upsert)');
       }
 
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('✅ CADASTRO COMPLETO - TUDO SALVO COM SUCESSO!');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('📊 Resumo do cadastro:');
-      console.log('  - User ID:', userId);
-      console.log('  - Email:', email.trim().toLowerCase());
-      console.log('  - Tipo:', userType);
-      console.log('  - Nome:', userType === 'caminhoneiro' ? name.trim() : companyName.trim());
-      console.log('  - Telefone:', phone.replace(/\D/g, ''));
-      console.log('  - Cidade/Estado:', city.trim(), '/', state.trim());
-      console.log('  - Avatar:', avatarPath ? 'Sim' : 'Não');
-      console.log('  - Documentos:', Object.keys(documentPaths).length);
-      console.log('═══════════════════════════════════════════════════════════');
+      // [REVISAR] console.log('  - Email:', email.trim().toLowerCase());
+      // [REVISAR] console.log('  - Nome:', userType === 'caminhoneiro' ? name.trim() : companyName.trim());
+      // [REVISAR] console.log('  - Telefone:', phone.replace(/\D/g, ''));
+      // [REVISAR] console.log('  - Cidade/Estado:', city.trim(), '/', state.trim());
       
       toast.success('Cadastro completo! Bem-vindo ao MooveFretes!');
       
@@ -694,12 +675,10 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
       
       // Executar rollback se Auth User foi criado
       if (authUserId) {
-        console.log('🔄 Iniciando rollback...');
         
         try {
           // 1. Deletar registro específico (driver ou company)
           if (userType === 'caminhoneiro') {
-            console.log('🗑️ Deletando registro de motorista...');
             const { error: deleteDriverError } = await supabase
               .from('drivers')
               .delete()
@@ -708,10 +687,8 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
             if (deleteDriverError) {
               console.error('❌ Erro ao deletar driver:', deleteDriverError);
             } else {
-              console.log('✅ Driver deletado');
             }
           } else {
-            console.log('🗑️ Deletando registro de empresa...');
             const { error: deleteCompanyError } = await supabase
               .from('companies')
               .delete()
@@ -720,12 +697,10 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
             if (deleteCompanyError) {
               console.error('❌ Erro ao deletar company:', deleteCompanyError);
             } else {
-              console.log('✅ Company deletada');
             }
           }
           
           // 2. Deletar profile
-          console.log('🗑️ Deletando profile...');
           const { error: deleteProfileError } = await supabase
             .from('profiles')
             .delete()
@@ -734,17 +709,11 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           if (deleteProfileError) {
             console.error('❌ Erro ao deletar profile:', deleteProfileError);
           } else {
-            console.log('✅ Profile deletado');
           }
           
           // 3. Fazer logout para limpar sessão
-          console.log('🔄 Fazendo logout para limpar sessão...');
           await supabase.auth.signOut();
-          console.log('✅ Logout executado');
           
-          console.log('✅ Rollback completo executado');
-          console.log('⚠️ IMPORTANTE: O Auth User não pode ser deletado do client-side.');
-          console.log('⚠️ Usuário deve usar opção "Esqueci minha senha" ou contatar suporte.');
         } catch (rollbackError) {
           console.error('❌ Erro durante rollback:', rollbackError);
         }
@@ -772,7 +741,8 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
                 Foto de Perfil
-                <span className="text-gray-400 text-xs">(opcional)</span>
+                {userType === 'caminhoneiro' && <span className="text-red-500">*</span>}
+                {userType !== 'caminhoneiro' && <span className="text-gray-400 text-xs">(opcional)</span>}
               </Label>
               <input
                 type="file"
@@ -1205,16 +1175,30 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
                 required
               />
 
+              {/* RG */}
+              <div className="space-y-2">
+                <Label htmlFor="rg">
+                  RG <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="rg"
+                  value={rg}
+                  onChange={(e) => setRg(e.target.value)}
+                  placeholder="00.000.000-0"
+                />
+              </div>
+
               {/* Data de Nascimento */}
               <div className="space-y-2">
                 <Label htmlFor="birthDate">
-                  Data de Nascimento <span className="text-gray-400 text-xs">(opcional)</span>
+                  Data de Nascimento <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="birthDate"
                   type="date"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
+                  required
                 />
               </div>
 
@@ -1259,14 +1243,43 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
 
               <div className="space-y-2">
                 <Label htmlFor="cnhValidity">
-                  Validade da CNH <span className="text-gray-400 text-xs">(opcional)</span>
+                  Validade da CNH <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="cnhValidity"
                   type="date"
                   value={cnhValidity}
                   onChange={(e) => setCnhValidity(e.target.value)}
+                  required
                 />
+              </div>
+
+              {/* RNTRC */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rntrc">
+                    RNTRC <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="rntrc"
+                    value={rntrc}
+                    onChange={(e) => setRntrc(e.target.value)}
+                    placeholder="Número do RNTRC"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rntrcValidity">
+                    Validade RNTRC <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="rntrcValidity"
+                    type="date"
+                    value={rntrcValidity}
+                    onChange={(e) => setRntrcValidity(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               {/* Veículo */}
@@ -1287,18 +1300,19 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="vehicleModel">
-                    Modelo <span className="text-gray-400 text-xs">(opcional)</span>
+                    Modelo <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="vehicleModel"
                     value={vehicleModel}
                     onChange={(e) => setVehicleModel(e.target.value)}
                     placeholder="Ex: Volvo FH"
+                    required
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="vehicleYear">
-                    Ano <span className="text-gray-400 text-xs">(opcional)</span>
+                    Ano <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="vehicleYear"
@@ -1306,6 +1320,7 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
                     onChange={(e) => setVehicleYear(e.target.value)}
                     placeholder="Ex: 2020"
                     maxLength={4}
+                    required
                   />
                 </div>
               </div>
@@ -1325,6 +1340,16 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
               <CNPJInput
                 value={cnpj}
                 onChange={setCnpj}
+                onCompanyData={(data) => {
+                  setCompanyName(data.razao_social || '');
+                  setTradeName(data.nome_fantasia || '');
+                  setStreet(data.logradouro || '');
+                  setNumber(data.numero || '');
+                  setNeighborhood(data.bairro || '');
+                  setCity(data.municipio || '');
+                  setState(data.uf || '');
+                  setCep(data.cep || '');
+                }}
                 label="CNPJ"
                 required
               />
@@ -1360,6 +1385,46 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
                 />
               </div>
 
+              {/* Inscrição Estadual */}
+              <div className="space-y-2">
+                <Label htmlFor="stateRegistration">
+                  Inscrição Estadual {!isentoIE && <span className="text-red-500">*</span>}
+                </Label>
+                <Input
+                  id="stateRegistration"
+                  value={stateRegistration}
+                  onChange={(e) => setStateRegistration(e.target.value)}
+                  placeholder="000.000.000.000"
+                  disabled={isentoIE}
+                  required={!isentoIE}
+                />
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={isentoIE}
+                    onChange={(e) => {
+                      setIsentoIE(e.target.checked);
+                      if (e.target.checked) setStateRegistration('');
+                    }}
+                    className="rounded"
+                  />
+                  Isento de Inscrição Estadual
+                </label>
+              </div>
+
+              {/* Inscrição Municipal */}
+              <div className="space-y-2">
+                <Label htmlFor="municipalRegistration">
+                  Inscrição Municipal <span className="text-gray-400 text-xs">(opcional)</span>
+                </Label>
+                <Input
+                  id="municipalRegistration"
+                  value={municipalRegistration}
+                  onChange={(e) => setMunicipalRegistration(e.target.value)}
+                  placeholder="000000"
+                />
+              </div>
+
               {/* Representante Legal */}
               <div className="space-y-2">
                 <Label htmlFor="representativeName">
@@ -1386,17 +1451,67 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
                 required
               />
 
-              {/* RNTRC */}
+              {/* RG do Representante */}
               <div className="space-y-2">
-                <Label htmlFor="rntrc">
-                  RNTRC <span className="text-gray-400 text-xs">(opcional)</span>
+                <Label htmlFor="representativeRg">
+                  RG do Representante <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="rntrc"
-                  value={rntrc}
-                  onChange={(e) => setRntrc(e.target.value)}
-                  placeholder="Número do RNTRC"
+                  id="representativeRg"
+                  value={representativeRg}
+                  onChange={(e) => setRepresentativeRg(e.target.value)}
+                  placeholder="00.000.000-0"
+                  required
                 />
+              </div>
+
+              {/* Tipo de Vínculo */}
+              <div className="space-y-2">
+                <Label htmlFor="representativeRole">
+                  Tipo de Vínculo <span className="text-red-500">*</span>
+                </Label>
+                <select
+                  id="representativeRole"
+                  value={representativeRole}
+                  onChange={(e) => setRepresentativeRole(e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  required
+                >
+                  <option value="">Selecione</option>
+                  <option value="Sócio">Sócio</option>
+                  <option value="Diretor">Diretor</option>
+                  <option value="Procurador">Procurador</option>
+                  <option value="Administrador">Administrador</option>
+                  <option value="Proprietário">Proprietário</option>
+                </select>
+              </div>
+
+              {/* RNTRC */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="companyRntrc">
+                    RNTRC {userType === 'transportadora' ? <span className="text-red-500">*</span> : <span className="text-gray-400 text-xs">(opcional)</span>}
+                  </Label>
+                  <Input
+                    id="companyRntrc"
+                    value={companyRntrc}
+                    onChange={(e) => setCompanyRntrc(e.target.value)}
+                    placeholder="Número do RNTRC"
+                    required={userType === 'transportadora'}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="companyRntrcValidity">
+                    Validade do RNTRC {userType === 'transportadora' ? <span className="text-red-500">*</span> : <span className="text-gray-400 text-xs">(opcional)</span>}
+                  </Label>
+                  <Input
+                    id="companyRntrcValidity"
+                    type="date"
+                    value={companyRntrcValidity}
+                    onChange={(e) => setCompanyRntrcValidity(e.target.value)}
+                    required={userType === 'transportadora'}
+                  />
+                </div>
               </div>
             </div>
           );
@@ -1406,88 +1521,69 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
         return (
           <div className="space-y-6">
             <p className="text-sm text-muted-foreground">
-              Envie os documentos necessários para validação do seu cadastro. Todos os documentos são opcionais, mas recomendados.
+              Envie os documentos necessários para validação do seu cadastro.
             </p>
 
             {userType === 'caminhoneiro' ? (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="cnhDoc">
-                    CNH <span className="text-gray-400 text-xs">(opcional)</span>
-                  </Label>
-                  <Input
-                    id="cnhDoc"
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => setCnhDoc(e.target.files?.[0] || null)}
-                    className="cursor-pointer"
-                  />
-                  {cnhDoc && (
-                    <p className="text-xs text-green-500 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      {cnhDoc.name}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="vehicleDoc">
-                    CRLV (Documento do Veículo) <span className="text-gray-400 text-xs">(opcional)</span>
-                  </Label>
-                  <Input
-                    id="vehicleDoc"
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => setVehicleDoc(e.target.files?.[0] || null)}
-                    className="cursor-pointer"
-                  />
-                  {vehicleDoc && (
-                    <p className="text-xs text-green-500 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      {vehicleDoc.name}
-                    </p>
-                  )}
-                </div>
+                {[
+                  { id: 'rgDoc', label: 'Foto do RG (Frente e Verso)', file: rgDoc, setFile: setRgDoc },
+                  { id: 'cpfDoc', label: 'Foto do CPF', file: cpfDoc, setFile: setCpfDoc },
+                  { id: 'cnhDoc', label: 'Foto da CNH (Frente e Verso)', file: cnhDoc, setFile: setCnhDoc },
+                  { id: 'rntrcDoc', label: 'Foto do RNTRC', file: rntrcDoc, setFile: setRntrcDoc },
+                  { id: 'vehicleDoc', label: 'CRLV (Documento do Veículo)', file: vehicleDoc, setFile: setVehicleDoc },
+                  { id: 'addressDoc', label: 'Comprovante de Endereço', file: addressDoc, setFile: setAddressDoc },
+                  { id: 'selfieDoc', label: 'Selfie segurando o RG', file: selfieDoc, setFile: setSelfieDoc },
+                ].map(({ id, label, file, setFile }) => (
+                  <div key={id} className="space-y-2">
+                    <Label htmlFor={id}>
+                      {label} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id={id}
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setFile(e.target.files?.[0] || null)}
+                      className="cursor-pointer"
+                    />
+                    {file && (
+                      <p className="text-xs text-green-500 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        {file.name}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </>
             ) : (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="cnpjDoc">
-                    Cartão CNPJ <span className="text-gray-400 text-xs">(opcional)</span>
-                  </Label>
-                  <Input
-                    id="cnpjDoc"
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => setCnpjDoc(e.target.files?.[0] || null)}
-                    className="cursor-pointer"
-                  />
-                  {cnpjDoc && (
-                    <p className="text-xs text-green-500 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      {cnpjDoc.name}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="contractDoc">
-                    Contrato Social <span className="text-gray-400 text-xs">(opcional)</span>
-                  </Label>
-                  <Input
-                    id="contractDoc"
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => setContractDoc(e.target.files?.[0] || null)}
-                    className="cursor-pointer"
-                  />
-                  {contractDoc && (
-                    <p className="text-xs text-green-500 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      {contractDoc.name}
-                    </p>
-                  )}
-                </div>
+                {[
+                  { id: 'cnpjDoc', label: 'Cartão CNPJ', file: cnpjDoc, setFile: setCnpjDoc, required: true },
+                  { id: 'contractDoc', label: 'Contrato Social', file: contractDoc, setFile: setContractDoc, required: true },
+                  { id: 'addressDoc', label: 'Comprovante de Endereço', file: addressDoc, setFile: setAddressDoc, required: true },
+                  ...(userType === 'transportadora'
+                    ? [{ id: 'rntrcDoc', label: 'Certificado RNTRC', file: rntrcDoc, setFile: setRntrcDoc, required: true }]
+                    : []),
+                ].map(({ id, label, file, setFile, required }) => (
+                  <div key={id} className="space-y-2">
+                    <Label htmlFor={id}>
+                      {label} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id={id}
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setFile(e.target.files?.[0] || null)}
+                      className="cursor-pointer"
+                    />
+                    {file && (
+                      <p className="text-xs text-green-500 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        {file.name}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </>
             )}
           </div>

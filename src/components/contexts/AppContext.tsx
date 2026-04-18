@@ -234,7 +234,6 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        console.log('AppProvider: Initializing with Supabase backend');
         
         // Import Supabase client
         const { getSupabaseClient } = await import('../../utils/supabase/client');
@@ -248,7 +247,6 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
         }
         
         if (session?.user) {
-          console.log('AppProvider: Found existing session for user:', session.user.email);
           
           // Load user profile from database (profiles table)
           const { data: profile } = await supabase
@@ -278,10 +276,6 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
                 
                 // ✅ AUTO-SINCRONIZAÇÃO: Se profiles.name está diferente de companies.trading_name, corrigir automaticamente
                 if (profile.name !== displayName) {
-                  console.log('🔄 [AppContext] Detectada inconsistência de dados:');
-                  console.log('   profiles.name:', profile.name);
-                  console.log('   companies.trading_name:', displayName);
-                  console.log('   → Sincronizando automaticamente...');
                   
                   // Atualizar profiles.name para manter sincronizado
                   const { error: syncError } = await supabase
@@ -295,7 +289,6 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
                   if (syncError) {
                     console.error('❌ [AppContext] Erro ao sincronizar profiles:', syncError);
                   } else {
-                    console.log('✅ [AppContext] profiles.name sincronizado com sucesso!');
                   }
                 }
               }
@@ -325,7 +318,6 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
             };
             
             dispatch({ type: 'SET_USER', payload: user });
-            console.log('AppProvider: User loaded successfully with Supabase Auth ID:', session.user.id);
             
             // ✅ CARREGAR NOTIFICAÇÕES INICIAIS
             try {
@@ -348,21 +340,18 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
                     data: n.metadata
                   }))
                 });
-                console.log('✅ [AppContext] Notificações carregadas:', notificationsResponse.data.length);
               }
             } catch (error) {
               console.error('❌ [AppContext] Erro ao carregar notificações:', error);
             }
           }
         } else {
-          console.log('AppProvider: No active session found');
         }
         
         setConnectionStatus('online');
         setLastSync(new Date().toISOString());
         dispatch({ type: 'SET_LOADING', payload: false });
 
-        console.log('AppProvider: Backend connection established');
 
       } catch (error) {
         console.error('AppProvider: Error initializing app:', error);
@@ -388,7 +377,6 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
         const { database } = await import('../../utils/database');
         const supabase = getSupabaseClient();
 
-        console.log('🔔 [AppContext] Iniciando Realtime para notificações do usuário:', state.user.id);
 
         // Criar canal de Realtime
         let reconnectTimeout: NodeJS.Timeout | null = null;
@@ -413,7 +401,6 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
                 filter: `user_id=eq.${state.user.id}`
               },
               async (payload) => {
-                console.log('🔔 [AppContext] Notificação em tempo real:', payload);
 
                 // Recarregar todas as notificações do usuário
                 const response = await database.notifications.getByUser(state.user!.id);
@@ -497,13 +484,11 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
 
   // ✅ Listener para eventos de notificação do hook global (localStorage)
   useEffect(() => {
-    console.log('🎯 [AppContext] Listener de notificações - state.user:', state.user?.id || 'UNDEFINED');
     
     if (!state.user) return;
 
     const handleNotificationCreated = async (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('🔔 [AppContext] Evento de notificação detectado:', customEvent.detail);
       
       // Recarregar notificações do localStorage
       try {
@@ -521,16 +506,13 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
             data: n.metadata
           }));
           
-          console.log('🔄 [AppContext] Notificações recarregadas:', notificationsWithTimestamp.length);
           
           dispatch({ 
             type: 'SET_NOTIFICATIONS', 
             payload: [...notificationsWithTimestamp] // Force new array reference
           });
           
-          console.log('✅ [AppContext] Estado atualizado com', notificationsWithTimestamp.length, 'notificações');
         } else {
-          console.log('⚠️ [AppContext] Nenhuma notificação encontrada');
         }
       } catch (error) {
         console.error('❌ [AppContext] Erro ao recarregar notificações:', error);
@@ -539,13 +521,11 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
 
     if (typeof window !== 'undefined') {
       window.addEventListener('notification-created', handleNotificationCreated);
-      console.log('👂 [AppContext] Escutando eventos de notificação para user:', state.user.id);
     }
 
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('notification-created', handleNotificationCreated);
-        console.log('🔇 [AppContext] Removendo listener de notificações');
       }
     };
   }, [state.user?.id]);
@@ -569,7 +549,6 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
         description: notification.message,
         action: notification.actions?.[0] ? {
           label: notification.actions[0].label,
-          onClick: () => console.log('Action clicked:', notification.actions?.[0].action)
         } : undefined
       });
     },

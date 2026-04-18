@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, AlertTriangle, Star, UserMinus, Package } from 'lucide-react';
 import { AdminDataTable } from './AdminDataTable';
-import { mockReviews, type AdminReview } from './admin-mock-data';
+import type { AdminReview } from './admin-mock-data';
+import { fetchAdminReviews, updateReviewStatus } from '../../utils/admin-supabase-service';
 import { toast } from 'sonner@2.0.3';
 
 const statusColors: Record<string, string> = {
@@ -16,13 +17,20 @@ const statusLabels: Record<string, string> = {
 };
 
 export function AdminReviews() {
-  const [reviews, setReviews] = useState(mockReviews);
+  const [reviews, setReviews] = useState<AdminReview[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterTab, setFilterTab] = useState<'all' | 'reported' | 'pending'>('all');
+
+  useEffect(() => {
+    fetchAdminReviews().then((data) => { setReviews(data); setLoading(false); });
+  }, []);
 
   const filtered = filterTab === 'all' ? reviews : filterTab === 'reported' ? reviews.filter(r => r.reported) : reviews.filter(r => r.status === 'pending_review');
 
-  const handleHide = (r: AdminReview) => {
-    setReviews(prev => prev.map(rv => rv.id === r.id ? { ...rv, status: rv.status === 'hidden' ? 'visible' : 'hidden' as any } : rv));
+  const handleHide = async (r: AdminReview) => {
+    const newStatus = r.status === 'hidden' ? 'visible' : 'hidden';
+    await updateReviewStatus(r.id, newStatus as AdminReview['status']);
+    setReviews(prev => prev.map(rv => rv.id === r.id ? { ...rv, status: newStatus as AdminReview['status'] } : rv));
     toast.success(r.status === 'hidden' ? 'Avaliação restaurada' : 'Avaliação ocultada');
   };
 
@@ -101,6 +109,8 @@ export function AdminReviews() {
       ),
     },
   ];
+
+  if (loading) return <div className="flex items-center justify-center py-12 text-[var(--muted-foreground)]">Carregando avaliações...</div>;
 
   return (
     <div className="space-y-4">

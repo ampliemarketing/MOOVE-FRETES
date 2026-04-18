@@ -13,12 +13,10 @@ export function NetworkStatus() {
         setOnline(true);
         setShowBanner(true);
         setTimeout(() => setShowBanner(false), 3000);
-        console.log('✅ Conexão restaurada');
       },
       () => {
         setOnline(false);
         setShowBanner(true);
-        console.log('⚠️ Conexão perdida');
       }
     );
 

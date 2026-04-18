@@ -19,7 +19,6 @@ export function PWAInstallBanner() {
   const handleInstall = async () => {
     const success = await install();
     if (success) {
-      console.log('✅ App instalado com sucesso!');
     }
   };
 

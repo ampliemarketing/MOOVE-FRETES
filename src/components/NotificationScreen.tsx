@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useApp, type Notification } from './contexts/AppContext';
 import { EmptyState, Alert } from './ui/enhanced-components';
+import { LoadingSpinner } from './LoadingSpinner';
 import type { User } from './contexts/AppContext';
 import { toast } from 'sonner@2.0.3';
 
@@ -39,12 +40,13 @@ export function NotificationScreen({ open, onOpenChange, user }: NotificationScr
   const [filter, setFilter] = useState<FilterType>('all');
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const [localNotifications, setLocalNotifications] = useState<Notification[]>([]);
   
   // ✅ Sincronizar notificações do AppContext com estado local
   useEffect(() => {
-    console.log('🔄 [NotificationScreen] Notificações do AppContext mudaram:', state.notifications?.length);
     setLocalNotifications(state.notifications || []);
+    setInitialized(true);
   }, [state.notifications]);
   
   // ✅ Usar notificações do estado local (sincronizadas automaticamente)
@@ -183,7 +185,6 @@ export function NotificationScreen({ open, onOpenChange, user }: NotificationScr
         });
         break;
       default:
-        console.log('Unknown action:', actionType);
     }
     
     if (!notification.read) {
@@ -301,8 +302,9 @@ export function NotificationScreen({ open, onOpenChange, user }: NotificationScr
 
         {/* Notifications List */}
         <div className="px-4 space-y-3">
+          {(loading || !initialized) && <LoadingSpinner message="Carregando notificações..." />}
           <AnimatePresence mode="popLayout">
-            {filteredNotifications.length > 0 ? (
+            {initialized && !loading && filteredNotifications.length > 0 ? (
               filteredNotifications.map((notification, index) => (
                 <motion.div
                   key={notification.id}
@@ -384,7 +386,6 @@ export function NotificationScreen({ open, onOpenChange, user }: NotificationScr
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     // Mark as unread functionality
-                                    console.log('Mark as unread');
                                   }}
                                   className="h-8 px-2 text-xs"
                                 >
@@ -417,7 +418,7 @@ export function NotificationScreen({ open, onOpenChange, user }: NotificationScr
                   </Card>
                 </motion.div>
               ))
-            ) : (
+            ) : initialized && !loading ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -426,12 +427,12 @@ export function NotificationScreen({ open, onOpenChange, user }: NotificationScr
                   icon={<Bell className="w-12 h-12" />}
                   title="Nenhuma notificação"
                   description={
-                    filter === 'all' 
+                    filter === 'all'
                       ? 'Você está em dia! Nenhuma notificação no momento.'
                       : `Nenhuma notificação encontrada para o filtro "${filterOptions.find(f => f.value === filter)?.label}".`
                   }
                   action={
-                    filter !== 'all' 
+                    filter !== 'all'
                       ? {
                           label: 'Ver Todas',
                           onClick: () => setFilter('all'),
@@ -441,7 +442,7 @@ export function NotificationScreen({ open, onOpenChange, user }: NotificationScr
                   }
                 />
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </div>
       </SheetContent>

@@ -23,7 +23,6 @@ export const DriverAvailabilityDebugPanel: React.FC<DriverAvailabilityDebugPanel
 
   const checkStatus = async () => {
     setLoading(true);
-    console.log('🔍 Verificando status do motorista...');
     
     try {
       const result = await checkDriverExists(userId);

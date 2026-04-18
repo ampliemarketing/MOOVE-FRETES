@@ -152,7 +152,6 @@ export async function withOfflineFallback<T>(
     
     return result;
   } catch (error) {
-    console.warn(`⚠️ Erro em ${operationName}, usando modo offline:`, error instanceof Error ? error.message : 'Erro desconhecido');
     
     // Marcar Supabase como indisponível
     isSupabaseAvailable = false;

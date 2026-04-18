@@ -140,7 +140,6 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
   useEffect(() => {
     if (initialDeepLink) {
       const { tab, entityId, entityType } = getTabForDeepLink(initialDeepLink);
-      console.log('🔗 [MainDashboard] Processando deep link:', { tab, entityId, entityType });
       
       setDeepLinkEntityId(entityId);
       setDeepLinkEntityType(entityType);
@@ -163,7 +162,6 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
   // 🔗 Handle in-app deep link navigation (from chat links, etc.)
   const handleDeepLinkNavigation = (deepLink: DeepLink) => {
     const { tab, entityId, entityType } = getTabForDeepLink(deepLink);
-    console.log('🔗 [MainDashboard] Navegação via deep link interno:', { tab, entityId, entityType });
     
     setDeepLinkEntityId(entityId);
     setDeepLinkEntityType(entityType);
@@ -268,7 +266,6 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
       const notifications = response.data || [];
       setRecentActivity(notifications);
       
-      console.log('✅ Atividades recentes carregadas:', notifications.length);
     } catch (error) {
       console.error('❌ Erro ao carregar atividade recente:', error);
     } finally {
@@ -342,12 +339,12 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
   };
 
   const handleOpenChat = (userId: string, userName: string, prefilledMessage?: string) => {
-    console.log('💬 [MainDashboard] handleOpenChat chamado!', {
-      userId,
-      userName,
-      hasPrefilledMessage: !!prefilledMessage,
-      messagePreview: prefilledMessage ? prefilledMessage.substring(0, 100) + '...' : null,
-    });
+    // [REVISAR] console.log('💬 [MainDashboard] handleOpenChat chamado!', {
+    // userId,
+    // userName,
+    // hasPrefilledMessage: !!prefilledMessage,
+    // messagePreview: prefilledMessage ? prefilledMessage.substring(0, 100) + '...' : null,
+    // });
     
     // Abrir chat diretamente com um usuário específico
     setSelectedFreightForChat(null); // Limpar frete selecionado
@@ -359,13 +356,6 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
 
   const handleNavigateToChat = (freightId: string, freightData?: any) => {
     // 🔍 DEBUG: Log dos dados recebidos
-    console.log('🔍 [handleNavigateToChat] Dados recebidos:', {
-      freightId,
-      hasFreightData: !!freightData,
-      customerId: freightData?.customerId,
-      customerName: freightData?.customerName,
-      allKeys: freightData ? Object.keys(freightData) : []
-    });
 
     // Abrir chat com o publisher do frete
     if (freightData?.customerId) {
@@ -398,12 +388,12 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
       setActiveTab('chat');
       toast.success(`Abrindo chat com ${freightData.customerName || 'empresa'}`);
       
-      console.log('✅ [handleNavigateToChat] Chat aberto com:', {
-        userId: freightData.customerId,
-        userName: freightData.customerName,
-        hasAutoMessage: true,
-        messagePreview: autoMessage.substring(0, 50) + '...'
-      });
+      // [REVISAR] console.log('✅ [handleNavigateToChat] Chat aberto com:', {
+      // userId: freightData.customerId,
+      // userName: freightData.customerName,
+      // hasAutoMessage: true,
+      // messagePreview: autoMessage.substring(0, 50) + '...'
+      // });
     } else {
       console.error('❌ [handleNavigateToChat] customerId não encontrado:', freightData);
       toast.error('Não foi possível abrir o chat - dados do frete incompletos');
@@ -417,7 +407,6 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
   };
 
   const handleViewFreight = (freightId: string) => {
-    console.log('👁️ [MainDashboard] Navegando para detalhes do frete:', freightId);
     setSelectedFreightForQuote(freightId);
     setActiveTab('all-freights');
     toast.success('Abrindo detalhes do frete');
@@ -468,8 +457,8 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
     // Sub-itens de Motoristas (para que o título funcione corretamente)
     { id: 'all-drivers', label: 'Todos os Motoristas', icon: Users },
     { id: 'published-routes', label: 'Rotas Publicadas', icon: Navigation },
-    { id: 'chat', label: 'Chat', icon: MessageSquare },
-    { id: 'social', label: 'Rede Social', icon: Heart }
+    { id: 'chat', label: 'Chat', icon: MessageSquare }
+    // { id: 'social', label: 'Rede Social', icon: Heart } // temporariamente removido
   ];
 
 

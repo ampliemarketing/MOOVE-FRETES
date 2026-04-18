@@ -28,7 +28,7 @@ import type { User as AppUser } from './contexts/AppContext';
 import type { UnifiedUserProfile } from '../utils/user-profile-helper';
 import { RatingDialog } from './RatingDialog';
 import { DriverDetailsSheet } from './DriverDetailsSheet';
-import { haversineDistance, getCityCoordinates } from '../utils/geo-utils';
+
 import { generateDeepLinkUrl } from '../utils/deep-link';
 import { getAvatarUrl } from '../utils/storage-helper';
 
@@ -76,7 +76,6 @@ interface Driver {
   location: {
     city: string;
     state: string;
-    coordinates?: [number, number];
   };
   destination?: {
     city: string;
@@ -124,7 +123,7 @@ export function DriversScreen({ onBack, initialFilters, initialView, user, onOpe
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [showDriverDetails, setShowDriverDetails] = useState(false);
   const [showMap, setShowMap] = useState(false);
-  const [sortBy, setSortBy] = useState<'rating' | 'price' | 'distance' | 'trips'>('rating');
+  const [sortBy, setSortBy] = useState<'rating' | 'price' | 'trips'>('rating');
   const [isFavorited, setIsFavorited] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -148,13 +147,6 @@ export function DriversScreen({ onBack, initialFilters, initialView, user, onOpe
   
   // 🔍 DEBUG: Verificar se onOpenChat está chegando
   useEffect(() => {
-    console.log('🟢 [DriversScreen] Props recebidas:', {
-      hasOnOpenChat: !!onOpenChat,
-      onOpenChatType: typeof onOpenChat,
-      hasUser: !!user,
-      userId: user?.id,
-      userName: user?.name
-    });
   }, [onOpenChat, user]);
   
   // Carregar favoritos do usuário
@@ -248,7 +240,6 @@ export function DriversScreen({ onBack, initialFilters, initialView, user, onOpe
           location: {
             city: d.currentLocation?.city || 'Desconhecido',
             state: d.currentLocation?.state || 'N/A',
-            coordinates: [d.currentLocation?.lng || 0, d.currentLocation?.lat || 0] as [number, number],
           },
           availability: d.status as 'available' | 'busy' | 'offline',
           verified: Boolean(d.cnh),
@@ -277,11 +268,6 @@ export function DriversScreen({ onBack, initialFilters, initialView, user, onOpe
 
   // 🔍 DEBUG: Log para verificar quantos motoristas estão sendo carregados
   useEffect(() => {
-    console.log('📊 [DriversScreen] Total de motoristas:', {
-      dbDrivers: dbDrivers?.length || 0,
-      driversWithRoutes: driversWithRoutes.length,
-      drivers: drivers.length
-    });
   }, [dbDrivers, driversWithRoutes, drivers]);
 
   const filteredDrivers = drivers.filter(driver => {
@@ -314,23 +300,6 @@ export function DriversScreen({ onBack, initialFilters, initialView, user, onOpe
         const searchState = driverFilters.destination.state.toLowerCase();
         return routeLower.includes(searchCity) && routeLower.includes(searchState);
       });
-
-    // ✅ Filtro de raio (distância) - requer origem selecionada + coordenadas do motorista
-    let matchesRadius = true;
-    if (driverFilters.radius && driverFilters.location.city && driver.location.coordinates) {
-      const originCoords = getCityCoordinates(driverFilters.location.city, driverFilters.location.state);
-      if (originCoords) {
-        const [driverLng, driverLat] = driver.location.coordinates;
-        // Ignorar motoristas sem coordenadas válidas (0,0)
-        if (driverLat !== 0 || driverLng !== 0) {
-          const distance = haversineDistance(
-            originCoords.lat, originCoords.lng,
-            driverLat, driverLng
-          );
-          matchesRadius = distance <= parseInt(driverFilters.radius);
-        }
-      }
-    }
 
     // ✅ Filtro de disponibilidade - sidebar E toolbar badges combinados
     const sidebarAvailabilityPass = 
@@ -383,7 +352,7 @@ export function DriversScreen({ onBack, initialFilters, initialView, user, onOpe
     const matchesFavorites = !driverFilters.showOnlyFavorites || 
       favorites.has(driver.user_id || driver.id);
 
-    return matchesSearch && matchesLocation && matchesDestination && matchesRadius && matchesAvailability && 
+    return matchesSearch && matchesLocation && matchesDestination && matchesAvailability &&
            matchesVerified && matchesRating && matchesVehicleType && matchesTrailerType && matchesState && matchesFavorites;
   });
 
@@ -393,8 +362,6 @@ export function DriversScreen({ onBack, initialFilters, initialView, user, onOpe
         return b.rating - a.rating;
       case 'price':
         return a.priceRange.min - b.priceRange.min;
-      case 'distance':
-        return 0; // Would calculate actual distance
       case 'trips':
         return b.totalTrips - a.totalTrips;
       default:
@@ -408,7 +375,6 @@ export function DriversScreen({ onBack, initialFilters, initialView, user, onOpe
   const driversWithUrls = useMemo(() => {
     if (sortedDrivers.length === 0) return [];
     
-    console.log('🔄 [DriversScreen] Pré-processando URLs para', sortedDrivers.length, 'motoristas');
     
     return sortedDrivers.map(driver => {
       const path = driver.avatarUrl;
@@ -434,11 +400,9 @@ export function DriversScreen({ onBack, initialFilters, initialView, user, onOpe
     if (initialSelectedDriverId && driversWithRoutes.length > 0) {
       const targetDriver = driversWithRoutes.find(d => d.id === initialSelectedDriverId);
       if (targetDriver) {
-        console.log('🔗 [DriversScreen] Auto-selecionando motorista via deep link:', targetDriver.name);
         setSelectedDriver(targetDriver);
         setShowDriverDetails(true);
       } else {
-        console.warn('🔗 [DriversScreen] Motorista não encontrado para deep link:', initialSelectedDriverId);
         toast.error('Motorista não encontrado');
       }
     }
@@ -484,7 +448,6 @@ ${generateDeepLinkUrl('profile', userId)}
     const phone = driver.phone.replace(/\D/g, '');
     const url = `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(message)}`;
     
-    console.log('📱 [WhatsApp Debug] URL Final:', url);
     
     window.open(url, '_blank');
     toast.success(`Abrindo WhatsApp para ${driver.name}`);
@@ -824,17 +787,9 @@ ${generateDeepLinkUrl('profile', userId)}
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      console.log('🔵 [DriversScreen] Botão Chat clicado!', {
-                                        hasOnOpenChat: !!onOpenChat,
-                                        driverId: driver.id,
-                                        driverUserId: driver.user_id,
-                                        driverName: driver.name,
-                                        willUse: driver.user_id || driver.id
-                                      });
                                       if (onOpenChat) {
                                         // ✅ CORRIGIDO: usar user_id ao invés de id da tabela drivers
                                         onOpenChat(driver.user_id || driver.id, driver.name);
-                                        console.log('✅ [DriversScreen] onOpenChat chamado com sucesso!');
                                       } else {
                                         console.error('❌ [DriversScreen] onOpenChat NÃO ESTÁ DEFINIDO!');
                                       }
@@ -994,17 +949,9 @@ ${generateDeepLinkUrl('profile', userId)}
                 <div className="grid grid-cols-4 gap-2">
                   <Button 
                     onClick={() => {
-                      console.log('🔵 [DriversScreen Modal] Botão Chat clicado!', {
-                        hasOnOpenChat: !!onOpenChat,
-                        driverId: selectedDriver.id,
-                        driverUserId: selectedDriver.user_id,
-                        driverName: selectedDriver.name,
-                        willUse: selectedDriver.user_id || selectedDriver.id
-                      });
                       if (onOpenChat) {
                         // ✅ CORRIGIDO: usar user_id ao invés de id da tabela drivers
                         onOpenChat(selectedDriver.user_id || selectedDriver.id, selectedDriver.name);
-                        console.log('✅ [DriversScreen Modal] onOpenChat chamado com sucesso!');
                       } else {
                         console.error('❌ [DriversScreen Modal] onOpenChat NÃO ESTÁ DEFINIDO!');
                       }
@@ -1276,7 +1223,6 @@ ${generateDeepLinkUrl('profile', userId)}
             toast.success('Avaliação enviada!');
             
             // 🔄 RECARREGAR a lista de motoristas para atualizar o reviewCount
-            console.log('🔄 [DriversScreen] Recarregando motoristas após avaliação...');
             await refresh();
           }}
         />

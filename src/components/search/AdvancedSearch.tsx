@@ -34,7 +34,6 @@ interface LogisticSearchFilters {
   origin: string;
   destination: string;
   type: 'all' | 'freights' | 'drivers' | 'companies';
-  radius: number;
   dateRange: {
     start: string;
     end: string;
@@ -204,7 +203,6 @@ const defaultFilters: LogisticSearchFilters = {
   origin: '',
   destination: '',
   type: 'all',
-  radius: 50,
   dateRange: {
     start: '',
     end: ''

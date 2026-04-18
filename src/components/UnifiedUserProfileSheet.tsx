@@ -53,16 +53,16 @@ export function UnifiedUserProfileSheet({
   // 🔍 DEBUG: Verificar dados do profile ao abrir o sheet
   React.useEffect(() => {
     if (open && profile) {
-      console.log('🔍 [UnifiedUserProfileSheet] Sheet aberto com profile:', {
-        id: profile.id,
-        name: profile.name,
-        userType: profile.userType,
-        hasAvatar: !!profile.avatar,
-        avatarPreview: profile.avatar?.substring(0, 100),
-        hasAvatarUrl: !!profile.avatarUrl,
-        avatarUrlPreview: profile.avatarUrl?.substring(0, 100),
-        allFields: Object.keys(profile)
-      });
+      // [REVISAR] console.log('🔍 [UnifiedUserProfileSheet] Sheet aberto com profile:', {
+      // id: profile.id,
+      // name: profile.name,
+      // userType: profile.userType,
+      // hasAvatar: !!profile.avatar,
+      // avatarPreview: profile.avatar?.substring(0, 100),
+      // hasAvatarUrl: !!profile.avatarUrl,
+      // avatarUrlPreview: profile.avatarUrl?.substring(0, 100),
+      // allFields: Object.keys(profile)
+      // });
     }
   }, [open, profile]);
 
@@ -154,7 +154,7 @@ ${greeting} ✨`;
                           alt={profile.name}
                           className="w-full h-full object-cover"
                           onLoad={() => {
-                            console.log('✅ [UnifiedUserProfileSheet] Avatar carregado com sucesso:', avatarUrl?.substring(0, 50));
+                            // [REVISAR] console.log('✅ [UnifiedUserProfileSheet] Avatar carregado com sucesso:', avatarUrl?.substring(0, 50));
                           }}
                           onError={(e) => {
                             console.error('❌ [UnifiedUserProfileSheet] Erro ao carregar avatar:', avatarUrl);

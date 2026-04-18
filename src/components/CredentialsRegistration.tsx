@@ -116,7 +116,6 @@ export function CredentialsRegistration({ onComplete, onBack, userType }: Creden
 
     setCheckingEmail(true);
     try {
-      console.log('🔍 Verificando disponibilidade do email:', emailToCheck);
       
       // Timeout para evitar espera infinita
       const timeoutPromise = new Promise((_, reject) => {
@@ -138,7 +137,6 @@ export function CredentialsRegistration({ onComplete, onBack, userType }: Creden
       if (profileError) {
         // PGRST116 = No rows found (email disponível)
         if (profileError.code === 'PGRST116') {
-          console.log('✅ Email disponível - código PGRST116');
           setEmailAvailable(true);
           setOrphanedUser(null);
           return;
@@ -154,7 +152,7 @@ export function CredentialsRegistration({ onComplete, onBack, userType }: Creden
         // Se for erro de conexão, permitir continuar
         if (profileError.message?.includes('Failed to fetch') || 
             profileError.message?.includes('fetch')) {
-          console.warn('⚠️ Erro de conexão - permitindo continuar (modo offline)');
+          // [REVISAR] console.warn('⚠️ Erro de conexão - permitindo continuar (modo offline)');
           setEmailAvailable(true); // Assume disponível em modo offline
           toast.warning('Não foi possível verificar o email online. Verifique sua conexão.');
           return;
@@ -165,13 +163,11 @@ export function CredentialsRegistration({ onComplete, onBack, userType }: Creden
       
       if (profileData) {
         // Email existe e tem perfil ativo
-        console.log('❌ Email já cadastrado no banco:', profileData);
         setEmailAvailable(false);
         setOrphanedUser(null);
         toast.error('Este email já está cadastrado. Faça login ou use outro email.');
       } else {
         // Email disponível
-        console.log('✅ Email disponível - não encontrado no banco');
         setEmailAvailable(true);
         setOrphanedUser(null);
       }
@@ -183,7 +179,7 @@ export function CredentialsRegistration({ onComplete, onBack, userType }: Creden
           (error.message === 'Timeout' || 
            error.message.includes('fetch') ||
            error.message.includes('network'))) {
-        console.warn('⚠️ Timeout ou erro de rede - permitindo continuar (modo offline)');
+        // [REVISAR] console.warn('⚠️ Timeout ou erro de rede - permitindo continuar (modo offline)');
         setEmailAvailable(true); // Assume disponível em modo offline
         toast.warning('Não foi possível verificar o email. Verifique sua conexão.');
       } else {
@@ -251,7 +247,6 @@ export function CredentialsRegistration({ onComplete, onBack, userType }: Creden
     try {
       // Salvar email no localStorage para recuperação posterior
       localStorage.setItem('incomplete_registration_email', email);
-      console.log('✅ Email salvo localmente para recuperação futura');
     } catch (error) {
       console.error('Erro ao salvar localmente:', error);
     }
@@ -280,13 +275,6 @@ export function CredentialsRegistration({ onComplete, onBack, userType }: Creden
     setLoading(true);
 
     try {
-      console.log('');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('🔐 CredentialsRegistration - CRIANDO AUTH USER AGORA!');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('📧 Email:', email);
-      console.log('🎯 UserType:', userType);
-      console.log('');
 
       // ✅ CRIAR AUTH USER IMEDIATAMENTE!
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -309,33 +297,25 @@ export function CredentialsRegistration({ onComplete, onBack, userType }: Creden
         throw new Error('Usuário não foi criado no Supabase Auth');
       }
 
-      console.log('✅ Auth User criado com sucesso!');
-      console.log('🆔 User ID:', authData.user.id);
-      console.log('📧 Email confirmado:', authData.user.email);
       
       // ⏱️ Aguardar sessão estar ativa
-      console.log('⏱️ Aguardando sessão estar ativa...');
       await new Promise(resolve => setTimeout(resolve, 300));
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        console.warn('⚠️ Sessão não detectada - continuando mesmo assim');
       } else {
-        console.log('✅ Sessão ativa confirmada');
       }
 
       // 📸 Upload de avatar (se houver)
       let avatarPath: string | undefined = undefined;
       
       if (profilePhoto) {
-        console.log('📸 Upload de avatar detectado...');
         try {
           const { uploadAvatar } = await import('../utils/storage-helper');
           const result = await uploadAvatar(authData.user.id, profilePhoto);
           
           if (result.success && result.path) {
             avatarPath = result.path;
-            console.log('✅ Avatar uploadado:', avatarPath);
             toast.success('Foto de perfil enviada com sucesso!');
           } else {
             console.error('❌ Erro ao fazer upload do avatar:', result.error);
@@ -347,11 +327,6 @@ export function CredentialsRegistration({ onComplete, onBack, userType }: Creden
         }
       }
 
-      console.log('');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('✅ USUÁRIO CRIADO COM SUCESSO! Prosseguindo para formulário...');
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('');
 
       // Salvar email localmente para recuperação
       localStorage.setItem('incomplete_registration_email', email);

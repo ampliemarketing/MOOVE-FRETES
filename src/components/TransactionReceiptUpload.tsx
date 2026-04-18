@@ -73,7 +73,6 @@ export function TransactionReceiptUpload({
     setUploading(true);
     
     try {
-      console.log('📤 [TransactionReceipt] Fazendo upload do comprovante...');
       
       // Upload do arquivo para o Storage
       const { uploadDocument } = await import('../utils/storage-helper');
@@ -91,7 +90,7 @@ export function TransactionReceiptUpload({
         return;
       }
       
-      console.log('✅ [TransactionReceipt] Comprovante uploadado (PATH):', uploadResult.path);
+      // [REVISAR] console.log('✅ [TransactionReceipt] Comprovante uploadado (PATH):', uploadResult.path);
       
       // Criar transação no banco COM PATH (não URL!)
       const { supabase } = await import('../utils/supabase/client');
@@ -108,7 +107,6 @@ export function TransactionReceiptUpload({
         created_at: new Date().toISOString(),
       };
       
-      console.log('💾 [TransactionReceipt] Salvando transação:', transactionData);
       
       const { data, error } = await supabase
         .from('transactions')
@@ -121,7 +119,6 @@ export function TransactionReceiptUpload({
         throw error;
       }
       
-      console.log('✅ [TransactionReceipt] Transação criada com sucesso!', data);
       
       toast.success('Comprovante enviado com sucesso!');
       

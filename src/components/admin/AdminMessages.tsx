@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, Ban, AlertTriangle, Paperclip, Package } from 'lucide-react';
 import { AdminDataTable } from './AdminDataTable';
-import { mockMessages, type AdminMessage } from './admin-mock-data';
+import type { AdminMessage } from './admin-mock-data';
+import { fetchAdminMessages } from '../../utils/admin-supabase-service';
 import { toast } from 'sonner@2.0.3';
 
 export function AdminMessages() {
-  const [messages] = useState(mockMessages);
+  const [messages, setMessages] = useState<AdminMessage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterReported, setFilterReported] = useState(false);
+
+  useEffect(() => {
+    fetchAdminMessages().then((data) => { setMessages(data); setLoading(false); });
+  }, []);
 
   const filtered = filterReported ? messages.filter(m => m.reported) : messages;
 
@@ -80,6 +86,8 @@ export function AdminMessages() {
       ),
     },
   ];
+
+  if (loading) return <div className="flex items-center justify-center py-12 text-[var(--muted-foreground)]">Carregando mensagens...</div>;
 
   return (
     <div className="space-y-4">

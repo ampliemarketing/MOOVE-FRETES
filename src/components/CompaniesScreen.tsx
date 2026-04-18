@@ -188,24 +188,18 @@ export function CompaniesScreen({
     if (initialSelectedId && companies.length > 0 && !loading) {
       const targetCompany = companies.find(c => c.userId === initialSelectedId || c.id === initialSelectedId);
       if (targetCompany) {
-        console.log('🔗 [CompaniesScreen] Auto-selecionando empresa via deep link:', targetCompany.name);
         setSelectedCompany(targetCompany);
         setShowCompanyDetails(true);
       } else {
-        console.warn('🔗 [CompaniesScreen] Empresa não encontrada para deep link:', initialSelectedId);
       }
     }
   }, [initialSelectedId, companies, loading]);
 
   const loadCompaniesWithStats = async () => {
-    console.log(
-      "🔄 CompaniesScreen: Iniciando carregamento completo de empresas...",
-    );
     setLoading(true);
 
     try {
       // 1. Buscar empresas DO SUPABASE (não do LocalStorage)
-      console.log("📡 Buscando empresas do Supabase...");
       const { data: supabaseCompanies, error: companiesError } =
         await supabase
           .from("companies")
@@ -241,29 +235,22 @@ export function CompaniesScreen({
           !companiesResponse.data ||
           companiesResponse.data.length === 0
         ) {
-          console.log("⚠️ Nenhuma empresa encontrada");
           setCompanies([]);
           setLoading(false);
           return;
         }
-        console.log(
-          `📊 ${companiesResponse.data.length} empresas encontradas (LocalStorage)`,
-        );
+        // [REVISAR] console.log(
+        // `📊 ${companiesResponse.data.length} empresas encontradas (LocalStorage)`,
+        // );
       } else if (
         !supabaseCompanies ||
         supabaseCompanies.length === 0
       ) {
-        console.log(
-          "⚠️ Nenhuma empresa encontrada no Supabase",
-        );
         setCompanies([]);
         setLoading(false);
         return;
       }
 
-      console.log(
-        `📊 ${supabaseCompanies?.length || 0} empresas encontradas no Supabase`,
-      );
 
       // 2. Buscar todos os fretes e ratings de uma vez para otimização
       const [allFreightsResponse, allRatingsResponse] =
@@ -286,31 +273,25 @@ export function CompaniesScreen({
         (f) => f.status !== "inactive",
       );
 
-      console.log(
-        `📦 Total de fretes no sistema: ${allFreights.length} (${allFreightsRaw.length - allFreights.length} fretes pausados excluídos)`,
-      );
-      console.log(
-        `⭐ Total de avaliações no sistema: ${allRatings.length}`,
-      );
 
       // Log detalhado dos fretes para debug
-      console.log(
-        "📋 Detalhes dos fretes:",
-        allFreights.map((f) => ({
-          id: f.id,
-          customerId: f.customerId,
-          customerName: f.customerName,
-          status: f.status,
-          origem:
-            f.origin?.city && f.origin?.state
-              ? `${f.origin.city}/${f.origin.state}`
-              : "N/A",
-          destino:
-            f.destination?.city && f.destination?.state
-              ? `${f.destination.city}/${f.destination.state}`
-              : "N/A",
-        })),
-      );
+      // [REVISAR] console.log(
+      // "📋 Detalhes dos fretes:",
+      // allFreights.map((f) => ({
+      // id: f.id,
+      // customerId: f.customerId,
+      // customerName: f.customerName,
+      // status: f.status,
+      // origem:
+      // f.origin?.city && f.origin?.state
+      // ? `${f.origin.city}/${f.origin.state}`
+      // : "N/A",
+      // destino:
+      // f.destination?.city && f.destination?.state
+      // ? `${f.destination.city}/${f.destination.state}`
+      // : "N/A",
+      // })),
+      // );
 
       // 3. Criar mapas para consulta rápida
       const freightsByCustomer = new Map<string, Freight[]>();
@@ -323,19 +304,19 @@ export function CompaniesScreen({
           .push(freight);
       });
 
-      console.log("🗂️ Mapa de fretes por customerId:", {
-        totalEmpresas: freightsByCustomer.size,
-        empresasComFretes: Array.from(
-          freightsByCustomer.entries(),
-        ).map(([customerId, freights]) => ({
-          customerId,
-          count: freights.length,
-          fretes: freights.map((f) => ({
-            id: f.id,
-            status: f.status,
-          })),
-        })),
-      });
+      // [REVISAR] console.log("🗂️ Mapa de fretes por customerId:", {
+      // totalEmpresas: freightsByCustomer.size,
+      // empresasComFretes: Array.from(
+      // freightsByCustomer.entries(),
+      // ).map(([customerId, freights]) => ({
+      // customerId,
+      // count: freights.length,
+      // fretes: freights.map((f) => ({
+      // id: f.id,
+      // status: f.status,
+      // })),
+      // })),
+      // });
 
       const ratingsByDriver = new Map<string, Rating[]>();
       allRatings.forEach((rating) => {
@@ -358,28 +339,21 @@ export function CompaniesScreen({
               profile.name ||
               "Empresa";
 
-            console.log(
-              `\n🏢 Processando empresa: ${companyName}`,
-            );
-            console.log(`   userId: ${companyData.user_id}`);
 
             // Buscar fretes da empresa usando o user_id
             const companyFreights =
               freightsByCustomer.get(companyData.user_id) || [];
 
-            console.log(
-              `   📦 Fretes encontrados: ${companyFreights.length}`,
-            );
             if (companyFreights.length > 0) {
-              console.log(
-                `   Detalhes dos fretes:`,
-                companyFreights.map((f) => ({
-                  id: f.id,
-                  status: f.status,
-                  customerId: f.customerId,
-                  rota: `${f.origin?.city || "N/A"}/${f.origin?.state || "N/A"} → ${f.destination?.city || "N/A"}/${f.destination?.state || "N/A"}`,
-                })),
-              );
+              // [REVISAR] console.log(
+              // `   Detalhes dos fretes:`,
+              // companyFreights.map((f) => ({
+              // id: f.id,
+              // status: f.status,
+              // customerId: f.customerId,
+              // rota: `${f.origin?.city || "N/A"}/${f.origin?.state || "N/A"} → ${f.destination?.city || "N/A"}/${f.destination?.state || "N/A"}`,
+              // })),
+              // );
             }
 
             // Calcular estatísticas de fretes
@@ -395,9 +369,6 @@ export function CompaniesScreen({
               (f) => f.status === "in-transit",
             );
 
-            console.log(
-              `   ✅ Ativos: ${activeFreights.length}, Concluídos: ${completedFreights.length}, Em trânsito: ${inTransitFreights.length}`,
-            );
 
             // Buscar avaliações da empresa (como motorista/prestador)
             const companyRatings =
@@ -430,7 +401,6 @@ export function CompaniesScreen({
               successRate: Number(successRate.toFixed(0)),
             };
 
-            console.log(`   📊 Estatísticas finais:`, stats);
 
             // ✅ PARSEAR ENDEREÇO (campo address é STRING JSON no banco)
             let parsedAddress: any = {};
@@ -441,7 +411,6 @@ export function CompaniesScreen({
                 parsedAddress = companyData.address;
               }
             } catch (error) {
-              console.warn('⚠️ Erro ao parsear endereço:', error);
               parsedAddress = {};
             }
 
@@ -486,25 +455,25 @@ export function CompaniesScreen({
         ),
       );
 
-      console.log(
-        "\n✅ RESUMO FINAL - Empresas processadas com estatísticas completas:",
-        {
-          total: companiesWithStats.length,
-          comFretes: companiesWithStats.filter(
-            (c) => c.stats.totalFreights > 0,
-          ).length,
-          comAvaliacoes: companiesWithStats.filter(
-            (c) => c.stats.reviewCount > 0,
-          ).length,
-          detalhes: companiesWithStats.map((c) => ({
-            nome: c.name,
-            userId: c.userId,
-            tipo: c.type,
-            fretesAtivos: c.stats.activeFreights,
-            fretesTotal: c.stats.totalFreights,
-          })),
-        },
-      );
+      // [REVISAR] console.log(
+      // "\n✅ RESUMO FINAL - Empresas processadas com estatísticas completas:",
+      // {
+      // total: companiesWithStats.length,
+      // comFretes: companiesWithStats.filter(
+      // (c) => c.stats.totalFreights > 0,
+      // ).length,
+      // comAvaliacoes: companiesWithStats.filter(
+      // (c) => c.stats.reviewCount > 0,
+      // ).length,
+      // detalhes: companiesWithStats.map((c) => ({
+      // nome: c.name,
+      // userId: c.userId,
+      // tipo: c.type,
+      // fretesAtivos: c.stats.activeFreights,
+      // fretesTotal: c.stats.totalFreights,
+      // })),
+      // },
+      // );
 
       setCompanies(companiesWithStats);
     } catch (error) {

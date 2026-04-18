@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Users, Truck, Package, DollarSign, MessageSquare, Star, AlertTriangle, Activity, TrendingUp, Clock, Ban, UserCheck, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { kpiData, userGrowthData, freightStatusData, revenueData, freightsByRegion, userTypeDistribution } from './admin-mock-data';
+import {
+  fetchAdminKPI,
+  fetchUserGrowthData,
+  fetchFreightStatusData,
+  fetchUserTypeDistribution,
+  type AdminKPI,
+  type ChartPoint,
+  type FreightStatusPoint,
+  type UserTypePoint,
+} from '../../utils/admin-supabase-service';
 
 function KPICard({ label, value, icon: Icon, change, changeType, color }: {
   label: string;
@@ -52,118 +61,108 @@ function AlertCard({ title, count, severity }: { title: string; count: number; s
 }
 
 export function AdminDashboard() {
+  const [kpi, setKpi] = useState<AdminKPI | null>(null);
+  const [userGrowth, setUserGrowth] = useState<ChartPoint[]>([]);
+  const [freightStatus, setFreightStatus] = useState<FreightStatusPoint[]>([]);
+  const [userTypes, setUserTypes] = useState<UserTypePoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetchAdminKPI(),
+      fetchUserGrowthData(),
+      fetchFreightStatusData(),
+      fetchUserTypeDistribution(),
+    ]).then(([kpiData, growth, fStatus, uTypes]) => {
+      setKpi(kpiData);
+      setUserGrowth(growth);
+      setFreightStatus(fStatus);
+      setUserTypes(uTypes);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <div className="flex items-center justify-center py-20 text-[var(--muted-foreground)]">Carregando dashboard...</div>;
+  if (!kpi) return null;
+
   return (
     <div className="space-y-6">
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard label="Usuários Totais" value={kpiData.totalUsers.toLocaleString('pt-BR')} icon={Users} change="+22% vs mês anterior" changeType="up" />
-        <KPICard label="Fretes Ativos" value={kpiData.activeFreights} icon={Package} change="+15 hoje" changeType="up" />
-        <KPICard label="Receita Mensal" value={`R$ ${kpiData.monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={DollarSign} change="-7% vs mês anterior" changeType="down" />
-        <KPICard label="Online Agora" value={kpiData.onlineNow} icon={Activity} change="Pico: 234" changeType="neutral" />
+        <KPICard label="Usuários Totais" value={kpi.totalUsers.toLocaleString('pt-BR')} icon={Users} />
+        <KPICard label="Fretes Ativos" value={kpi.activeFreights} icon={Package} />
+        <KPICard label="Usuários Pendentes" value={kpi.pendingUsers} icon={Clock} />
+        <KPICard label="Usuários Bloqueados" value={kpi.blockedUsers} icon={Ban} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard label="Usuários Pendentes" value={kpiData.pendingUsers} icon={Clock} change="Aguardando aprovação" changeType="neutral" />
-        <KPICard label="Usuários Bloqueados" value={kpiData.blockedUsers} icon={Ban} change="+2 esta semana" changeType="up" />
-        <KPICard label="Rating Médio Global" value={kpiData.avgRating.toFixed(1)} icon={Star} change="+0.1 vs mês anterior" changeType="up" />
-        <KPICard label="Mensagens Enviadas" value={kpiData.totalMessages.toLocaleString('pt-BR')} icon={MessageSquare} change="+1.234 hoje" changeType="up" />
+        <KPICard label="Total de Fretes" value={kpi.totalFreights.toLocaleString('pt-BR')} icon={Truck} />
+        <KPICard label="Fretes Concluídos" value={kpi.completedFreights.toLocaleString('pt-BR')} icon={UserCheck} />
+        <KPICard label="Rating Médio Global" value={kpi.avgRating > 0 ? kpi.avgRating.toFixed(1) : '—'} icon={Star} />
+        <KPICard label="Usuários Ativos" value={kpi.activeUsers.toLocaleString('pt-BR')} icon={Activity} />
       </div>
 
       {/* Alerts */}
       <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-5">
         <h3 className="font-[500] text-[var(--foreground)] mb-3 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-500" />
-          Alertas Críticos
+          Alertas
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <AlertCard title="Fretes atrasados > 3 dias" count={kpiData.delayedFreights} severity="critical" />
-          <AlertCard title="Denúncias pendentes" count={kpiData.pendingReports} severity="warning" />
-          <AlertCard title="Erros recentes (24h)" count={kpiData.recentErrors} severity="info" />
+          <AlertCard title="Usuários pendentes de aprovação" count={kpi.pendingUsers} severity="warning" />
+          <AlertCard title="Denúncias pendentes" count={kpi.pendingReports} severity="warning" />
+          <AlertCard title="Fretes cancelados" count={kpi.cancelledFreights} severity="info" />
         </div>
       </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* User Growth */}
-        <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-5">
-          <h3 className="font-[500] text-[var(--foreground)] mb-4">Crescimento de Usuários</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={userGrowthData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e1e4e8" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#6c757d" />
-              <YAxis tick={{ fontSize: 12 }} stroke="#6c757d" />
-              <Tooltip
-                contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e1e4e8', fontSize: '13px' }}
-                formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Usuários']}
-              />
-              <Line type="monotone" dataKey="users" stroke="#253663" strokeWidth={2.5} dot={{ fill: '#253663', r: 4 }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {userGrowth.length > 0 && (
+          <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-5">
+            <h3 className="font-[500] text-[var(--foreground)] mb-4">Crescimento de Usuários</h3>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={userGrowth}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e1e4e8" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#6c757d" />
+                <YAxis tick={{ fontSize: 12 }} stroke="#6c757d" />
+                <Tooltip
+                  contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e1e4e8', fontSize: '13px' }}
+                  formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Usuários']}
+                />
+                <Line type="monotone" dataKey="users" stroke="#253663" strokeWidth={2.5} dot={{ fill: '#253663', r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
-        {/* Revenue */}
-        <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-5">
-          <h3 className="font-[500] text-[var(--foreground)] mb-4">Receita Mensal (R$)</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e1e4e8" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#6c757d" />
-              <YAxis tick={{ fontSize: 12 }} stroke="#6c757d" tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e1e4e8', fontSize: '13px' }}
-                formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Receita']}
-              />
-              <Bar dataKey="revenue" fill="#253663" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {freightStatus.length > 0 && (
+          <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-5">
+            <h3 className="font-[500] text-[var(--foreground)] mb-4">Fretes por Status</h3>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie data={freightStatus} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="value">
+                  {freightStatus.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e1e4e8', fontSize: '13px' }}
+                  formatter={(value: number) => [value.toLocaleString('pt-BR'), '']}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Freight Status Distribution */}
-        <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-5">
-          <h3 className="font-[500] text-[var(--foreground)] mb-4">Fretes por Status</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={freightStatusData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="value">
-                {freightStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e1e4e8', fontSize: '13px' }}
-                formatter={(value: number) => [value.toLocaleString('pt-BR'), '']}
-              />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Freights by Region */}
-        <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-5">
-          <h3 className="font-[500] text-[var(--foreground)] mb-4">Fretes por Região</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={freightsByRegion} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#e1e4e8" />
-              <XAxis type="number" tick={{ fontSize: 11 }} stroke="#6c757d" />
-              <YAxis type="category" dataKey="region" tick={{ fontSize: 11 }} stroke="#6c757d" width={80} />
-              <Tooltip
-                contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e1e4e8', fontSize: '13px' }}
-                formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Fretes']}
-              />
-              <Bar dataKey="freights" fill="#3b82f6" radius={[0, 6, 6, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* User Type Distribution */}
+      {userTypes.length > 0 && (
         <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-5">
           <h3 className="font-[500] text-[var(--foreground)] mb-4">Tipo de Usuário</h3>
           <ResponsiveContainer width="100%" height={240}>
             <PieChart>
-              <Pie data={userTypeDistribution} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="value">
-                {userTypeDistribution.map((entry, index) => (
+              <Pie data={userTypes} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="value">
+                {userTypes.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -175,25 +174,25 @@ export function AdminDashboard() {
             </PieChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      )}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-4 text-center">
-          <p className="text-[2rem] font-[500] text-[#253663]">{kpiData.totalFreights.toLocaleString('pt-BR')}</p>
+          <p className="text-[2rem] font-[500] text-[#253663]">{kpi.totalFreights.toLocaleString('pt-BR')}</p>
           <p className="text-[0.8rem] text-[var(--muted-foreground)]">Fretes Totais</p>
         </div>
         <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-4 text-center">
-          <p className="text-[2rem] font-[500] text-green-600">{kpiData.completedFreights.toLocaleString('pt-BR')}</p>
+          <p className="text-[2rem] font-[500] text-green-600">{kpi.completedFreights.toLocaleString('pt-BR')}</p>
           <p className="text-[0.8rem] text-[var(--muted-foreground)]">Concluídos</p>
         </div>
         <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-4 text-center">
-          <p className="text-[2rem] font-[500] text-amber-500">{kpiData.totalQuotes.toLocaleString('pt-BR')}</p>
-          <p className="text-[0.8rem] text-[var(--muted-foreground)]">Cotações Enviadas</p>
+          <p className="text-[2rem] font-[500] text-red-500">{kpi.cancelledFreights.toLocaleString('pt-BR')}</p>
+          <p className="text-[0.8rem] text-[var(--muted-foreground)]">Cancelados</p>
         </div>
         <div className="bg-white rounded-[0.75rem] border border-[var(--border)] p-4 text-center">
-          <p className="text-[2rem] font-[500] text-[#253663]">R$ {(kpiData.platformRevenue / 1000).toFixed(0)}k</p>
-          <p className="text-[0.8rem] text-[var(--muted-foreground)]">Receita Total</p>
+          <p className="text-[2rem] font-[500] text-amber-500">{kpi.scheduledFreights.toLocaleString('pt-BR')}</p>
+          <p className="text-[0.8rem] text-[var(--muted-foreground)]">Agendados</p>
         </div>
       </div>
     </div>

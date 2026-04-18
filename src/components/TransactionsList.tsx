@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Loader2, DollarSign, FileText, Eye, Download, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { DollarSign, FileText, Eye, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { LoadingSpinner } from './LoadingSpinner';
 import { motion } from 'motion/react';
 import { toast } from 'sonner@2.0.3';
 
@@ -37,8 +38,8 @@ export function TransactionsList({ freightId, refreshTrigger }: TransactionsList
   }, [freightId, refreshTrigger]);
 
   const loadTransactions = async () => {
+    setLoading(true);
     try {
-      console.log('💰 [TransactionsList] Carregando transações do frete:', freightId);
       
       const { supabase } = await import('../utils/supabase/client');
       
@@ -53,7 +54,6 @@ export function TransactionsList({ freightId, refreshTrigger }: TransactionsList
         return;
       }
       
-      console.log(`✅ [TransactionsList] ${data?.length || 0} transações carregadas`);
       setTransactions(data || []);
       
     } catch (error) {
@@ -94,11 +94,7 @@ export function TransactionsList({ freightId, refreshTrigger }: TransactionsList
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingSpinner message="Carregando transações..." />;
   }
 
   if (transactions.length === 0) {

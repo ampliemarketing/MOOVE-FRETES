@@ -33,20 +33,17 @@ export function useAvailableRoutesRealtime({ onNewRoute }: UsePreferredRoutesRea
       setLoading(true);
       setError(null);
       
-      console.log('📥 Carregando rotas preferidas ativas...');
       
       // 1. Tentar carregar do Supabase primeiro
       const supabaseRoutes = await loadActiveRoutesFromSupabase();
       
       if (supabaseRoutes.length > 0) {
-        console.log('✅ Rotas carregadas do Supabase:', supabaseRoutes.length);
         setRoutes(supabaseRoutes);
         
         // ⚠️ NÃO chamar database.preferredRoutes.create aqui pois causaria duplicação
         // As rotas já estão no Supabase e serão carregadas quando necessário
       } else {
         // 2. Fallback: carregar do LocalStorage
-        console.log('📦 Carregando rotas do LocalStorage...');
         const localResult = await database.preferredRoutes.getAllActive();
         
         if (localResult.success && localResult.data) {
@@ -64,7 +61,6 @@ export function useAvailableRoutesRealtime({ onNewRoute }: UsePreferredRoutesRea
 
   // Callback para nova rota publicada
   const handleRoutePublished = useCallback((route: PreferredRoute) => {
-    console.log('🆕 Nova rota publicada em tempo real:', route);
     
     setRoutes(prev => {
       // Evitar duplicatas
@@ -82,14 +78,12 @@ export function useAvailableRoutesRealtime({ onNewRoute }: UsePreferredRoutesRea
 
   // Callback para rota atualizada
   const handleRouteUpdated = useCallback((route: PreferredRoute) => {
-    console.log('📝 Rota atualizada em tempo real:', route);
     
     setRoutes(prev => prev.map(r => r.id === route.id ? route : r));
   }, []);
 
   // Callback para rota deletada
   const handleRouteDeleted = useCallback((routeId: string) => {
-    console.log('🗑️ Rota deletada em tempo real:', routeId);
     
     setRoutes(prev => prev.filter(r => r.id !== routeId));
   }, []);
@@ -134,21 +128,17 @@ export function useMyPreferredRoutes(driverId: string) {
       setLoading(true);
       setError(null);
       
-      console.log('📥 Carregando rotas...', driverId ? `(motorista: ${driverId})` : '(todas as rotas)');
       
       // ✅ Se driverId vazio, carregar TODAS as rotas ativas (view pública)
       if (!driverId || driverId === '') {
-        console.log('🌍 Carregando TODAS as rotas ativas do Supabase...');
         const supabaseRoutes = await loadActiveRoutesFromSupabase();
         
-        console.log(`✅ ${supabaseRoutes.length} rotas ativas carregadas do Supabase`);
         setRoutes(supabaseRoutes);
       } else {
         // ✅ Se driverId preenchido, carregar apenas do motorista específico
         const result = await database.preferredRoutes.getByDriver(driverId);
         
         if (result.success && result.data) {
-          console.log(`✅ ${result.data.length} rotas do motorista carregadas`);
           setRoutes(result.data);
         }
       }
@@ -164,7 +154,6 @@ export function useMyPreferredRoutes(driverId: string) {
   // Criar nova rota
   const createRoute = useCallback(async (route: Partial<PreferredRoute>) => {
     try {
-      console.log('📤 Criando nova rota preferida...');
       
       const result = await createPreferredRouteAndSync({
         ...route,
@@ -190,7 +179,6 @@ export function useMyPreferredRoutes(driverId: string) {
   // Atualizar rota
   const updateRoute = useCallback(async (routeId: string, updates: Partial<PreferredRoute>) => {
     try {
-      console.log('📝 Atualizando rota:', routeId);
       
       const result = await updatePreferredRouteAndSync(routeId, updates);
       
@@ -216,7 +204,6 @@ export function useMyPreferredRoutes(driverId: string) {
   // Desativar rota (não deleta, apenas marca como inativa)
   const deactivateRoute = useCallback(async (routeId: string) => {
     try {
-      console.log('🔴 Desativando rota:', routeId);
       
       // Verificar se o ID é um UUID válido
       const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(routeId);
@@ -239,7 +226,7 @@ export function useMyPreferredRoutes(driverId: string) {
         return { success: false, error: result.error };
       } else {
         // ID legado - atualizar apenas no LocalStorage
-        console.warn('⚠️ Rota com ID legado (não-UUID), atualizando apenas no LocalStorage:', routeId);
+        // [REVISAR] console.warn('⚠️ Rota com ID legado (não-UUID), atualizando apenas no LocalStorage:', routeId);
         const result = await database.preferredRoutes.update(routeId, { isActive: false });
         
         if (result.success) {
@@ -264,7 +251,6 @@ export function useMyPreferredRoutes(driverId: string) {
   // Reativar rota
   const reactivateRoute = useCallback(async (routeId: string) => {
     try {
-      console.log('🟢 Reativando rota:', routeId);
       
       // Verificar se o ID é um UUID válido
       const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(routeId);
@@ -287,7 +273,7 @@ export function useMyPreferredRoutes(driverId: string) {
         return { success: false, error: result.error };
       } else {
         // ID legado - atualizar apenas no LocalStorage
-        console.warn('⚠️ Rota com ID legado (não-UUID), atualizando apenas no LocalStorage:', routeId);
+        // [REVISAR] console.warn('⚠️ Rota com ID legado (não-UUID), atualizando apenas no LocalStorage:', routeId);
         const result = await database.preferredRoutes.update(routeId, { isActive: true });
         
         if (result.success) {
@@ -336,11 +322,9 @@ export function useMyPreferredRoutes(driverId: string) {
     
     // ✅ Se for visualização pública (driverId vazio), inscrever no realtime
     if (!driverId || driverId === '') {
-      console.log('📡 Inscrevendo no realtime de rotas públicas...');
       
       const channel = subscribeToRoutesRealtime({
         onRoutePublished: (route) => {
-          console.log('🆕 Nova rota publicada:', route);
           setRoutes(prev => {
             // Evitar duplicatas
             if (prev.some(r => r.id === route.id)) {
@@ -350,18 +334,15 @@ export function useMyPreferredRoutes(driverId: string) {
           });
         },
         onRouteUpdated: (route) => {
-          console.log('📝 Rota atualizada:', route);
           setRoutes(prev => prev.map(r => r.id === route.id ? route : r));
         },
         onRouteDeleted: (routeId) => {
-          console.log('🗑️ Rota deletada:', routeId);
           setRoutes(prev => prev.filter(r => r.id !== routeId));
         }
       });
       
       // Cleanup
       return () => {
-        console.log('🔌 Desconectando do realtime de rotas públicas...');
         unsubscribeFromRealtime();
       };
     }
@@ -399,7 +380,6 @@ export function useSearchPreferredRoutes() {
       setLoading(true);
       setError(null);
       
-      console.log('🔍 Buscando rotas com filtros:', filters);
       
       // Carregar todas as rotas ativas
       const allRoutes = await loadActiveRoutesFromSupabase();
@@ -432,7 +412,6 @@ export function useSearchPreferredRoutes() {
       }
       
       setRoutes(filteredRoutes);
-      console.log('✅ Rotas filtradas:', filteredRoutes.length);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao buscar rotas';
       setError(message);

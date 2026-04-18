@@ -63,18 +63,18 @@ export function useAutoSync(options: AutoSyncOptions) {
     isSyncingRef.current = true;
     setSyncState(prev => ({ ...prev, isSyncing: true }));
 
+    let loadingToastId: string | number | undefined;
     if (showToast) {
-      toast.info('🔄 Sincronizando dados...');
+      loadingToastId = toast.loading('🔄 Sincronizando dados...');
     }
 
     try {
       const result = await syncAllUserData(userId);
-      
+
       const totalSynced = result.totalSynced || 0;
-      
+
       // Sempre considerar sucesso - sistema funciona sem sincronização
-      console.log(`✅ Sincronização concluída: ${totalSynced} itens`);
-      
+
       setSyncState(prev => ({
         ...prev,
         isSyncing: false,
@@ -84,15 +84,21 @@ export function useAutoSync(options: AutoSyncOptions) {
         retryCount: 0
       }));
 
-      if (showToast && totalSynced > 0) {
-        toast.success(`${totalSynced} ${totalSynced === 1 ? 'item sincronizado' : 'itens sincronizados'}`);
+      if (showToast) {
+        if (totalSynced > 0) {
+          toast.success(`${totalSynced} ${totalSynced === 1 ? 'item sincronizado' : 'itens sincronizados'}`, { id: loadingToastId });
+        } else if (loadingToastId !== undefined) {
+          toast.dismiss(loadingToastId);
+        }
       }
 
       onSyncSuccess?.(totalSynced);
     } catch (error) {
       // Sincronização é opcional — não bloqueia o sistema
-      console.warn('[Sync] Falha na sincronização (não crítico):', error);
-
+      // [REVISAR] console.warn('[Sync] Falha na sincronização (não crítico):', error);
+      if (loadingToastId !== undefined) {
+        toast.dismiss(loadingToastId);
+      }
       setSyncState(prev => ({
         ...prev,
         isSyncing: false,
@@ -118,14 +124,12 @@ export function useAutoSync(options: AutoSyncOptions) {
     if (!enabled) return;
 
     const handleOnline = async () => {
-      console.log('🌐 Conexão restaurada, verificando Supabase...');
       setSyncState(prev => ({ ...prev, isOnline: true }));
       
       // Verificar se Supabase está disponível
       const available = await recheckSupabaseAvailability();
       
       if (available) {
-        console.log('✅ Supabase disponível, iniciando sincronização...');
         toast.success('🌐 Conexão restaurada');
         // Sincronizar após 2 segundos
         setTimeout(() => performSync(true), 2000);
@@ -133,7 +137,6 @@ export function useAutoSync(options: AutoSyncOptions) {
     };
 
     const handleOffline = () => {
-      console.log('📴 Conexão perdida');
       setSyncState(prev => ({ ...prev, isOnline: false }));
       toast.warning('📴 Modo offline - dados serão salvos localmente');
     };
@@ -155,7 +158,6 @@ export function useAutoSync(options: AutoSyncOptions) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('👁️ App voltou ao foco, verificando sincronização...');
         
         // Sincronizar se última sync foi há mais de 30 segundos
         if (syncState.lastSyncTime) {

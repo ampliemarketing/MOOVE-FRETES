@@ -118,41 +118,23 @@ export function DriverDetailsSheet({
       try {
         // ✅ CORRIGIDO: usar user_id ao invés de id
         const targetId = driver.user_id || driver.id;
-        console.group('🔍 [DriverDetailsSheet] CARREGAMENTO DE AVALIAÇÕES');
-        console.log('📋 Driver Data:', {
-          driverId: driver.id,
-          userId: driver.user_id,
-          targetId,
-          driverName: driver.name,
-          hasUserId: !!driver.user_id,
-          willUse: targetId
-        });
         
-        console.log('📞 Chamando database.ratings.getByTarget com:', targetId);
         const response = await database.ratings.getByTarget(targetId);
-        console.log('📦 Response recebida:', {
-          success: response.success,
-          hasData: !!response.data,
-          dataLength: response.data?.length || 0,
-          error: response.error
-        });
         
         if (response.success && response.data) {
           setRatings(response.data);
-          console.log('✅ Avaliações carregadas com sucesso:', {
-            count: response.data.length,
-            ratings: response.data.map(r => ({
-              id: r.id,
-              evaluatorName: r.evaluatorName,
-              overallRating: r.overallRating,
-              createdAt: r.createdAt
-            }))
-          });
+          // [REVISAR] console.log('✅ Avaliações carregadas com sucesso:', {
+          // count: response.data.length,
+          // ratings: response.data.map(r => ({
+          // id: r.id,
+          // evaluatorName: r.evaluatorName,
+          // overallRating: r.overallRating,
+          // createdAt: r.createdAt
+          // }))
+          // });
         } else {
-          console.warn('⚠️ Nenhuma avaliação encontrada ou erro:', response.error);
           setRatings([]);
         }
-        console.groupEnd();
       } catch (error) {
         console.error('❌ [DriverDetailsSheet] Erro ao carregar avaliações:', error);
         setRatings([]);

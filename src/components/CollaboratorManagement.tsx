@@ -93,7 +93,6 @@ export function CollaboratorManagement({ user, companyId }: CollaboratorManageme
       if (isCompanyOwner && collaboratorsData) {
         const ownerExists = collaboratorsData.some(c => c.userId === user.id);
         if (!ownerExists) {
-          console.log('🔧 Owner não encontrado na tabela collaborators, criando automaticamente...');
           try {
             const ownerResult = await collaboratorRepository.create({
               userId: user.id,
@@ -106,13 +105,11 @@ export function CollaboratorManagement({ user, companyId }: CollaboratorManageme
               isSuperAdmin: true,
             });
             if (ownerResult) {
-              console.log('✅ Owner criado como super_admin:', ownerResult.id);
               // Recarregar lista
               const updatedData = await collaboratorRepository.getByCompany(companyId);
               setCollaborators(updatedData || []);
             }
           } catch (autoCreateErr) {
-            console.warn('⚠️ Não foi possível auto-criar owner como collaborator:', autoCreateErr);
           }
         }
       }
@@ -215,7 +212,6 @@ export function CollaboratorManagement({ user, companyId }: CollaboratorManageme
           temporaryPassword: newPassword
         });
       } catch (emailError) {
-        console.warn('⚠️ Não foi possível enviar email');
       }
       
       addCollaboratorNotification({

@@ -50,7 +50,6 @@ export class DriverRepository {
         
         // ✅ Pegar o ID gerado pelo Supabase
         createdId = supabaseData.id;
-        console.log('✅ Motorista salvo no Supabase:', createdId);
         
       } catch (supabaseError) {
         console.error('❌ ERRO CRÍTICO ao salvar motorista no Supabase:', supabaseError);
@@ -74,7 +73,7 @@ export class DriverRepository {
         driversList.push(createdId);
         await db.set(KeyPatterns.driversList(), driversList);
       } catch (cacheError) {
-        console.warn('⚠️ Erro ao cachear motorista (não crítico):', cacheError);
+        // [REVISAR] console.warn('⚠️ Erro ao cachear motorista (não crítico):', cacheError);
       }
 
       return {
@@ -477,14 +476,12 @@ export class DriverRepository {
         };
       });
       
-      console.log('🔍 [getAvailableByLocation] Motoristas encontrados no Supabase:', data?.length);
       
       // Converter e filtrar por localização (case-insensitive e trim)
       const drivers = data
         .map(sqlToDriver)
         .filter(driver => {
           if (!driver.currentLocation) {
-            console.log('⚠️ Motorista sem currentLocation:', driver.userId);
             return false;
           }
           
@@ -496,17 +493,9 @@ export class DriverRepository {
           
           const matches = driverCity === searchCity && driverState === searchState;
           
-          console.log('🔍 Comparando localização:', {
-            driverLocation: `${driver.currentLocation.city}/${driver.currentLocation.state}`,
-            searchLocation: `${city}/${state}`,
-            normalizedDriver: `${driverCity}/${driverState}`,
-            normalizedSearch: `${searchCity}/${searchState}`,
-            matches
-          });
           return matches;
         });
       
-      console.log('✅ [getAvailableByLocation] Motoristas filtrados por localização:', drivers.length);
       
       return {
         success: true,
@@ -543,13 +532,10 @@ export class DriverRepository {
         return { success: true, data: [] };
       }
       
-      console.log('🔍 [getAvailableByLocationWithProfiles] Motoristas encontrados no Supabase:', driversData?.length);
-      console.log('📊 [getAvailableByLocationWithProfiles] Sample driver:', driversData?.[0]);
       
       // Filtrar por localização (case-insensitive e trim)
       const filteredDrivers = driversData.filter(driver => {
         if (!driver.current_location) {
-          console.log('⚠️ Motorista sem current_location:', driver.user_id);
           return false;
         }
         
@@ -561,20 +547,9 @@ export class DriverRepository {
         
         const matches = driverCity === searchCity && driverState === searchState;
         
-        console.log('🔍 Comparando localização:', {
-          driverLocation: `${driver.current_location.city}/${driver.current_location.state}`,
-          searchLocation: `${city}/${state}`,
-          normalizedDriver: `${driverCity}/${driverState}`,
-          normalizedSearch: `${searchCity}/${searchState}`,
-          matches,
-          driverId: driver.id,
-          available: driver.available,
-          expiresAt: driver.availability_expires_at
-        });
         return matches;
       });
       
-      console.log('✅ [getAvailableByLocationWithProfiles] Motoristas filtrados por localização:', filteredDrivers.length);
       
       if (filteredDrivers.length === 0) {
         return { success: true, data: [] };
@@ -582,7 +557,6 @@ export class DriverRepository {
       
       // 🔥 PASSO 2: Buscar profiles correspondentes
       const userIds = filteredDrivers.map(d => d.user_id);
-      console.log('👥 [getAvailableByLocationWithProfiles] Buscando profiles para user_ids:', userIds);
       
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -595,7 +569,6 @@ export class DriverRepository {
         return { success: true, data: filteredDrivers };
       }
       
-      console.log('✅ [getAvailableByLocationWithProfiles] Profiles encontrados:', profilesData?.length);
       
       // 🔥 PASSO 3: Combinar drivers com profiles
       const driversWithProfiles = filteredDrivers.map(driver => {
@@ -606,8 +579,6 @@ export class DriverRepository {
         };
       });
       
-      console.log('✅ [getAvailableByLocationWithProfiles] Dados combinados:', driversWithProfiles.length);
-      console.log('📊 Sample combined:', driversWithProfiles[0]);
       
       return {
         success: true,
@@ -666,7 +637,6 @@ export class DriverRepository {
       
       // 🔥 Se motorista não existir, criar automaticamente
       if (!driverResponse.success || !driverResponse.data) {
-        console.log('⚠️ Motorista não encontrado, criando automaticamente para userId:', userId);
         
         const createResponse = await this.create({
           userId: userId,
@@ -684,7 +654,6 @@ export class DriverRepository {
           };
         }
         
-        console.log('✅ Motorista criado com sucesso:', createResponse.data.id);
         
         // Usar o motorista recém-criado
         driverResponse = {
@@ -695,13 +664,6 @@ export class DriverRepository {
 
       const driver = driverResponse.data!;
       
-      console.log('🔄 [updateDriverAvailability] Atualizando motorista:', {
-        driverId: driver.id,
-        available: updates.isAvailable,
-        currentLocation: updates.location,
-        availabilityExpiresAt: updates.expiresAt,
-        expiresAtType: typeof updates.expiresAt
-      });
       
       const updateResult = await this.update(driver.id, {
         available: updates.isAvailable,

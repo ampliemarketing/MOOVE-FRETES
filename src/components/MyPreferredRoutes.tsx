@@ -89,7 +89,6 @@ export function MyPreferredRoutes({ onAddRoute, user, viewMode = 'personal', onO
       const supabase = getSupabaseClient();
       const driverIds = [...new Set(routes.map(r => r.driverId))];
       
-      console.log('🚚 Buscando dados de motoristas...', driverIds);
       
       try {
         // ✅ Buscar TUDO da tabela drivers (já tem name, phone, rating, completed_trips)
@@ -118,7 +117,6 @@ export function MyPreferredRoutes({ onAddRoute, user, viewMode = 'personal', onO
         });
         
         setDriversData(driversMap);
-        console.log('✅ Dados de motoristas carregados:', driversMap);
       } catch (err) {
         console.error('❌ Erro ao buscar motoristas:', err);
       }
@@ -140,7 +138,6 @@ export function MyPreferredRoutes({ onAddRoute, user, viewMode = 'personal', onO
   // ✅ NOVO: Função para abrir chat interno
   const openChat = (driverId: string, driverName: string) => {
     // Implementar navegação para o chat
-    console.log('Abrir chat com:', driverId, driverName);
     // TODO: Navegar para tela de chat
   };
   

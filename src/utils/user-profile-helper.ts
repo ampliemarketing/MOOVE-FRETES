@@ -60,7 +60,6 @@ export interface UnifiedUserProfile {
 
 export async function fetchCompleteUserProfile(userId: string): Promise<UnifiedUserProfile | null> {
   try {
-    console.log('🔍 [fetchCompleteUserProfile] Buscando perfil de:', userId);
     
     // Buscar dados básicos do perfil
     const { data: profile, error: profileError } = await supabase
@@ -75,11 +74,9 @@ export async function fetchCompleteUserProfile(userId: string): Promise<UnifiedU
     }
 
     if (!profile) {
-      console.warn('⚠️ Perfil não encontrado');
       return null;
     }
 
-    console.log('✅ Perfil base encontrado:', profile.name, profile.user_type);
 
     // Buscar avatar do usuário (de profiles ou users)
     let avatarUrl: string | undefined = profile.avatar || profile.avatar_url;
@@ -97,10 +94,10 @@ export async function fetchCompleteUserProfile(userId: string): Promise<UnifiedU
       }
     }
 
-    console.log('🖼️ [fetchCompleteUserProfile] Avatar encontrado:', {
-      hasAvatar: !!avatarUrl,
-      avatarPreview: avatarUrl?.substring(0, 100)
-    });
+    // [REVISAR] console.log('🖼️ [fetchCompleteUserProfile] Avatar encontrado:', {
+    // hasAvatar: !!avatarUrl,
+    // avatarPreview: avatarUrl?.substring(0, 100)
+    // });
 
     const baseProfile: UnifiedUserProfile = {
       id: profile.id,
@@ -121,7 +118,6 @@ export async function fetchCompleteUserProfile(userId: string): Promise<UnifiedU
 
     // Se for caminhoneiro, buscar dados do motorista
     if (profile.user_type === 'caminhoneiro') {
-      console.log('🔍 Buscando dados do motorista na tabela drivers...');
       
       const { data: driver, error: driverError } = await supabase
         .from('drivers')
@@ -130,15 +126,9 @@ export async function fetchCompleteUserProfile(userId: string): Promise<UnifiedU
         .single();
 
       if (driverError) {
-        console.warn('⚠️ Erro ao buscar driver:', driverError.message);
       }
 
       if (driver) {
-        console.log('✅ Dados do motorista encontrados:', {
-          cnh: driver.cnh,
-          vehicle_type: driver.vehicle_type,
-          vehicle_plate: driver.vehicle_plate
-        });
         
         baseProfile.driver = {
           cnh: driver.cnh,
@@ -163,8 +153,6 @@ export async function fetchCompleteUserProfile(userId: string): Promise<UnifiedU
         if (driver.rating) baseProfile.displayData!.rating = driver.rating;
         if (driver.completed_trips) baseProfile.displayData!.completedTrips = driver.completed_trips;
       } else {
-        console.warn('⚠️ Motorista não possui cadastro completo na tabela drivers');
-        console.log('ℹ️ Mostrando apenas dados básicos do perfil');
         // Não é um erro - apenas mostra dados básicos do perfil
       }
     }
@@ -178,7 +166,6 @@ export async function fetchCompleteUserProfile(userId: string): Promise<UnifiedU
         .single();
 
       if (company) {
-        console.log('✅ Dados da empresa encontrados');
         baseProfile.company = {
           companyName: company.company_name,
           cnpj: company.cnpj,
@@ -196,16 +183,9 @@ export async function fetchCompleteUserProfile(userId: string): Promise<UnifiedU
           fleetSize: company.fleet_size,
         };
       } else {
-        console.warn('⚠️ Dados da empresa não encontrados');
       }
     }
 
-    console.log('✅ Perfil completo montado:', {
-      name: baseProfile.name,
-      userType: baseProfile.userType,
-      hasDriver: !!baseProfile.driver,
-      hasCompany: !!baseProfile.company,
-    });
 
     return baseProfile;
   } catch (error) {

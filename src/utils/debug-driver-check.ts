@@ -29,7 +29,6 @@ export async function checkDriverExists(userId: string): Promise<DriverCheckResu
       };
     }
 
-    console.log('✅ Usuário encontrado:', user.name);
 
     // 2. Verificar se tem registro de motorista
     const { data: driver, error: driverError } = await supabase
@@ -40,7 +39,6 @@ export async function checkDriverExists(userId: string): Promise<DriverCheckResu
 
     if (driverError) {
       if (driverError.code === 'PGRST116') {
-        console.warn('⚠️ Motorista não tem registro na tabela drivers');
         return {
           exists: false,
           needsCreation: true,
@@ -55,12 +53,6 @@ export async function checkDriverExists(userId: string): Promise<DriverCheckResu
       };
     }
 
-    console.log('✅ Registro de motorista encontrado');
-    console.log('Dados do motorista:', {
-      vehicleType: driver.vehicle_type,
-      available: driver.available,
-      currentLocation: driver.current_location
-    });
 
     return {
       exists: true,
@@ -86,7 +78,6 @@ export async function createDriverRecord(userId: string) {
     const check = await checkDriverExists(userId);
     
     if (!check.needsCreation) {
-      console.log('✅ Motorista já existe ou não é necessário criar');
       return { success: true, existed: true };
     }
 
@@ -108,7 +99,6 @@ export async function createDriverRecord(userId: string) {
       return { success: false, error };
     }
 
-    console.log('✅ Motorista criado com sucesso:', data);
     return { success: true, data };
   } catch (error) {
     console.error('❌ Exceção ao criar motorista:', error);
@@ -121,8 +111,7 @@ export async function createDriverRecord(userId: string) {
   const result = await checkDriverExists(userId);
   
   if (!result.exists && result.needsCreation) {
-    console.log('🤔 Deseja criar o registro do motorista? Execute:');
-    console.log(`window.createDriver("${userId}")`);
+    // [REVISAR] console.log(`window.createDriver("${userId}")`);
   }
   
   return result;
@@ -133,7 +122,6 @@ export async function createDriverRecord(userId: string) {
 // ✅ FUNÇÃO PARA CRIAR FRETE DE TESTE COMPLETO
 (window as any).createTestFreight = async () => {
   try {
-    console.log('🧪 Criando frete de teste completo...');
     
     const { database } = await import('./database');
     
@@ -150,7 +138,6 @@ export async function createDriverRecord(userId: string) {
     }
     
     const user = users[0];
-    console.log('✅ Usando usuário:', user.name);
     
     // Dados do frete de teste
     const freightData = {
@@ -176,16 +163,11 @@ export async function createDriverRecord(userId: string) {
       notes: 'Frete de teste criado automaticamente. Carga frágil, requer cuidado especial.'
     };
     
-    console.log('📦 Dados do frete:', freightData);
     
     // Criar o frete usando o FreightRepository
     const result = await database.freights.create(freightData);
     
     if (result.success) {
-      console.log('✅ Frete de teste criado com sucesso!');
-      console.log('ID do frete:', result.data?.id);
-      console.log('📍 Origem:', `${freightData.origin.city}, ${freightData.origin.state}`);
-      console.log('📍 Destino:', `${freightData.destination.city}, ${freightData.destination.state}`);
       return { success: true, freight: result.data };
     } else {
       console.error('❌ Erro ao criar frete:', result.error);
@@ -200,7 +182,6 @@ export async function createDriverRecord(userId: string) {
 // ✅ FUNÇÃO DEBUG: Listar todas as avaliações
 (window as any).debugRatings = async () => {
   try {
-    console.log('🔍 Buscando todas as avaliações...');
     
     const { data, error } = await supabase
       .from('ratings')
@@ -212,16 +193,15 @@ export async function createDriverRecord(userId: string) {
       return { success: false, error };
     }
     
-    console.log(`✅ ${data.length} avaliações encontradas`);
     
     if (data.length > 0) {
-      console.table(data.map(r => ({
-        id: r.id.substring(0, 8),
-        avaliador: r.reviewer_id.substring(0, 8),
-        avaliado: r.rated_user_id.substring(0, 8),
-        nota_geral: r.overall_rating,
-        criado: new Date(r.created_at).toLocaleString('pt-BR')
-      })));
+      // [REVISAR] console.table(data.map(r => ({
+      // id: r.id.substring(0, 8),
+      // avaliador: r.reviewer_id.substring(0, 8),
+      // avaliado: r.rated_user_id.substring(0, 8),
+      // nota_geral: r.overall_rating,
+      // criado: new Date(r.created_at).toLocaleString('pt-BR')
+      // })));
     }
     
     return { success: true, data };
@@ -234,7 +214,6 @@ export async function createDriverRecord(userId: string) {
 // ✅ FUNÇÃO DEBUG: Ver avaliações de um usuário específico
 (window as any).debugUserRatings = async (userId: string) => {
   try {
-    console.log('🔍 Buscando avaliações do usuário:', userId);
     
     // Buscar dados do usuário
     const { data: user } = await supabase
@@ -244,7 +223,6 @@ export async function createDriverRecord(userId: string) {
       .single();
     
     if (user) {
-      console.log('👤 Usuário:', user.name, `(${user.email})`);
     }
     
     // Buscar avaliações RECEBIDAS
@@ -271,26 +249,23 @@ export async function createDriverRecord(userId: string) {
       return { success: false, error: errorGiven };
     }
     
-    console.log(`\n📥 AVALIAÇÕES RECEBIDAS: ${receivedRatings.length}`);
     if (receivedRatings.length > 0) {
       const avgRating = receivedRatings.reduce((sum, r) => sum + r.overall_rating, 0) / receivedRatings.length;
-      console.log(`⭐ Média: ${avgRating.toFixed(1)}/5`);
-      console.table(receivedRatings.map(r => ({
-        de: r.reviewer_id.substring(0, 8),
-        nota: r.overall_rating,
-        comentario: r.comment || '(sem comentário)',
-        data: new Date(r.created_at).toLocaleDateString('pt-BR')
-      })));
+      // [REVISAR] console.table(receivedRatings.map(r => ({
+      // de: r.reviewer_id.substring(0, 8),
+      // nota: r.overall_rating,
+      // comentario: r.comment || '(sem comentário)',
+      // data: new Date(r.created_at).toLocaleDateString('pt-BR')
+      // })));
     }
     
-    console.log(`\n📤 AVALIAÇÕES FEITAS: ${givenRatings.length}`);
     if (givenRatings.length > 0) {
-      console.table(givenRatings.map(r => ({
-        para: r.rated_user_id.substring(0, 8),
-        nota: r.overall_rating,
-        comentario: r.comment || '(sem comentário)',
-        data: new Date(r.created_at).toLocaleDateString('pt-BR')
-      })));
+      // [REVISAR] console.table(givenRatings.map(r => ({
+      // para: r.rated_user_id.substring(0, 8),
+      // nota: r.overall_rating,
+      // comentario: r.comment || '(sem comentário)',
+      // data: new Date(r.created_at).toLocaleDateString('pt-BR')
+      // })));
     }
     
     return {
@@ -310,7 +285,6 @@ export async function createDriverRecord(userId: string) {
 // ✅ FUNÇÃO DEBUG: Criar avaliação de teste
 (window as any).createTestRating = async (targetUserId: string) => {
   try {
-    console.log('🧪 Criando avaliação de teste...');
     
     // Buscar usuário logado
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -320,8 +294,6 @@ export async function createDriverRecord(userId: string) {
       return { success: false, error: 'No authenticated user' };
     }
     
-    console.log('👤 Avaliador:', authUser.id);
-    console.log('👤 Avaliado:', targetUserId);
     
     // Verificar se usuário alvo existe
     const { data: targetUser } = await supabase
@@ -335,7 +307,6 @@ export async function createDriverRecord(userId: string) {
       return { success: false, error: 'Target user not found' };
     }
     
-    console.log('✅ Avaliando:', targetUser.name);
     
     // Criar avaliação
     const ratingData = {
@@ -354,8 +325,6 @@ export async function createDriverRecord(userId: string) {
     const result = await database.ratings.create(ratingData);
     
     if (result.success) {
-      console.log('✅ Avaliação de teste criada com sucesso!');
-      console.log('ID:', result.data?.id);
       return { success: true, rating: result.data };
     } else {
       console.error('❌ Erro ao criar avaliação:', result.error);
@@ -369,52 +338,43 @@ export async function createDriverRecord(userId: string) {
 
 // ✅ FUNÇÃO DEBUG: Verificar favoritos e se motoristas existem
 (window as any).debugFavorites = async (userId: string) => {
-  console.log('🔍 [debugFavorites] Verificando favoritos do usuário:', userId);
   
   const { database } = await import('./database');
   
   // Buscar favoritos
   const favoritesResponse = await database.favorites.getUserFavorites(userId);
-  console.log('📊 Favoritos encontrados:', favoritesResponse.data?.length || 0);
   
   if (!favoritesResponse.data || favoritesResponse.data.length === 0) {
-    console.log('⚠️ Nenhum favorito encontrado');
     return;
   }
   
   // Verificar cada motorista
   for (const driverId of favoritesResponse.data) {
-    console.log('\n🔍 Verificando motorista:', driverId);
     
     // 1. Verificar em unified_users
     const unifiedUser = await database.unifiedUsers.getById(driverId);
     if (unifiedUser) {
-      console.log('✅ Encontrado em unified_users:', unifiedUser.name);
       continue;
     }
     
     // 2. Verificar em users
     const userResponse = await database.users.getById(driverId);
     if (userResponse.success && userResponse.data) {
-      console.log('✅ Encontrado em users (tabela antiga):', userResponse.data.name);
-      console.log('⚠️ Este usuário NÃO está em unified_users - precisa migração');
+      // [REVISAR] console.log('✅ Encontrado em users (tabela antiga):', userResponse.data.name);
       continue;
     }
     
     // 3. Motorista não encontrado
     console.error('❌ Motorista NÃO encontrado em NENHUMA tabela:', driverId);
-    console.log('🔧 Sugestão: Remover este favorito com:');
-    console.log(`   await database.favorites.removeFavorite("${userId}", "${driverId}")`);
+    // [REVISAR] console.log(`   await database.favorites.removeFavorite("${userId}", "${driverId}")`);
   }
   
-  console.log('\n✅ Verificação concluída');
 };
 
-console.log('🛠️ Debug tools disponíveis:');
-console.log('  window.debugDriver(\"user-id\") - Verificar se motorista existe');
-console.log('  window.createDriver(\"user-id\") - Criar registro de motorista');
-console.log('  window.createTestFreight() - 🧪 Criar frete de teste completo');
-console.log('  window.debugRatings() - 🔍 Listar todas as avaliações');
-console.log('  window.debugUserRatings(\"user-id\") - 🔍 Ver avaliações de um usuário');
-console.log('  window.createTestRating(\"target-user-id\") - 🧪 Criar avaliação de teste');
-console.log('  window.debugFavorites(\"user-id\") - 🔍 Verificar favoritos e motoristas');
+// [REVISAR] console.log('  window.debugDriver(\"user-id\") - Verificar se motorista existe');
+// [REVISAR] console.log('  window.createDriver(\"user-id\") - Criar registro de motorista');
+// [REVISAR] console.log('  window.createTestFreight() - 🧪 Criar frete de teste completo');
+// [REVISAR] console.log('  window.debugRatings() - 🔍 Listar todas as avaliações');
+// [REVISAR] console.log('  window.debugUserRatings(\"user-id\") - 🔍 Ver avaliações de um usuário');
+// [REVISAR] console.log('  window.createTestRating(\"target-user-id\") - 🧪 Criar avaliação de teste');
+// [REVISAR] console.log('  window.debugFavorites(\"user-id\") - 🔍 Verificar favoritos e motoristas');

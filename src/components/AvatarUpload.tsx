@@ -42,25 +42,23 @@ export function AvatarUpload({
         
         if (error) {
           if (error.message.includes('Bucket not found')) {
-            console.warn('⚠️ [AvatarUpload] Bucket não encontrado');
             setBucketExists(false);
           } else {
             // Outros erros (como permissão) significam que bucket existe
-            console.log('✅ [AvatarUpload] Bucket existe (erro de permissão detectado)');
+            // [REVISAR] console.log('✅ [AvatarUpload] Bucket existe (erro de permissão detectado)');
             setBucketExists(true);
           }
           
           // Limpar arquivo de teste se foi criado
           await supabase.storage.from('profile-images').remove([testPath]);
         } else {
-          console.log('✅ [AvatarUpload] Bucket "profile-images" funcionando');
           setBucketExists(true);
           
           // Limpar arquivo de teste
           await supabase.storage.from('profile-images').remove([testPath]);
         }
       } catch (error: any) {
-        console.log('⚠️ [AvatarUpload] Assumindo que bucket existe (erro ao testar):', error.message);
+        // [REVISAR] console.log('⚠️ [AvatarUpload] Assumindo que bucket existe (erro ao testar):', error.message);
         // Assumir que bucket existe para não bloquear UI
         setBucketExists(true);
       }
@@ -100,7 +98,6 @@ export function AvatarUpload({
     setIsUploading(true);
 
     try {
-      console.log('📤 [AvatarUpload] Iniciando upload...');
 
       // ✅ USAR HELPER CENTRALIZADO
       const result = await uploadAvatar(userId, selectedFile);
@@ -110,7 +107,6 @@ export function AvatarUpload({
       }
 
       const avatarPath = result.path;
-      console.log('✅ [AvatarUpload] Upload concluído. PATH:', avatarPath);
 
       // ✅ SALVAR PATH NO BANCO (NÃO URL!)
       const supabase = (await import('../utils/supabase/client')).getSupabaseClient();
@@ -128,7 +124,6 @@ export function AvatarUpload({
         throw updateError;
       }
 
-      console.log('✅ [AvatarUpload] Profiles atualizado com PATH');
 
       // ✅ Sincronizar com drivers/companies (salvar PATH também!)
       if (userType === 'caminhoneiro') {
@@ -149,7 +144,6 @@ export function AvatarUpload({
           .eq('user_id', userId);
       }
 
-      console.log('✅ [AvatarUpload] Avatar atualizado com sucesso!');
 
       toast.success('Foto de perfil atualizada com sucesso!');
       

@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import type { User } from './contexts/AppContext';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { toast } from 'sonner@2.0.3';
+import { LoadingSpinner } from './LoadingSpinner';
 
 // Função para gerar código de frete no padrão de placa brasileira Mercosul (AAA0A00) - FALLBACK
 const generateFreightCode = (id: string): string => {
@@ -118,6 +119,7 @@ export function FreightHistory({ user }: FreightHistoryProps) {
       if (error) {
         console.error('Erro ao carregar histórico:', error);
         toast.error('Erro ao carregar histórico de fretes');
+        setHistoricalFreights([]);
         return;
       }
 
@@ -303,7 +305,6 @@ export function FreightHistory({ user }: FreightHistoryProps) {
       Avaliação: f.rating || '-'
     }));
 
-    console.log('Exportar histórico:', data);
     alert('Funcionalidade de exportação será implementada em breve!');
   };
 
@@ -461,14 +462,7 @@ export function FreightHistory({ user }: FreightHistoryProps) {
       {/* Freight List */}
       <div className="space-y-4">
         {loading ? (
-          <Card className="shadow-card">
-            <CardContent className="p-12 text-center">
-              <div className="flex items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <p className="text-muted-foreground">Carregando histórico...</p>
-              </div>
-            </CardContent>
-          </Card>
+          <LoadingSpinner message="Carregando histórico..." />
         ) : filteredFreights.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-12 text-center">

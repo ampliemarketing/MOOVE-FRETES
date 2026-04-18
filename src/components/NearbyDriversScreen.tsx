@@ -87,7 +87,6 @@ interface DriverDisplay {
     max: number;
   };
   reviewCount: number;
-  distance?: number; // Distância aproximada em km
   availabilityExpiresAt?: string;
 }
 
@@ -102,8 +101,7 @@ export function NearbyDriversScreen({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<DriverDisplay | null>(null);
   const [showDriverDetails, setShowDriverDetails] = useState(false);
-  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'trips'>('distance');
-  const [searchRadius, setSearchRadius] = useState<number>(100); // Raio em km (padrão: 100km)
+  const [sortBy, setSortBy] = useState<'rating' | 'trips'>('rating');
   const [drivers, setDrivers] = useState<DriverDisplay[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -115,16 +113,6 @@ export function NearbyDriversScreen({
   const loadNearbyDrivers = async () => {
     setLoading(true);
     try {
-      console.log('🚛 [NearbyDriversScreen] Iniciando busca de motoristas próximos');
-      console.log('📍 Origem do frete:', freightOrigin);
-      console.log('🔎 Parametros de busca:', {
-        city: freightOrigin.city,
-        state: freightOrigin.state,
-        city_type: typeof freightOrigin.city,
-        state_type: typeof freightOrigin.state,
-        city_length: freightOrigin.city?.length,
-        state_length: freightOrigin.state?.length
-      });
       
       // Buscar motoristas com disponibilidade ativa próximos à origem
       const result = await database.getAvailableDriversByLocation(
@@ -132,20 +120,13 @@ export function NearbyDriversScreen({
         freightOrigin.state
       );
 
-      console.log('📥 Resultado da busca:', result);
 
       if (result.success && result.data) {
-        console.log('✅ Motoristas encontrados:', result.data.length);
         
         // Converter para formato DriverDisplay
         const driversData: DriverDisplay[] = result.data
           .filter((item: any) => {
             const hasProfile = !!item.profile;
-            console.log('🔍 Verificando motorista:', { 
-              id: item.user_id, 
-              hasProfile,
-              location: item.current_location 
-            });
             return hasProfile;
           })
           .map((item: any) => {
@@ -178,21 +159,14 @@ export function NearbyDriversScreen({
                 max: 0
               },
               reviewCount: 0,
-              distance: calculateDistance(
-                item.current_location || { city: freightOrigin.city, state: freightOrigin.state },
-                freightOrigin
-              ),
               availabilityExpiresAt: item.availability_expires_at
             };
             
-            console.log('🚗 Motorista convertido:', driverData);
             return driverData;
           });
 
-        console.log('📋 Total de motoristas após conversão:', driversData.length);
         setDrivers(driversData);
       } else {
-        console.log('⚠️ Nenhum motorista encontrado ou erro:', result.error);
         setDrivers([]);
       }
     } catch (error) {
@@ -202,20 +176,6 @@ export function NearbyDriversScreen({
     } finally {
       setLoading(false);
     }
-  };
-
-  // Calcular distância aproximada (simplificado - mesma cidade = 0km, mesmo estado = 100km, diferente = 500km)
-  const calculateDistance = (
-    location: { city: string; state: string },
-    origin: { city: string; state: string }
-  ): number => {
-    if (location.city === origin.city && location.state === origin.state) {
-      return 0;
-    }
-    if (location.state === origin.state) {
-      return 100;
-    }
-    return 500;
   };
 
   // 🔥 Gerar código do frete
@@ -299,9 +259,6 @@ Podemos conversar? 📦`;
   const filteredDrivers = useMemo(() => {
     let filtered = drivers;
 
-    // Filtrar por raio de distância
-    filtered = filtered.filter(driver => (driver.distance || 0) <= searchRadius);
-
     // Busca por nome
     if (searchTerm) {
       filtered = filtered.filter(driver =>
@@ -313,8 +270,6 @@ Podemos conversar? 📦`;
     // Ordenar
     filtered = [...filtered].sort((a, b) => {
       switch (sortBy) {
-        case 'distance':
-          return (a.distance || 0) - (b.distance || 0);
         case 'rating':
           return b.rating - a.rating;
         case 'trips':
@@ -325,7 +280,7 @@ Podemos conversar? 📦`;
     });
 
     return filtered;
-  }, [drivers, searchTerm, sortBy, searchRadius]);
+  }, [drivers, searchTerm, sortBy]);
 
   const handleContactDriver = (driver: DriverDisplay) => {
     if (driver.phone) {
@@ -493,23 +448,8 @@ Podemos conversar? 📦`;
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="distance">Mais próximos</SelectItem>
                 <SelectItem value="rating">Melhor avaliados</SelectItem>
                 <SelectItem value="trips">Mais viagens</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Raio de Busca */}
-            <Select value={searchRadius.toString()} onValueChange={(value) => setSearchRadius(Number(value))}>
-              <SelectTrigger className="w-full sm:w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="50">50 km</SelectItem>
-                <SelectItem value="100">100 km</SelectItem>
-                <SelectItem value="200">200 km</SelectItem>
-                <SelectItem value="500">500 km</SelectItem>
-                <SelectItem value="1000">1000 km</SelectItem>
               </SelectContent>
             </Select>
 

@@ -43,7 +43,6 @@ export function RegistrationFlow({ onComplete, onBackToAuth, selectedUserType = 
 
   const handleRegistrationComplete = async (data: any) => {
     setRegistrationData(data);
-    console.log('✅ Registro completo - redirecionando para onComplete');
     await onComplete(data);
   };
 

@@ -53,7 +53,6 @@ export class CompanyRepository {
         
         // ✅ Pegar o ID gerado pelo Supabase
         createdId = supabaseData.id;
-        console.log('✅ Empresa salva no Supabase:', createdId);
         
       } catch (supabaseError) {
         console.error('❌ ERRO CRÍTICO ao salvar empresa:', supabaseError);
@@ -81,7 +80,6 @@ export class CompanyRepository {
         companiesList.push(createdId);
         await db.set(KeyPatterns.companiesList(), companiesList);
       } catch (cacheError) {
-        console.warn('⚠️ Erro ao cachear empresa:', cacheError);
       }
 
       return {

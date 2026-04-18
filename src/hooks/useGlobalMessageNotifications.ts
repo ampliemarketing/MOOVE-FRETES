@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { getSupabaseClient } from '../utils/supabase/client';
-import { createNotification } from '../utils/notification-manager';
 
 /**
  * Hook global para detectar novas mensagens e criar notificações automaticamente.
@@ -21,11 +20,9 @@ export function useGlobalMessageNotifications(userId: string | undefined) {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError || !session) {
-          console.log('⚠️ [Global Notifications] Sem sessão ativa - notificações realtime desabilitadas');
           return;
         }
 
-        console.log('🌍 [Global Notifications] Ativando listener para usuário:', userId);
 
         channel = supabase
           .channel('global_message_notifications')
@@ -45,7 +42,6 @@ export function useGlobalMessageNotifications(userId: string | undefined) {
                 return;
               }
 
-              console.log('🔔 [Global Notifications] Nova mensagem de:', newMessage.sender_id);
 
               const { data: senderData } = await supabase
                 .from('profiles')
@@ -80,7 +76,6 @@ export function useGlobalMessageNotifications(userId: string | undefined) {
                 const createResult = await database.notifications.create(notification);
 
                 if (createResult.success) {
-                  console.log('📬 [Global Notifications] Notificação criada');
                 }
               } catch (error) {
                 console.error('❌ [Global Notifications] Erro ao salvar:', error);
@@ -103,13 +98,10 @@ export function useGlobalMessageNotifications(userId: string | undefined) {
             }
 
             if (status === 'SUBSCRIBED') {
-              console.log('✅ [Global Notifications] Notificações ativadas');
             } else if (status === 'CHANNEL_ERROR') {
-              console.warn('⚠️ [Global Notifications] Erro no canal - verifique políticas RLS');
             }
           });
       } catch (error) {
-        console.warn('⚠️ [Global Notifications] Não foi possível ativar notificações:', error);
       }
     };
 

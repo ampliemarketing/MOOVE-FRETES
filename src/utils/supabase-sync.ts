@@ -13,7 +13,6 @@ import type { DBResponse } from './database/db-client';
  */
 export async function syncCompanyToSupabase(company: any): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('📤 Sincronizando empresa com Supabase...', company);
     
     const supabase = getSupabaseClient();
     
@@ -64,7 +63,6 @@ export async function syncCompanyToSupabase(company: any): Promise<{ success: bo
     
     if (existingCompany) {
       // ✅ Atualizar empresa existente (UPDATE)
-      console.log('📝 Atualizando empresa existente no Supabase...');
       const result = await supabase
         .from('companies')
         .update(companyData)
@@ -76,7 +74,6 @@ export async function syncCompanyToSupabase(company: any): Promise<{ success: bo
       error = result.error;
     } else {
       // ✅ Criar nova empresa (INSERT)
-      console.log('➕ Criando nova empresa no Supabase...');
       
       // Verificar se CNPJ já existe em outra empresa
       if (companyData.cnpj) {
@@ -87,7 +84,6 @@ export async function syncCompanyToSupabase(company: any): Promise<{ success: bo
           .maybeSingle();
         
         if (cnpjExists) {
-          console.warn('⚠️ CNPJ já cadastrado para outro usuário:', companyData.cnpj);
           return {
             success: false,
             error: 'CNPJ já cadastrado no sistema'
@@ -122,7 +118,6 @@ export async function syncCompanyToSupabase(company: any): Promise<{ success: bo
       };
     }
     
-    console.log('✅ Empresa sincronizada com sucesso no Supabase!', data);
     return { success: true };
   } catch (error) {
     console.error('❌ Erro ao sincronizar empresa:', error);
@@ -138,7 +133,6 @@ export async function syncCompanyToSupabase(company: any): Promise<{ success: bo
  */
 export async function loadActiveRoutesFromSupabase(): Promise<PreferredRoute[]> {
   try {
-    console.log('📥 Carregando rotas ativas do Supabase...');
     
     const supabase = getSupabaseClient();
     
@@ -154,7 +148,6 @@ export async function loadActiveRoutesFromSupabase(): Promise<PreferredRoute[]> 
     }
 
     if (!data || data.length === 0) {
-      console.log('📭 Nenhuma rota ativa encontrada no Supabase');
       return [];
     }
 
@@ -171,7 +164,6 @@ export async function loadActiveRoutesFromSupabase(): Promise<PreferredRoute[]> 
       updatedAt: row.updated_at,
     }));
 
-    console.log(`✅ ${routes.length} rotas carregadas do Supabase`);
     return routes;
   } catch (error) {
     console.error('❌ Erro ao carregar rotas do Supabase:', error);
@@ -186,7 +178,6 @@ export async function createPreferredRouteAndSync(
   data: Partial<PreferredRoute> & { driverId: string }
 ): Promise<DBResponse<PreferredRoute>> {
   try {
-    console.log('📤 Criando rota preferida...');
     
     // Criar no database local (que já sincroniza com Supabase)
     const result = await database.preferredRoutes.create({
@@ -216,7 +207,6 @@ export async function updatePreferredRouteAndSync(
   updates: Partial<PreferredRoute>
 ): Promise<DBResponse<PreferredRoute>> {
   try {
-    console.log('📝 Atualizando rota preferida...', routeId);
     
     // Atualizar no database local (que já sincroniza com Supabase)
     const result = await database.preferredRoutes.update(routeId, updates);
@@ -242,7 +232,6 @@ export function subscribeToRoutesRealtime(callbacks: {
   try {
     const supabase = getSupabaseClient();
     
-    console.log('🔴 Configurando subscription em tempo real para rotas...');
     
     const channel = supabase
       .channel('preferred_routes_changes')
@@ -254,7 +243,6 @@ export function subscribeToRoutesRealtime(callbacks: {
           table: 'preferred_routes',
         },
         (payload) => {
-          console.log('🆕 Nova rota recebida em tempo real:', payload.new);
           
           if (callbacks.onRoutePublished) {
             const newRoute: PreferredRoute = {
@@ -281,7 +269,6 @@ export function subscribeToRoutesRealtime(callbacks: {
           table: 'preferred_routes',
         },
         (payload) => {
-          console.log('📝 Rota atualizada em tempo real:', payload.new);
           
           if (callbacks.onRouteUpdated) {
             const updatedRoute: PreferredRoute = {
@@ -308,7 +295,6 @@ export function subscribeToRoutesRealtime(callbacks: {
           table: 'preferred_routes',
         },
         (payload) => {
-          console.log('🗑️ Rota deletada em tempo real:', payload.old.id);
           
           if (callbacks.onRouteDeleted) {
             callbacks.onRouteDeleted(payload.old.id);
@@ -331,6 +317,5 @@ export function unsubscribeFromRealtime(channel?: any): void {
   if (channel) {
     const supabase = getSupabaseClient();
     supabase.removeChannel(channel);
-    console.log('✅ Subscription cancelada');
   }
 }

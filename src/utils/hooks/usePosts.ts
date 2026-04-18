@@ -76,9 +76,8 @@ export function usePosts() {
         setPosts([]);
       }
     } catch (err) {
-      // Silenciar completamente - sistema offline usa array vazio
       setPosts([]);
-      setError(null);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar o feed. Verifique sua conexão.');
     } finally {
       setLoading(false);
     }

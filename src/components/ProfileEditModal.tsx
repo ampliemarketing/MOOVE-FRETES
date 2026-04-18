@@ -123,7 +123,6 @@ export function ProfileEditModal({
 
   const handleAvatarUpdate = async (newAvatarUrl: string) => {
     setAvatarUrl(newAvatarUrl);
-    console.log('✅ [ProfileEditModal] Avatar atualizado:', newAvatarUrl);
     
     // Atualizar contexto global imediatamente
     if (state.user) {
@@ -136,7 +135,6 @@ export function ProfileEditModal({
       // Persistir no localStorage também (cache)
       try {
         localStorage.setItem('maisfrete-user', JSON.stringify(updatedUser));
-        console.log('✅ [ProfileEditModal] Avatar sincronizado no localStorage');
       } catch (error) {
         console.error('❌ [ProfileEditModal] Erro ao salvar no localStorage:', error);
       }
@@ -293,7 +291,6 @@ export function ProfileEditModal({
           // Persistir no localStorage também (cache)
           try {
             localStorage.setItem('maisfrete-user', JSON.stringify(updatedUser));
-            console.log('✅ [ProfileEditModal] Dados do usuário sincronizados no AppContext e localStorage');
           } catch (error) {
             console.error('❌ [ProfileEditModal] Erro ao salvar no localStorage:', error);
           }
@@ -364,7 +361,6 @@ export function ProfileEditModal({
           console.error('❌ Erro ao atualizar profiles:', profileError);
           // Não lançar erro para não bloquear o fluxo
         } else {
-          console.log('✅ [ProfileEditModal] profiles.name sincronizado com:', formData.nomeFantasia);
         }
 
         // Atualizar na tabela profiles
@@ -420,22 +416,18 @@ export function ProfileEditModal({
           
           // 🔥 LIMPAR CACHE ANTIGO PRIMEIRO
           localStorage.removeItem('maisfrete-user');
-          console.log('🗑️ [ProfileEditModal] Cache antigo limpo!');
           
           actions.setUser(updatedUser);
           
           // Persistir no localStorage também (cache)
           try {
             localStorage.setItem('maisfrete-user', JSON.stringify(updatedUser));
-            console.log('✅ [ProfileEditModal] Dados da empresa sincronizados no AppContext e localStorage');
-            console.log('📝 [ProfileEditModal] Nome atualizado para:', formData.nomeFantasia);
           } catch (error) {
             console.error('❌ [ProfileEditModal] Erro ao salvar no localStorage:', error);
           }
           
           // 🔥 FORÇAR RELOAD COMPLETO DA PÁGINA PARA GARANTIR ATUALIZAÇÃO
           setTimeout(() => {
-            console.log('🔄 [ProfileEditModal] Recarregando página para aplicar mudanças...');
             window.location.reload();
           }, 500);
         }

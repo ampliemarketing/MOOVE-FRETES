@@ -89,7 +89,7 @@ export const pageHelpData: Record<string, PageHelpInfo> = {
     description:
       'Encontre e gerencie motoristas ou transportadoras cadastradas na plataforma. Use filtros avançados para encontrar o profissional ideal.',
     tips: [
-      'Filtre por verificação, disponibilidade e raio de atuação.',
+      'Filtre por verificação, disponibilidade e tipo de veículo.',
       'Marque motoristas como favoritos para encontrá-los rapidamente.',
       'Clique em um perfil para ver detalhes completos, avaliações e veículos.',
       'Use o botão de chat para entrar em contato diretamente.',
@@ -100,7 +100,7 @@ export const pageHelpData: Record<string, PageHelpInfo> = {
     description:
       'Lista completa de motoristas cadastrados na plataforma. Use filtros avançados para encontrar motoristas por localização, tipo de veículo e disponibilidade.',
     tips: [
-      'O filtro de raio usa geolocalização para encontrar motoristas próximos.',
+      'Use os filtros de origem e destino para encontrar motoristas na rota desejada.',
       'Motoristas verificados possuem um selo de verificação.',
       'Favorite motoristas para acessá-los rapidamente no futuro.',
     ],

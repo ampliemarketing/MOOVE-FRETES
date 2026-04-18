@@ -50,7 +50,6 @@ export class NotificationRepository {
       }
 
       const created = sqlToNotification(data);
-      console.log('✅ Notificação criada no Supabase:', created.id);
 
       // 2. CACHEAR NO LOCALSTORAGE (opcional)
       try {
@@ -63,7 +62,6 @@ export class NotificationRepository {
         userNotifications.unshift(created.id);
         await db.set(userKey, userNotifications);
       } catch (cacheError) {
-        console.warn('⚠️ Erro ao cachear notificação:', cacheError);
         // Não falhar se cache falhar
       }
 
@@ -141,7 +139,6 @@ export class NotificationRepository {
       }
 
       const notifications = data.map(sqlToNotification);
-      console.log(`✅ ${notifications.length} notificações carregadas do Supabase`);
 
       // 2. ATUALIZAR CACHE (opcional)
       try {
@@ -152,7 +149,6 @@ export class NotificationRepository {
         }
         await db.set(KeyPatterns.notificationsByUser(userId), notificationIds);
       } catch (cacheError) {
-        console.warn('⚠️ Erro ao cachear notificações:', cacheError);
       }
 
       return {
@@ -202,7 +198,6 @@ export class NotificationRepository {
       try {
         await db.set(KeyPatterns.notification(id), updated);
       } catch (cacheError) {
-        console.warn('⚠️ Erro ao atualizar cache:', cacheError);
       }
 
       return {
