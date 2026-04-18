@@ -1539,15 +1539,15 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
   }
 
   return (
-    <div className="w-full px-4 py-8">
-      <div className="w-full max-w-md my-auto mx-auto">
+    <div className="w-full px-4 py-4">
+      <div className="w-full max-w-md mx-auto">
         {/* Logo */}
         <motion.div
-          initial={{ y: -50, opacity: 0 }}
+          initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="text-center mb-8"
+          className="flex items-center justify-center mb-4"
         >
-          <div className="w-56 h-28 mx-auto mb-8">
+          <div className="w-44 h-20">
             <img
               src={logoMaisFrete}
               alt="MaisFrete"
@@ -1563,8 +1563,9 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           transition={{ delay: 0.2 }}
         >
           <Card
-            className="border-0"
+            className="border-0 flex flex-col"
             style={{
+              maxHeight: 'calc(100vh - 8rem)',
               boxShadow: [
                 '0 0 0 1px rgba(29,52,99,0.06)',
                 '0 8px 30px 0px rgba(29,52,99,0.14)',
@@ -1576,7 +1577,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
               ].join(', '),
             }}
           >
-            <CardHeader className="text-center pb-4">
+            <CardHeader className="text-center pb-4 flex-shrink-0">
               <CardTitle className="text-2xl text-primary">
                 {isLogin ? "Entrar" : "Criar Conta"}
               </CardTitle>
@@ -1585,7 +1586,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
               </p>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 flex-1 overflow-y-auto">
               {/* Login Form - sempre visível quando isLogin é true */}
               {isLogin ? (
                 <form
@@ -1759,17 +1760,6 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           </Card>
         </motion.div>
 
-        {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="text-center mt-8 space-y-3"
-        >
-          <p className="text-muted-foreground text-sm">
-            © 2026 MooveFretes - Logística Inteligente
-          </p>
-        </motion.div>
       </div>
 
       {/* Database Error Alert */}

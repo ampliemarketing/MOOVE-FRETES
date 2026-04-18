@@ -98,7 +98,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-6 px-[21px] py-[0px]">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 rounded-[0px] p-6 sm:p-8 text-white shadow-lg">
+      <div className="bg-gradient-to-br from-primary to-primary/80 rounded-[0px] p-6 sm:p-8 text-white shadow-lg -mx-[21px]">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold mb-2">

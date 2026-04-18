@@ -52,13 +52,13 @@ export function BackgroundPaths({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-white">
+    <div className="relative h-screen w-full flex items-center justify-center bg-white overflow-hidden">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <FloatingPaths position={1} />
         <FloatingPaths position={-1} />
       </div>
 
-      <div className="relative z-10 w-full max-w-md px-4 md:px-6">
+      <div className="relative z-10 w-full px-4 md:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -75,8 +75,8 @@ export function RegistrationFlow({ onComplete, onBackToAuth, selectedUserType = 
 
   const renderPendingApproval = () => (
     <div className="w-full">
-      <div className="flex items-center justify-center py-8 px-4">
-        <div className="max-w-md w-full">
+      <div className="flex items-center justify-center py-2 px-4">
+        <div className="w-full max-w-md mx-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -136,8 +136,8 @@ export function RegistrationFlow({ onComplete, onBackToAuth, selectedUserType = 
 
     return (
       <div className="w-full">
-        <div className="flex items-center justify-center py-8 px-4">
-          <div className="max-w-md w-full">
+        <div className="flex items-center justify-center py-2 px-4">
+          <div className="w-full max-w-md mx-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}

@@ -1596,23 +1596,23 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
 
   return (
     <div className="w-full">
-      <div className="max-w-md w-full mx-auto py-4">
+      <div className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl mx-auto py-2">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           {/* Logo */}
-          <div className="flex items-center justify-center mb-6">
-            <img 
-              src={logoMaisFrete} 
-              alt="MooveFretes" 
-              className="h-16 w-auto"
+          <div className="flex items-center justify-center mb-4">
+            <img
+              src={logoMaisFrete}
+              alt="MooveFretes"
+              className="h-12 w-auto"
             />
           </div>
 
-          <Card className="bg-white shadow-card">
-            <CardHeader className="border-b border-light">
-              <div className="flex items-center justify-between mb-4">
+          <Card className="bg-white shadow-card flex flex-col" style={{ maxHeight: 'calc(100vh - 6rem)' }}>
+            <CardHeader className="border-b border-light flex-shrink-0 pb-4">
+              <div className="flex items-center justify-between mb-3">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1624,9 +1624,6 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
                 </Button>
                 <div className="text-center flex-1">
                   <h1 className="text-xl text-foreground">Complete seu Perfil</h1>
-                  <p className="text-sm text-[#253663] mt-1">
-                    Passo {currentStepIndex + 1} de {steps.length}
-                  </p>
                 </div>
                 <div className="w-10"></div>
               </div>
@@ -1635,18 +1632,18 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
               <Progress value={progress} className="h-2" />
 
               {/* Step Icons */}
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center justify-between mt-3">
                 {steps.map((step, index) => {
                   const StepIcon = step.icon;
                   const isActive = index === currentStepIndex;
                   const isCompleted = index < currentStepIndex;
-                  
+
                   return (
                     <div key={step.id} className="flex flex-col items-center flex-1">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                        isActive 
-                          ? 'bg-[#253663] text-white' 
-                          : isCompleted 
+                        isActive
+                          ? 'bg-[#253663] text-white'
+                          : isCompleted
                           ? 'bg-green-500 text-white'
                           : 'bg-gray-200 text-gray-400'
                       }`}>
@@ -1667,7 +1664,8 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
               </div>
             </CardHeader>
 
-            <CardContent className="p-6">
+            {/* Scrollable form content */}
+            <CardContent className="flex-1 overflow-y-auto p-6 min-h-0">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
@@ -1679,47 +1677,40 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
                   {renderCurrentStep()}
                 </motion.div>
               </AnimatePresence>
-
-              {/* Navigation Buttons */}
-              <div className="mt-8">
-                {currentStepIndex === steps.length - 1 ? (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="w-full bg-[#253663] hover:bg-[#253663]/90 text-white"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Criando conta...
-                      </>
-                    ) : (
-                      <>
-                        Criar Conta e Continuar
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleNext}
-                    disabled={!canProceedToNextStep()}
-                    className="w-full bg-[#253663] hover:bg-[#253663]/90 text-white"
-                  >
-                    Próximo
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                )}
-              </div>
             </CardContent>
-          </Card>
 
-          {/* Support info */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Após criar sua conta, você completará seu perfil com mais informações
-            </p>
-          </div>
+            {/* Fixed navigation buttons */}
+            <div className="px-6 pb-6 pt-4 border-t border-light flex-shrink-0">
+              {currentStepIndex === steps.length - 1 ? (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full bg-[#253663] hover:bg-[#253663]/90 text-white"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Criando conta...
+                    </>
+                  ) : (
+                    <>
+                      Criar Conta e Continuar
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNext}
+                  disabled={!canProceedToNextStep()}
+                  className="w-full bg-[#253663] hover:bg-[#253663]/90 text-white"
+                >
+                  Próximo
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              )}
+            </div>
+          </Card>
         </motion.div>
       </div>
 
