@@ -68,7 +68,22 @@ export class PreferredRouteRepository {
 
       // 1. SALVAR NO SUPABASE (que vai gerar o UUID)
       const supabase = getSupabaseClient();
-      const sqlData = preferredRouteToSQL(newRoute);
+
+      // Resolver drivers.id a partir do user_id (FK exige drivers.id, não auth.uid)
+      const { data: driverRow, error: driverError } = await supabase
+        .from('drivers')
+        .select('id')
+        .eq('user_id', route.driverId)
+        .single();
+
+      if (driverError || !driverRow) {
+        return {
+          success: false,
+          error: 'Perfil de motorista não encontrado para este usuário',
+        };
+      }
+
+      const sqlData = preferredRouteToSQL({ ...newRoute, driverId: driverRow.id });
 
       const { data, error } = await supabase
         .from('preferred_routes')
