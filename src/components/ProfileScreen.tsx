@@ -173,6 +173,7 @@ interface UserStats {
   punctuality: number;
   weeklyFreights: number;
   thisMonthValue: number;
+  profileViews: number;
 }
 
 interface SocialStats {
@@ -255,7 +256,8 @@ const mockUserData: UserData = {
     averageRating: 0,
     punctuality: 0,
     weeklyFreights: 0,
-    thisMonthValue: 0
+    thisMonthValue: 0,
+    profileViews: 0
   },
   socialStats: {
     followers: 0,
@@ -327,6 +329,10 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
         
         if (userResponse.success && userResponse.data) {
           const profileData = userResponse.data;
+          
+          // 📊 Buscar visualizações de perfil
+          const viewsResponse = await database.profileViews.getViewCount(profileId);
+          const profileViewsCount = viewsResponse.success ? viewsResponse.data || 0 : 0;
           
           // 🏢 Buscar dados da empresa se for transportadora, embarcador ou agenciador
           // ✅ SOLUÇÃO 2: Não buscar companies para caminhoneiros (previne erro 406)
@@ -570,6 +576,7 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
               averageRating: companyData?.rating || driverData?.rating || profileData.profile?.rating || user.rating || 0,
               totalFreights: profileData.profile?.totalFreights || driverData?.completedTrips || user.totalTrips || 0,
               punctuality: driverData?.punctuality ?? 0,
+              profileViews: profileViewsCount,
             },
             socialStats: {
               ...prev.socialStats,
@@ -1100,9 +1107,9 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
               icon: Users,
             },
             { 
-              label: 'Pontualidade', 
-              value: `${userData.stats.punctuality || 0}%`, 
-              icon: Clock,
+              label: 'Visitas', 
+              value: formatNumber(userData.stats.profileViews), 
+              icon: Eye,
             }
           ].map((stat, index) => (
             <motion.div

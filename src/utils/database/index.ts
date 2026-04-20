@@ -34,6 +34,7 @@ import { collaboratorRepository, CollaboratorRepository } from './repositories/c
 import { activityLogRepository, ActivityLogRepository } from './repositories/activity-log-repository';
 import { favoriteRepository, FavoriteRepository } from './repositories/favorite-repository';
 import { savedContactRepository, SavedContactRepository, freightContactRepository, FreightContactRepository } from './repositories/saved-contact-repository';
+import { profileViewRepository, ProfileViewRepository } from './repositories/profile-view-repository';
 
 // Re-export repositories
 export { userRepository, UserRepository };
@@ -53,6 +54,7 @@ export { collaboratorRepository, CollaboratorRepository };
 export { activityLogRepository, ActivityLogRepository };
 export { favoriteRepository, FavoriteRepository };
 export { savedContactRepository, SavedContactRepository, freightContactRepository, FreightContactRepository };
+export { profileViewRepository, ProfileViewRepository };
 
 // Create unified database object for convenient access
 export const database = {
@@ -80,6 +82,7 @@ export const database = {
   favorites: favoriteRepository,
   savedContacts: savedContactRepository,
   freightContacts: freightContactRepository,
+  profileViews: profileViewRepository,
   
   // Helper methods para disponibilidade de motoristas
   getDriverAvailability: (userId: string) => driverRepository.getDriverAvailability(userId),

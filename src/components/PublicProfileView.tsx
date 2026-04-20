@@ -109,6 +109,20 @@ export function PublicProfileView({ profile, currentUser, onBack }: PublicProfil
     if (!isOwnProfile) loadFavorites();
   }, [currentUser.id, profile.id, isOwnProfile]);
 
+  // Record profile view
+  useEffect(() => {
+    const recordView = async () => {
+      if (!isOwnProfile && currentUser.id && profile.id) {
+        try {
+          await database.profileViews.recordView(currentUser.id, profile.id);
+        } catch (error) {
+          console.error('❌ [PublicProfileView] Erro ao registrar visita:', error);
+        }
+      }
+    };
+    recordView();
+  }, [profile.id, currentUser.id, isOwnProfile]);
+
   const handleOpenChat = () => {
     navigate('/chat', {
       state: {
