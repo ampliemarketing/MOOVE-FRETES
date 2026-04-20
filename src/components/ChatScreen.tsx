@@ -1389,6 +1389,19 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
           .from('conversations')
           .update({ last_message_at: now })
           .eq('id', selectedChat.id);
+
+        // Create push notification for the recipient
+        const recipientId = selectedChat.otherUser?.id;
+        if (recipientId) {
+          await supabase.from('notifications').insert({
+            user_id: recipientId,
+            type: 'message',
+            title: `Nova mensagem de ${chatDisplayName || user.name || 'Usuário'}`,
+            message: content.substring(0, 100),
+            related_id: selectedChat.id,
+            is_read: false,
+          });
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);
