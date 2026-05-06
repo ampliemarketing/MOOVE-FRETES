@@ -299,10 +299,8 @@ export class FreightRepository {
             // ✅ Status "inactive" → marcar como privado
             if (updates.status === 'inactive') {
               supabaseUpdates.visibility = 'private';
-              supabaseUpdates.metadata = { is_paused: true };
             } else if (updates.status === 'active' || updates.status === 'open') {
               supabaseUpdates.visibility = 'public';
-              supabaseUpdates.metadata = { is_paused: false };
             } else if (updates.status === 'completed') {
               // ✅ ADICIONADO: Marcar timestamp de conclusão
               supabaseUpdates.completed_at = new Date().toISOString();

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { formatLocationSlash, formatLocation, isValidLocation, isSameLocation } from '../utils/location-helpers';
 import { validateFreights } from '../utils/freight-validator';
 import { 
@@ -202,6 +202,7 @@ export function FreightManagement({
   selectedFreightId
 }: FreightManagementProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'draft' | 'active' | 'scheduled' | 'contracted' | 'completed' | 'inactive'>('all');
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -296,7 +297,18 @@ export function FreightManagement({
       navigate(`/fretes/${selectedFreightId}`, { replace: true });
     }
   }, [selectedFreightId, navigate]);
-  
+
+  // ✏️ Abrir edição quando vindo de /fretes/:id via editFreightId no state de navegação
+  React.useEffect(() => {
+    const editFreightId = location.state?.editFreightId;
+    if (!editFreightId || !apiFreights.length) return;
+    const freight = apiFreights.find((f: Freight) => f.id === editFreightId);
+    if (freight) {
+      handleEditFreight(freight);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, apiFreights]);
+
   // 🚛 Carregar disponibilidade do motorista
   React.useEffect(() => {
     if (user && user.id && user.userType === 'caminhoneiro') {

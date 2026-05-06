@@ -79,7 +79,7 @@ export function useFreightById(freightId: string) {
       const publisherPhone = profile?.phone || '';
 
       // Detect paused freights
-      const isPaused = f.visibility === 'private' && f.metadata?.is_paused === true;
+      const isPaused = f.visibility === 'private';
 
       const transformedFreight = {
         id: f.id,

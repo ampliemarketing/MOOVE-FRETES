@@ -590,7 +590,7 @@ export function FreightRegistration({
         selectedSpecialTrailers: freightData.selectedSpecialTrailers,
         freightValueType: freightData.freightValueType,
         valueCalculation: freightData.valueCalculation,
-        paymentIncluded: freightData.paymentIncluded,
+        paymentIncluded: freightData.tollPayment,
         paymentMethod: freightData.paymentMethod,
         advancePayment: freightData.advancePayment,
         urgencyType: freightData.urgencyType,
@@ -759,7 +759,7 @@ export function FreightRegistration({
         selectedSpecialTrailers: freightData.selectedSpecialTrailers,
         freightValueType: freightData.freightValueType,
         valueCalculation: freightData.valueCalculation,
-        paymentIncluded: freightData.paymentIncluded,
+        paymentIncluded: freightData.tollPayment,
         paymentMethod: freightData.paymentMethod,
         advancePayment: freightData.advancePayment,
         urgencyType: 'scheduled',
@@ -1001,7 +1001,9 @@ export function FreightRegistration({
                   <div>
                     <h2 className="text-base font-medium text-[#111827]">Origem e Destino</h2>
                     <p className="text-sm text-[#6b7280] mt-0.5">
-                      Informe os dados de coleta e entrega da mercadoria
+                      {isEditing
+                        ? 'Origem, destino e datas não podem ser alterados após a publicação'
+                        : 'Informe os dados de coleta e entrega da mercadoria'}
                     </p>
                   </div>
                 </div>
@@ -1017,8 +1019,9 @@ export function FreightRegistration({
                       updateFreightData('originState', stateCode);
                     }}
                     placeholder="Digite o nome da cidade"
+                    disabled={isEditing}
                   />
-                  
+
                   <div className="space-y-2">
                     <Label>Data de coleta (opcional)</Label>
                     <Input
@@ -1028,10 +1031,13 @@ export function FreightRegistration({
                       className="bg-input-background border-input-border"
                       placeholder="DD/MM/AAAA"
                       min={new Date().toISOString().split('T')[0]}
+                      disabled={isEditing}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Necessário para agendar o frete
-                    </p>
+                    {!isEditing && (
+                      <p className="text-xs text-muted-foreground">
+                        Necessário para agendar o frete
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1044,8 +1050,9 @@ export function FreightRegistration({
                       updateFreightData('destinationState', stateCode);
                     }}
                     placeholder="Digite o nome da cidade"
+                    disabled={isEditing}
                   />
-                  
+
                   <div className="space-y-2">
                     <Label>Data de entrega (opcional)</Label>
                     <Input
@@ -1054,6 +1061,7 @@ export function FreightRegistration({
                       onChange={(e) => updateFreightData('deliveryDate', e.target.value)}
                       className="bg-input-background border-input-border"
                       placeholder="DD/MM/AAAA"
+                      disabled={isEditing}
                     />
                   </div>
                 </div>

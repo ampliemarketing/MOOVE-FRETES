@@ -10,6 +10,7 @@ interface CityAutocompleteProps {
   onValueChange: (city: string, stateCode: string) => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 interface CitySuggestion {
@@ -19,12 +20,13 @@ interface CitySuggestion {
   label: string;
 }
 
-export function CityAutocomplete({ 
-  label, 
-  value, 
-  onValueChange, 
+export function CityAutocomplete({
+  label,
+  value,
+  onValueChange,
   placeholder = "Digite o nome da cidade",
-  className = ""
+  className = "",
+  disabled = false
 }: CityAutocompleteProps) {
   const [searchQuery, setSearchQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
@@ -176,20 +178,21 @@ export function CityAutocomplete({
         <Input
           ref={inputRef}
           value={searchQuery}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
+          onChange={disabled ? undefined : handleInputChange}
+          onKeyDown={disabled ? undefined : handleKeyDown}
           onFocus={() => {
-            if (searchQuery.length >= 2 && suggestions.length > 0) {
+            if (!disabled && searchQuery.length >= 2 && suggestions.length > 0) {
               setShowSuggestions(true);
             }
           }}
           placeholder={placeholder}
-          className="bg-input-background border-input-border pr-10"
+          disabled={disabled}
+          className={`bg-input-background border-input-border pr-10 ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {isLoading ? (
+          {!disabled && isLoading ? (
             <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-          ) : searchQuery ? (
+          ) : !disabled && searchQuery ? (
             <button
               type="button"
               onClick={handleClear}

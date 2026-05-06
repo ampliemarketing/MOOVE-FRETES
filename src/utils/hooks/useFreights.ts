@@ -212,8 +212,8 @@ export function useFreights() {
             
             // Transformar dados do Supabase para o formato esperado
             const transformedFreights = supabaseFreights.map(f => {
-              // ⚠️ DETECTAR FRETES PAUSADOS: visibility 'private' + metadata.is_paused = true
-              const isPaused = f.visibility === 'private' && f.metadata?.is_paused === true;
+              // ⚠️ DETECTAR FRETES PAUSADOS: visibility 'private'
+              const isPaused = f.visibility === 'private';
               
               // 🖼️ PEGAR LOGO DA EMPRESA DO MAPA
               const companyLogo = avatarMap.get(f.publisher_id) || '';
