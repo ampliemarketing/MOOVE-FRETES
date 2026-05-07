@@ -42,12 +42,13 @@ import logoMaisFrete from "../assets/logo-moovefretes.png";
 const LAST_LOGGED_EMAIL_KEY = "maisfrete_last_logged_email";
 
 interface AuthScreenProps {
-  onLogin: (email: string, password: string) => Promise<void>;
+  onLogin: (email: string, password: string, userType: "caminhoneiro" | "transportadora" | "agenciador") => Promise<void>;
 }
 
 type ViewMode = "auth" | "register" | "registration-flow";
 
 export function AuthScreen({ onLogin }: AuthScreenProps) {
+  const [authStep, setAuthStep] = useState<"selection" | "form">("selection");
   const [viewMode, setViewMode] = useState<ViewMode>("auth");
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -73,7 +74,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
     email: "",
     password: "",
     name: "",
-    userType: "caminhoneiro",
+    userType: "caminhoneiro" as "caminhoneiro" | "transportadora" | "agenciador",
   });
 
   // Check Supabase connection on mount
@@ -133,6 +134,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
       await onLogin(
         formData.email.trim(),
         formData.password.trim(),
+        formData.userType,
       );
 
       // 🔑 Salvar email do último usuário logado
@@ -1449,7 +1451,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           }
 
           // Step 6: Auto-login após cadastro
-          await onLogin(userData.email, userData.password);
+          await onLogin(userData.email, userData.password, userData.userType || selectedUserType || "caminhoneiro");
         } else {
           throw new Error(
             "Falha ao criar usuário no database local",
@@ -1587,44 +1589,135 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
             </CardHeader>
 
             <CardContent className="space-y-6 flex-1 overflow-y-auto">
-              {/* Login Form - sempre visível quando isLogin é true */}
-              {isLogin ? (
+              {/* Passo 1: Seleção de Perfil */}
+              {authStep === "selection" ? (
+                <div className="space-y-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center mb-6"
+                  >
+                    <Label className="text-sm font-medium text-muted-foreground block">
+                      {isLogin ? "Como deseja entrar?" : "Escolha o tipo de cadastro:"}
+                    </Label>
+                  </motion.div>
+
+                  <div className="grid gap-4">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <Button
+                        onClick={() => {
+                          setFormData({ ...formData, userType: "caminhoneiro" });
+                          if (isLogin) {
+                            setAuthStep("form");
+                          } else {
+                            handleStartRegistration("caminhoneiro");
+                          }
+                        }}
+                        disabled={loading}
+                        variant="outline"
+                        className="w-full flex items-center justify-start gap-4 h-24 p-4 transition-all border-2 hover:border-primary hover:bg-primary/5 group"
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                          <Truck className="w-7 h-7 text-primary" />
+                        </div>
+                        <div className="text-left">
+                          <div className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+                            Caminhoneiro
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Motorista autônomo ou profissional
+                          </div>
+                        </div>
+                      </Button>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <Button
+                        onClick={() => {
+                          setFormData({ ...formData, userType: "transportadora" });
+                          if (isLogin) {
+                            setAuthStep("form");
+                          } else {
+                            handleStartRegistration("transportadora");
+                          }
+                        }}
+                        disabled={loading}
+                        variant="outline"
+                        className="w-full flex items-center justify-start gap-4 h-24 p-4 transition-all border-2 hover:border-primary hover:bg-primary/5 group"
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                          <Building className="w-7 h-7 text-primary" />
+                        </div>
+                        <div className="text-left">
+                          <div className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+                            Transportadora / Embarcador
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Empresa de transporte ou embarcador
+                          </div>
+                        </div>
+                      </Button>
+                    </motion.div>
+                  </div>
+
+                  {/* Toggle between login and register */}
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-center pt-6"
+                  >
+                    <div className="text-sm text-muted-foreground mb-1">
+                      {isLogin ? "Não tem uma conta?" : "Já possui uma conta?"}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="link"
+                      onClick={() => setIsLogin(!isLogin)}
+                      className="text-base text-primary font-semibold hover:underline p-0 h-auto"
+                    >
+                      {isLogin ? "Criar nova conta" : "Fazer login"}
+                    </Button>
+                  </motion.div>
+                </div>
+              ) : isLogin ? (
+                /* Passo 2: Formuário de Login */
                 <form
                   onSubmit={handleSubmit}
                   className="space-y-4"
                 >
-                  {/* Seletor de tipo de usuário para Login */}
-                  <div className="space-y-3 mb-6">
-                    <Label className="text-sm font-medium text-muted-foreground block text-center">
-                      Entrar como:
-                    </Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        type="button"
-                        variant={formData.userType === 'caminhoneiro' ? 'default' : 'outline'}
-                        onClick={() => setFormData({...formData, userType: 'caminhoneiro'})}
-                        className={`flex items-center justify-center gap-2 h-12 transition-all ${
-                          formData.userType === 'caminhoneiro' 
-                            ? 'bg-primary text-white shadow-md' 
-                            : 'hover:border-primary hover:bg-primary/5'
-                        }`}
-                      >
-                        <Truck className="w-5 h-5" />
-                        <span className="font-medium">Motorista</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={formData.userType === 'transportadora' ? 'default' : 'outline'}
-                        onClick={() => setFormData({...formData, userType: 'transportadora'})}
-                        className={`flex items-center justify-center gap-2 h-12 transition-all ${
-                          formData.userType === 'transportadora' 
-                            ? 'bg-primary text-white shadow-md' 
-                            : 'hover:border-primary hover:bg-primary/5'
-                        }`}
-                      >
-                        <Building className="w-5 h-5" />
-                        <span className="font-medium">Empresa</span>
-                      </Button>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setAuthStep("selection")}
+                    className="flex items-center gap-1 text-xs text-muted-foreground p-0 h-auto hover:text-primary mb-2"
+                  >
+                    <ArrowLeft className="w-3 h-3" />
+                    Voltar para seleção de perfil
+                  </Button>
+
+                  <div className="bg-primary/5 p-3 rounded-lg flex items-center gap-3 border border-primary/10 mb-4">
+                    {formData.userType === 'caminhoneiro' ? (
+                      <Truck className="w-5 h-5 text-primary" />
+                    ) : (
+                      <Building className="w-5 h-5 text-primary" />
+                    )}
+                    <div>
+                      <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                        Acessando como
+                      </div>
+                      <div className="text-sm font-bold text-primary">
+                        {formData.userType === 'caminhoneiro' ? 'Caminhoneiro' : 'Transportadora/Embarcador'}
+                      </div>
                     </div>
                   </div>
 
@@ -1708,89 +1801,19 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                     {loading ? "Entrando..." : "Entrar"}
                   </Button>
 
-                  {/* Toggle between login and register */}
+                  {/* Toggle back to selection */}
                   <div className="text-center pt-2">
                     <Button
                       type="button"
                       variant="link"
-                      onClick={() => setIsLogin(!isLogin)}
+                      onClick={() => setAuthStep("selection")}
                       className="text-sm text-muted-foreground hover:text-primary"
                     >
-                      <>
-                        Não tem conta?{" "}
-                        <span className="font-medium ml-1">
-                          Criar nova conta
-                        </span>
-                      </>
+                      <span className="font-medium">Alterar tipo de acesso</span>
                     </Button>
                   </div>
                 </form>
-              ) : (
-                /* Registration Type Selection - NOVO FLUXO SIMPLIFICADO */
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Escolha o tipo de cadastro:
-                  </Label>
-                  <div className="grid gap-2">
-                    <Button
-                      onClick={() =>
-                        handleStartRegistration("caminhoneiro")
-                      }
-                      disabled={loading}
-                      variant="outline"
-                      className="flex items-center justify-start gap-3 h-16 hover:border-primary hover:bg-background hover:text-foreground transition-colors"
-                    >
-                      <Truck className="w-6 h-6 text-primary" />
-                      <div className="text-left">
-                        <div className="font-medium">
-                          Caminhoneiro
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Motorista autônomo ou profissional
-                        </div>
-                      </div>
-                    </Button>
-
-                    <Button
-                      onClick={() =>
-                        handleStartRegistration(
-                          "transportadora",
-                        )
-                      }
-                      disabled={loading}
-                      variant="outline"
-                      className="flex items-center justify-start gap-3 h-16 hover:border-primary hover:bg-background hover:text-foreground transition-colors"
-                    >
-                      <Building className="w-6 h-6 text-primary" />
-                      <div className="text-left">
-                        <div className="font-medium">
-                          Transportadora/Embarcador
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Empresa de transporte ou embarcador
-                        </div>
-                      </div>
-                    </Button>
-                  </div>
-
-                  {/* Toggle back to login */}
-                  <div className="text-center pt-2">
-                    <Button
-                      type="button"
-                      variant="link"
-                      onClick={() => setIsLogin(!isLogin)}
-                      className="text-sm text-muted-foreground hover:text-primary"
-                    >
-                      <>
-                        Já tem conta?{" "}
-                        <span className="font-medium ml-1">
-                          Fazer login
-                        </span>
-                      </>
-                    </Button>
-                  </div>
-                </div>
-              )}
+              ) : null}
             </CardContent>
           </Card>
         </motion.div>

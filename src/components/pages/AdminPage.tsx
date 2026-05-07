@@ -12,15 +12,34 @@ export function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    console.log('🛡️ AdminPage: Monitorando estado de auth', { loading, authenticated, email: user?.email });
     if (!loading && authenticated && user?.email) {
       const authorized = SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
+      console.log('🛡️ AdminPage: Resultado da autorização:', authorized);
       setIsAdmin(authorized);
     } else {
       setIsAdmin(false);
     }
   }, [loading, authenticated, user]);
 
-  if (loading) return null;
+  // Debug initial mount
+  useEffect(() => {
+    console.log('🛡️ AdminPage: Componente montado. Lista de admins autorizados:', SUPER_ADMIN_EMAILS);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#1a2340] text-white">
+        <div className="w-16 h-16 border-4 border-t-primary border-white/20 rounded-full animate-spin mb-4" />
+        <p className="text-lg font-medium">Verificando credenciais administrativas...</p>
+      </div>
+    );
+  }
+
+  // Se a lista de emails estiver vazia, pode ser um erro de configuração de ambiente
+  if (SUPER_ADMIN_EMAILS.length === 0) {
+    console.error('❌ CRÍTICO: VITE_ADMIN_EMAILS não está definida ou está vazia no ambiente de produção.');
+  }
 
   if (!isAdmin) {
     return (

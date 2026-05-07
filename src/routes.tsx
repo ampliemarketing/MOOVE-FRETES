@@ -22,16 +22,16 @@ import { DriverDeepLink, CompanyDeepLink, FreightDeepLink, ChatDeepLink } from '
 
 
 export const router = createBrowserRouter([
+  // Admin route (outside main layout) - Moved to top for priority
+  {
+    path: '/admin/*',
+    element: <AdminPage />,
+  },
+
   // Public routes
   {
     path: '/login',
     Component: LoginPage,
-  },
-
-  // Admin route (outside main layout)
-  {
-    path: '/admin',
-    Component: AdminPage,
   },
 
   // Protected routes with app layout

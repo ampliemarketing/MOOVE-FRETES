@@ -11,7 +11,7 @@ interface AuthContextType {
   authenticated: boolean;
   profileIncomplete: boolean;
   incompleteUserType: 'caminhoneiro' | 'transportadora' | 'agenciador' | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, expectedType?: 'caminhoneiro' | 'transportadora' | 'agenciador') => Promise<void>;
   logout: () => Promise<void>;
   handleVerificationComplete: () => Promise<void>;
 }
@@ -177,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Login
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, expectedType?: 'caminhoneiro' | 'transportadora' | 'agenciador') => {
     setLoading(true);
     try {
       if (!email?.trim()) throw new Error('Email não fornecido');
@@ -200,18 +200,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Erro ao fazer login: usuário ou sessão não retornados');
       }
 
+      // Check user type if expectedType is provided
+      const { loadUserProfileFromSupabase } = await import('../../utils/universal-sync');
+      const supabaseProfile = await loadUserProfileFromSupabase(data.user.id);
+      const userType = supabaseProfile?.userType || data.user.user_metadata?.userType || data.user.user_metadata?.user_type;
+
+      if (expectedType) {
+        const isMatch = (expectedType === 'caminhoneiro' && userType === 'caminhoneiro') || 
+                        (expectedType === 'transportadora' && (userType === 'transportadora' || userType === 'agenciador'));
+        
+        if (!isMatch) {
+          await supabase.auth.signOut();
+          setAuthenticated(false);
+          setUser(null);
+          const typeLabel = expectedType === 'caminhoneiro' ? 'Motorista' : 'Transportadora/Empresa';
+          throw new Error(`Esta conta não é de um ${typeLabel}. Por favor, selecione o perfil correto.`);
+        }
+      }
+
       let userResponse = await database.users.getById(data.user.id);
 
       if (!userResponse.success || !userResponse.data) {
-        const { loadUserProfileFromSupabase } = await import('../../utils/universal-sync');
-        const supabaseProfile = await loadUserProfileFromSupabase(data.user.id);
-        const userType = supabaseProfile?.userType || data.user.user_metadata?.userType || data.user.user_metadata?.user_type || 'shipper';
+        const finalUserType = userType || 'shipper';
 
         const newUserData: any = {
           id: data.user.id,
           email: data.user.email,
           name: supabaseProfile?.name || data.user.user_metadata?.name || 'Usuário',
-          userType,
+          userType: finalUserType,
           phone: supabaseProfile?.phone || data.user.user_metadata?.phone || '',
           verified: supabaseProfile?.verified || data.user.user_metadata?.verified || false,
           rating: supabaseProfile?.rating || data.user.user_metadata?.rating || 0,
