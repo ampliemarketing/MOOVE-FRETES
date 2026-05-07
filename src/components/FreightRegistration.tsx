@@ -186,7 +186,7 @@ export function FreightRegistration({
       freightValueType: 'known',
       freightValue: '',
       valueCalculation: '',
-      tollPayment: 'included',
+      tollPayment: 'separate',
       paymentMethod: '',
       advancePayment: '',
       schedulingDate: '',
@@ -2051,36 +2051,11 @@ export function FreightRegistration({
 
                 <Separator />
                 {/* Pedágio */}
-                <div className="space-y-3">
+                <div className="space-y-1">
                   <Label className="text-sm font-medium text-[#111827]">Pedágio</Label>
-                  <RadioGroup 
-                    value={freightData.tollPayment} 
-                    onValueChange={(value: 'included' | 'separate') => updateFreightData('tollPayment', value)}
-                    className="grid grid-cols-2 gap-3"
-                  >
-                    <div 
-                      className={`flex items-center justify-center py-2.5 px-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        freightData.tollPayment === 'included' ? 'border-[#253663] bg-white' : 'border-[#e5e7eb] bg-white hover:border-[#d1d5db]'
-                      }`}
-                      onClick={() => updateFreightData('tollPayment', 'included')}
-                    >
-                      <Label htmlFor="toll-included" className={`cursor-pointer text-sm ${
-                        freightData.tollPayment === 'included' ? 'text-[#253663]' : 'text-[#9ca3af]'
-                      }`}>Incluso no valor</Label>
-                      <RadioGroupItem value="included" id="toll-included" className="hidden" />
-                    </div>
-                    <div 
-                      className={`flex items-center justify-center py-2.5 px-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        freightData.tollPayment === 'separate' ? 'border-[#253663] bg-white' : 'border-[#e5e7eb] bg-white hover:border-[#d1d5db]'
-                      }`}
-                      onClick={() => updateFreightData('tollPayment', 'separate')}
-                    >
-                      <Label htmlFor="toll-separate" className={`cursor-pointer text-sm ${
-                        freightData.tollPayment === 'separate' ? 'text-[#253663]' : 'text-[#9ca3af]'
-                      }`}>Pago à parte</Label>
-                      <RadioGroupItem value="separate" id="toll-separate" className="hidden" />
-                    </div>
-                  </RadioGroup>
+                  <p className="text-sm text-[#111827] font-medium">
+                    Pago à parte
+                  </p>
                   <p className="text-xs text-[#ea742a] font-medium mt-1">
                     Nota: O pedágio sempre deve ser pago a parte.
                   </p>

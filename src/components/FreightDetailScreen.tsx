@@ -990,20 +990,26 @@ ${generateDeepLinkUrl('profile', params.driverId)}
                       <div className="col-span-full bg-gray-50 p-3 rounded">
                         <div className="text-xs text-gray-500 mb-1">Incluído no Pagamento</div>
                         <div className="text-sm font-medium text-gray-900">
-                          {freight.paymentIncluded && Array.isArray(freight.paymentIncluded) && freight.paymentIncluded.length > 0 ? 
-                            (() => {
-                              const items = freight.paymentIncluded.map((item: string) => {
-                                switch (item) {
-                                  case 'fuel': return 'Combustível';
-                                  case 'tolls': return 'Pedágios';
-                                  case 'taxes': return 'Impostos';
-                                  case 'insurance': return 'Seguro';
-                                  default: return item;
-                                }
-                              });
-                              return items.join(', ');
-                            })()
-                            : 'Pagamento Separado'}
+                          {freight.paymentIncluded ? (
+                            Array.isArray(freight.paymentIncluded) ? (
+                              freight.paymentIncluded.length > 0 ? (
+                                (() => {
+                                  const items = freight.paymentIncluded.map((item: string) => {
+                                    switch (item) {
+                                      case 'fuel': return 'Combustível';
+                                      case 'tolls': return 'Pedágios';
+                                      case 'taxes': return 'Impostos';
+                                      case 'insurance': return 'Seguro';
+                                      default: return item;
+                                    }
+                                  });
+                                  return items.join(', ');
+                                })()
+                              ) : 'Pagamento Separado'
+                            ) : (
+                              freight.paymentIncluded === 'included' ? 'Pedágio incluso' : 'Pagamento Separado'
+                            )
+                          ) : 'Não informado'}
                         </div>
                       </div>
                     </div>

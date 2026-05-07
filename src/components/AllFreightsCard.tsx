@@ -176,7 +176,7 @@ export function AllFreightsCard({ freight, onClick }: AllFreightsCardProps) {
             )}
             {freight.paymentIncluded && (
               <div>
-                {freight.paymentIncluded === 'included' ? 'Pedágio incluso' : 'Pedágio não incluso'}
+                {freight.paymentIncluded === 'included' ? 'Pedágio incluso' : 'Pedágio pago à parte'}
               </div>
             )}
             {freight.paymentMethod && (
