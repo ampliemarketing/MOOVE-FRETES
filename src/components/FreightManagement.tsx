@@ -75,7 +75,7 @@ import { CityAutocomplete } from './CityAutocomplete';
 import { FreightFilters, initialFiltersState, FreightFiltersState } from './freight/FreightFilters';
 import { AvailabilityCountdown } from './AvailabilityCountdown';
 import { NearbyDriversScreen } from './NearbyDriversScreen';
-import { UpdateDatesModal } from './freight/UpdateDatesModal';
+
 import { getAvatarUrl } from '../utils/storage-helper';
 import { generateDeepLinkUrl } from '../utils/deep-link';
 
@@ -220,8 +220,7 @@ export function FreightManagement({
   const [showDeleteDialog, setShowDeleteDialog] = useState<string[] | null>(null);
   const [showEditDialog, setShowEditDialog] = useState<string | null>(null);
   const [freightToEdit, setFreightToEdit] = useState<Freight | null>(null);
-  const [showUpdateDatesModal, setShowUpdateDatesModal] = useState(false);
-  const [freightsToUpdateDates, setFreightsToUpdateDates] = useState<string[]>([]);
+
   // Navigation to /fretes/:id handles freight detail view
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showQuoteDialog, setShowQuoteDialog] = useState<{ freight: Freight; proposedPrice: string } | null>(null);
@@ -963,52 +962,7 @@ export function FreightManagement({
     }
   };
 
-  const handleUpdateDates = async (dates: { pickupDate?: string; deliveryDate?: string }) => {
-    // Verificar permissões para colaboradores
-    if (user.userType === 'transportadora' || user.userType === 'agenciador') {
-      if (!permissions.loading && permissions.collaborator && !permissions.hasPermission('edit_freight')) {
-        toast.error('Você não tem permissão para editar fretes');
-        return;
-      }
-    }
-    
-    try {
-      let successCount = 0;
-      let errorCount = 0;
-      
-      for (const freightId of freightsToUpdateDates) {
-        try {
-          const result = await database.freights.update(freightId, dates);
-          
-          if (result.success) {
-            successCount++;
-          } else {
-            errorCount++;
-          }
-        } catch (error) {
-          console.error(`Error updating dates for freight ${freightId}:`, error);
-          errorCount++;
-        }
-      }
-      
-      // Refresh data
-      if (viewMode === 'my-freights') {
-        await refreshMyFreights();
-      } else {
-        await refreshAllFreights();
-      }
-      
-      // Limpar seleção
-      setSelectedFreights([]);
-      setFreightsToUpdateDates([]);
-      
-      // Mensagens de sucesso/erro já são mostradas no modal
-      
-    } catch (error) {
-      console.error('Error updating freight dates:', error);
-      throw error; // Propagar erro para o modal tratar
-    }
-  };
+
 
   const handleSendQuote = async () => {
     if (!showQuoteDialog) return;
@@ -1171,17 +1125,7 @@ ${generateDeepLinkUrl('freight', freight.id)}`;
                         <Share className="w-4 h-4 mr-2" />
                         Compartilhar
                       </Button>
-                      <Button variant="outline" size="sm" className="h-10" onClick={() => {
-                        if (selectedFreights.length === 0) {
-                          toast.error('Selecione pelo menos um frete para atualizar as datas');
-                          return;
-                        }
-                        setFreightsToUpdateDates(selectedFreights);
-                        setShowUpdateDatesModal(true);
-                      }}>
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Atualizar datas
-                      </Button>
+
                       <Button variant="outline" size="sm" className="h-10" onClick={() => {
                         selectedFreights.forEach(id => handleToggleStatus(id, 'inactive'));
                         setSelectedFreights([]);
@@ -1715,13 +1659,7 @@ ${generateDeepLinkUrl('freight', freight.id)}`;
                               <MdOutlineEdit className="w-4 h-4 mr-2" />
                               Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              setFreightsToUpdateDates([freight.id]);
-                              setShowUpdateDatesModal(true);
-                            }}>
-                              <Calendar className="w-4 h-4 mr-2" />
-                              Atualizar data
-                            </DropdownMenuItem>
+
                             <DropdownMenuItem onClick={() => {
                               const origin = formatLocationSlash(freight.origin);
                               const destination = formatLocationSlash(freight.destination);
@@ -2204,27 +2142,7 @@ https://moovefretes.com.br`;
           </DialogContent>
         </Dialog>
 
-        {/* Modal de Atualização de Datas */}
-        <UpdateDatesModal
-          isOpen={showUpdateDatesModal}
-          onClose={() => {
-            setShowUpdateDatesModal(false);
-            setFreightsToUpdateDates([]);
-          }}
-          onUpdate={handleUpdateDates}
-          freightCount={freightsToUpdateDates.length}
-          currentDates={
-            freightsToUpdateDates.length === 1
-              ? (() => {
-                  const freight = freights.find(f => f.id === freightsToUpdateDates[0]);
-                  return freight ? {
-                    pickupDate: freight.pickupDate,
-                    deliveryDate: freight.deliveryDate
-                  } : undefined;
-                })()
-              : undefined
-          }
-        />
+
 
       </div>
     </TooltipProvider>

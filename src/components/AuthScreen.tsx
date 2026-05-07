@@ -1593,6 +1593,41 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                   onSubmit={handleSubmit}
                   className="space-y-4"
                 >
+                  {/* Seletor de tipo de usuário para Login */}
+                  <div className="space-y-3 mb-6">
+                    <Label className="text-sm font-medium text-muted-foreground block text-center">
+                      Entrar como:
+                    </Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        type="button"
+                        variant={formData.userType === 'caminhoneiro' ? 'default' : 'outline'}
+                        onClick={() => setFormData({...formData, userType: 'caminhoneiro'})}
+                        className={`flex items-center justify-center gap-2 h-12 transition-all ${
+                          formData.userType === 'caminhoneiro' 
+                            ? 'bg-primary text-white shadow-md' 
+                            : 'hover:border-primary hover:bg-primary/5'
+                        }`}
+                      >
+                        <Truck className="w-5 h-5" />
+                        <span className="font-medium">Motorista</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={formData.userType === 'transportadora' ? 'default' : 'outline'}
+                        onClick={() => setFormData({...formData, userType: 'transportadora'})}
+                        className={`flex items-center justify-center gap-2 h-12 transition-all ${
+                          formData.userType === 'transportadora' 
+                            ? 'bg-primary text-white shadow-md' 
+                            : 'hover:border-primary hover:bg-primary/5'
+                        }`}
+                      >
+                        <Building className="w-5 h-5" />
+                        <span className="font-medium">Empresa</span>
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">

@@ -20,6 +20,7 @@ import { PreferredRoutesPage } from './components/pages/PreferredRoutesPage';
 import { AdminPage } from './components/pages/AdminPage';
 import { DriverDeepLink, CompanyDeepLink, FreightDeepLink, ChatDeepLink } from './components/pages/DeepLinkRedirects';
 
+
 export const router = createBrowserRouter([
   // Public routes
   {

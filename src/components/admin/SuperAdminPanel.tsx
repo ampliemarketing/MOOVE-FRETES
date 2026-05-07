@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Users, Building2, Truck, Package, MessageSquare,
   Star, DollarSign, Settings, ScrollText, Bell, Wrench, ChevronLeft,
-  Menu, Search, LogOut, Shield, X, ChevronDown
+  Menu, Search, LogOut, Shield, X, ChevronDown, FileCheck, LifeBuoy, AlertCircle
 } from 'lucide-react';
 import { AdminDashboard } from './AdminDashboard';
 import { AdminUsers } from './AdminUsers';
@@ -16,7 +16,10 @@ import { AdminSettings } from './AdminSettings';
 import { AdminLogs } from './AdminLogs';
 import { AdminNotifications } from './AdminNotifications';
 import { AdminTools } from './AdminTools';
-import { SUPER_ADMIN_EMAILS } from './admin-mock-data';
+import { AdminApprovals } from './AdminApprovals';
+import { AdminSupport } from './AdminSupport';
+import { AdminCriticalFreights } from './AdminCriticalFreights';
+import { fetchAdminKPI, type AdminKPI } from '../../utils/admin-supabase-service';
 
 interface MenuItem {
   id: string;
@@ -24,21 +27,6 @@ interface MenuItem {
   icon: React.ElementType;
   badge?: number;
 }
-
-const menuItems: MenuItem[] = [
-  { id: 'dashboard', label: 'Dashboard Geral', icon: LayoutDashboard },
-  { id: 'users', label: 'Usuários', icon: Users, badge: 43 },
-  { id: 'companies', label: 'Empresas', icon: Building2, badge: 2 },
-  { id: 'drivers', label: 'Motoristas', icon: Truck },
-  { id: 'freights', label: 'Fretes & Cotações', icon: Package },
-  { id: 'messages', label: 'Mensagens & Suporte', icon: MessageSquare, badge: 1 },
-  { id: 'reviews', label: 'Avaliações & Denúncias', icon: Star, badge: 7 },
-  { id: 'financial', label: 'Financeiro Global', icon: DollarSign },
-  { id: 'settings', label: 'Configurações', icon: Settings },
-  { id: 'logs', label: 'Logs & Auditoria', icon: ScrollText },
-  { id: 'notifications', label: 'Notificações Broadcast', icon: Bell },
-  { id: 'tools', label: 'Ferramentas Avançadas', icon: Wrench },
-];
 
 interface SuperAdminPanelProps {
   onExit: () => void;
@@ -50,6 +38,48 @@ export function SuperAdminPanel({ onExit, userEmail }: SuperAdminPanelProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
+  const [kpi, setKpi] = useState<AdminKPI | null>(null);
+
+  const loadData = async () => {
+    const data = await fetchAdminKPI();
+    setKpi(data);
+  };
+
+  useEffect(() => {
+    loadData();
+
+    // Subscribe to all relevant tables for real-time updates
+    const channel = supabase
+      .channel('admin-realtime-badges')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'freights' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ratings' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadData)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const menuItems: MenuItem[] = [
+    { id: 'dashboard', label: 'Dashboard Geral', icon: LayoutDashboard },
+    { id: 'users', label: 'Usuários', icon: Users, badge: kpi?.totalUsers },
+    { id: 'approvals', label: 'Verificação & Documentos', icon: FileCheck, badge: kpi?.pendingUsers },
+    { id: 'companies', label: 'Empresas', icon: Building2, badge: kpi?.pendingCompanies },
+    { id: 'drivers', label: 'Motoristas', icon: Truck },
+    { id: 'freights', label: 'Fretes & Cotações', icon: Package },
+    { id: 'critical', label: 'Fretes Críticos', icon: AlertCircle, badge: kpi?.criticalFreights },
+    { id: 'messages', label: 'Monitoramento Chat', icon: MessageSquare, badge: kpi?.reportedMessages },
+    { id: 'support', label: 'Tickets de Suporte', icon: LifeBuoy, badge: kpi?.openTickets },
+    { id: 'reviews', label: 'Avaliações & Denúncias', icon: Star, badge: kpi?.pendingReports },
+    { id: 'financial', label: 'Financeiro Global', icon: DollarSign },
+    { id: 'settings', label: 'Configurações Master', icon: Settings },
+    { id: 'logs', label: 'Logs & Auditoria', icon: ScrollText },
+    { id: 'notifications', label: 'Notificações Broadcast', icon: Bell },
+    { id: 'tools', label: 'Ferramentas Avançadas', icon: Wrench },
+  ];
 
   // Close mobile menu on section change
   const handleSectionChange = (id: string) => {
@@ -77,10 +107,13 @@ export function SuperAdminPanel({ onExit, userEmail }: SuperAdminPanelProps) {
     switch (activeSection) {
       case 'dashboard': return <AdminDashboard />;
       case 'users': return <AdminUsers />;
+      case 'approvals': return <AdminApprovals />;
       case 'companies': return <AdminCompanies />;
       case 'drivers': return <AdminDrivers />;
       case 'freights': return <AdminFreights />;
+      case 'critical': return <AdminCriticalFreights />;
       case 'messages': return <AdminMessages />;
+      case 'support': return <AdminSupport />;
       case 'reviews': return <AdminReviews />;
       case 'financial': return <AdminFinancial />;
       case 'settings': return <AdminSettings />;

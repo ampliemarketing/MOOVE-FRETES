@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, Settings, Percent, Clock, Trophy, Mail, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
+import { fetchMasterSettings, updateMasterSettings } from '../../utils/admin-supabase-service';
 
 interface SystemConfig {
   platformFeePercent: number;
@@ -42,12 +43,20 @@ export function AdminSettings() {
   });
 
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMasterSettings().then(data => {
+      if (data) setConfig(data);
+      setLoading(false);
+    });
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
-    await new Promise(r => setTimeout(r, 800));
-    setSaving(false);
+    await updateMasterSettings(config);
     toast.success('Configurações salvas com sucesso');
+    setSaving(false);
   };
 
   const update = (key: keyof SystemConfig, value: any) => setConfig(prev => ({ ...prev, [key]: value }));
@@ -67,6 +76,8 @@ export function AdminSettings() {
       </button>
     </div>
   );
+
+  if (loading) return <div className="flex items-center justify-center py-12 text-slate-500">Carregando configurações...</div>;
 
   return (
     <div className="space-y-6 max-w-3xl">

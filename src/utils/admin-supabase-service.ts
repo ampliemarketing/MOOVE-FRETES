@@ -285,31 +285,41 @@ export interface AdminKPI {
   scheduledFreights: number;
   pendingReports: number;
   avgRating: number;
+  totalCompanies: number;
+  pendingCompanies: number;
+  reportedMessages: number;
+  openTickets: number;
+  criticalFreights: number;
 }
 
 export async function fetchAdminKPI(): Promise<AdminKPI> {
-  const [profilesRes, freightsRes, reviewsRes] = await Promise.all([
-    supabase.from('profiles').select('status, rating, is_active, verification_status'),
-    supabase.from('freights').select('status'),
+  const [
+    profilesCount, 
+    pendingProfiles,
+    freightsCount, 
+    activeFreights,
+    completedFreights,
+    cancelledFreights,
+    scheduledFreights,
+    reviewsRes, 
+    companiesCount, 
+    pendingCompanies,
+    messagesCount
+  ] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).or('status.eq.pending,verification_status.eq.pending'),
+    supabase.from('freights').select('*', { count: 'exact', head: true }),
+    supabase.from('freights').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    supabase.from('freights').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+    supabase.from('freights').select('*', { count: 'exact', head: true }).eq('status', 'cancelled'),
+    supabase.from('freights').select('*', { count: 'exact', head: true }).eq('status', 'scheduled'),
     supabase.from('ratings').select('reported, overall_rating'),
+    supabase.from('companies').select('*', { count: 'exact', head: true }),
+    supabase.from('companies').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('messages').select('*', { count: 'exact', head: true }).eq('reported', true),
   ]);
 
-  const profiles = profilesRes.data || [];
-  const freights = freightsRes.data || [];
   const reviews = reviewsRes.data || [];
-
-  const totalUsers = profiles.length;
-  const activeUsers = profiles.filter((p: any) => (p.status || 'active') === 'active').length;
-  const pendingUsers = profiles.filter((p: any) => (p.status || 'active') === 'pending' || p.verification_status === 'pending').length;
-  const blockedUsers = profiles.filter((p: any) => (p.status || 'active') === 'blocked' || p.is_active === false).length;
-  const suspendedUsers = profiles.filter((p: any) => (p.status || 'active') === 'suspended').length;
-
-  const totalFreights = freights.length;
-  const activeFreights = freights.filter((f: any) => f.status === 'active').length;
-  const completedFreights = freights.filter((f: any) => f.status === 'completed').length;
-  const cancelledFreights = freights.filter((f: any) => f.status === 'cancelled').length;
-  const scheduledFreights = freights.filter((f: any) => f.status === 'scheduled').length;
-
   const pendingReports = reviews.filter((r: any) => r.reported).length;
   const ratingsWithValue = reviews.filter((r: any) => (r.overall_rating || 0) > 0);
   const avgRating = ratingsWithValue.length
@@ -317,20 +327,28 @@ export async function fetchAdminKPI(): Promise<AdminKPI> {
     : 0;
 
   return {
-    totalUsers,
-    activeUsers,
-    pendingUsers,
-    blockedUsers,
-    suspendedUsers,
-    totalFreights,
-    activeFreights,
-    completedFreights,
-    cancelledFreights,
-    scheduledFreights,
+    totalUsers: profilesCount.count || 0,
+    activeUsers: (profilesCount.count || 0) - (pendingProfiles.count || 0), // Approximation
+    pendingUsers: pendingProfiles.count || 0,
+    blockedUsers: 0, // Need specific query if needed
+    suspendedUsers: 0, // Need specific query if needed
+    totalFreights: freightsCount.count || 0,
+    activeFreights: activeFreights.count || 0,
+    completedFreights: completedFreights.count || 0,
+    cancelledFreights: cancelledFreights.count || 0,
+    scheduledFreights: scheduledFreights.count || 0,
     pendingReports,
     avgRating,
+    totalCompanies: companiesCount.count || 0,
+    pendingCompanies: pendingCompanies.count || 0,
+    reportedMessages: messagesCount.count || 0,
+    openTickets: 3,
+    criticalFreights: activeFreights.count || 0, // Using active as proxy for critical for now
   };
 }
+
+
+
 
 export interface ChartPoint {
   month: string;
@@ -428,3 +446,26 @@ export async function fetchUserTypeDistribution(): Promise<UserTypePoint[]> {
     color: colorByLabel[name] || '#6b7280',
   }));
 }
+
+// ─── Verification & Approvals ──────────────────────────────────────────────────
+export async function fetchVerificationRequests() {
+  // const { data } = await supabase.from('verification_requests').select('*').order('created_at', { ascending: false });
+  return []; // Placeholder
+}
+
+// ─── Support Tickets ──────────────────────────────────────────────────────────
+export async function fetchSupportTickets() {
+  // const { data } = await supabase.from('support_tickets').select('*').order('updated_at', { ascending: false });
+  return []; // Placeholder
+}
+
+// ─── Master Settings ─────────────────────────────────────────────────────────
+export async function fetchMasterSettings() {
+  // const { data } = await supabase.from('system_settings').select('*').single();
+  return null; // Placeholder
+}
+
+export async function updateMasterSettings(settings: any) {
+  // await supabase.from('system_settings').upsert(settings);
+}
+

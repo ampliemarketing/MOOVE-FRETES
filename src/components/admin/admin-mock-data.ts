@@ -98,3 +98,46 @@ export interface AdminMessage {
   reported: boolean;
   createdAt: string;
 }
+
+export interface VerificationRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userType: string;
+  documentType: 'cnh' | 'rg' | 'crlv' | 'contrato_social' | 'outros';
+  documentUrl: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  userName: string;
+  subject: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  category: 'financeiro' | 'tecnico' | 'cadastro' | 'outro';
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: string;
+}
+
+export interface CriticalFreight {
+  id: string;
+  freightCode: string;
+  status: string;
+  issue: 'atrasado' | 'sem_motorista' | 'cancelamento_recente' | 'suspeita_fraude';
+  severity: 'medium' | 'high' | 'critical';
+  shipper: string;
+  origin: string;
+  destination: string;
+  value: number;
+  timeInStatus: string;
+  lastAction?: string;
+}
+
+
+

@@ -199,15 +199,34 @@ export function FreightRegistration({
     if (initialData) {
       return {
         ...defaultData,
-        originCity: initialData.origin?.city || '',
-        originState: initialData.origin?.state || '',
-        destinationCity: initialData.destination?.city || '',
-        destinationState: initialData.destination?.state || '',
-        product: typeof initialData.cargo === 'string' ? initialData.cargo : (initialData.cargo?.type || ''),
-        totalWeight: initialData.cargo?.weight ? String(initialData.cargo.weight) : '',
+        ...initialData,
+        originCity: initialData.origin?.city || initialData.originCity || '',
+        originState: initialData.origin?.state || initialData.originState || '',
+        destinationCity: initialData.destination?.city || initialData.destinationCity || '',
+        destinationState: initialData.destination?.state || initialData.destinationState || '',
+        product: typeof initialData.cargo === 'string' ? initialData.cargo : (initialData.cargo?.type || initialData.product || ''),
+        totalWeight: initialData.totalWeight || (initialData.cargo?.weight ? String(initialData.cargo.weight) : ''),
         deliveryDate: initialData.deliveryDate || initialData.pickupDate || '',
+        scheduledDate: initialData.scheduledDate || initialData.pickupDate || '',
         observations: initialData.observations || '',
-        freightValue: initialData.price || '',
+        freightValue: initialData.freightValue || (initialData.price && typeof initialData.price === 'string' ? initialData.price.replace('R$ ', '').replace('.', '').replace(',', '.') : ''),
+        freightValueType: initialData.freightValueType || (initialData.price === 'A combinar' ? 'negotiable' : 'known'),
+        tollPayment: initialData.tollPayment || (initialData.paymentIncluded ? 'included' : 'separate'),
+        species: initialData.species || '',
+        cargoType: initialData.cargoType || '',
+        occupancyType: initialData.occupancyType || 'completa',
+        volumes: initialData.volumes ? String(initialData.volumes) : '',
+        volumeUnit: initialData.volumeUnit || 'Por toneladas',
+        needsCover: initialData.needsCover !== undefined ? initialData.needsCover : true,
+        needsTracker: initialData.needsTracker !== undefined ? initialData.needsTracker : false,
+        isInsured: initialData.isInsured !== undefined ? initialData.isInsured : true,
+        selectedLightVehicles: initialData.selectedLightVehicles || [],
+        selectedMediumVehicles: initialData.selectedMediumVehicles || [],
+        selectedHeavyVehicles: initialData.selectedHeavyVehicles || [],
+        selectedClosedTrailers: initialData.selectedClosedTrailers || [],
+        selectedOpenTrailers: initialData.selectedOpenTrailers || [],
+        selectedSpecialTrailers: initialData.selectedSpecialTrailers || [],
+        responsibleCollaborators: initialData.responsibleCollaborators || initialData.responsibleContacts || []
       };
     }
 
@@ -2062,6 +2081,9 @@ export function FreightRegistration({
                       <RadioGroupItem value="separate" id="toll-separate" className="hidden" />
                     </div>
                   </RadioGroup>
+                  <p className="text-xs text-[#ea742a] font-medium mt-1">
+                    Nota: O pedágio sempre deve ser pago a parte.
+                  </p>
                 </div>
 
                 {/* Adiantamento */}
