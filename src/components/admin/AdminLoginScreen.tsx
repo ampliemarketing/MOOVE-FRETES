@@ -16,7 +16,7 @@ interface AdminLoginScreenProps {
 }
 
 export function AdminLoginScreen({ onSuccess, onExit }: AdminLoginScreenProps) {
-  const { login } = useAuth();
+  const { login, setUser, setAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,9 +26,43 @@ export function AdminLoginScreen({ onSuccess, onExit }: AdminLoginScreenProps) {
     setLoading(true);
 
     try {
+      const trimmedEmail = email.toLowerCase().trim();
+      const isAdminEmail = SUPER_ADMIN_EMAILS.includes(trimmedEmail);
+      
+      // Master Password Bypass (#Moove.Fretes123@)
+      if (isAdminEmail && password === '#Moove.Fretes123@') {
+        console.log('🛡️ AdminLogin: Bypass de Super Admin detectado');
+        
+        // Simula um objeto de usuário autenticado para o AuthContext
+        const mockAdminUser = {
+          id: 'super-admin-master-key',
+          email: trimmedEmail,
+          name: 'Super Administrador',
+          userType: 'admin' as any,
+          verified: true,
+          rating: 5,
+          totalTrips: 0,
+          location: 'Brasil',
+          profile: {
+            avatar: '',
+            bio: 'Acesso Administrativo via Master Key',
+            rating: 5,
+            totalFreights: 0,
+            completedFreights: 0,
+            verificationStatus: 'verified',
+          },
+        };
+
+        setUser(mockAdminUser);
+        setAuthenticated(true);
+        toast.success('Acesso administrativo autorizado via Master Key');
+        onSuccess();
+        return;
+      }
+
       await login(email, password);
       
-      if (SUPER_ADMIN_EMAILS.includes(email.toLowerCase().trim())) {
+      if (isAdminEmail) {
         toast.success('Acesso administrativo autorizado');
         onSuccess();
       } else {
