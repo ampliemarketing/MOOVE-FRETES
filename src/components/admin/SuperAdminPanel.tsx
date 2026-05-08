@@ -20,6 +20,7 @@ import { AdminApprovals } from './AdminApprovals';
 import { AdminSupport } from './AdminSupport';
 import { AdminCriticalFreights } from './AdminCriticalFreights';
 import { fetchAdminKPI, type AdminKPI } from '../../utils/admin-supabase-service';
+import { supabase } from '../../utils/supabase/client';
 
 interface MenuItem {
   id: string;
