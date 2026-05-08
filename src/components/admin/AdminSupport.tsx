@@ -4,6 +4,8 @@ import { AdminDataTable } from './AdminDataTable';
 import type { SupportTicket } from './admin-mock-data';
 import { toast } from 'sonner@2.0.3';
 
+import { fetchSupportTickets } from '../../utils/admin-supabase-service';
+
 export function AdminSupport() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -11,47 +13,10 @@ export function AdminSupport() {
   const [reply, setReply] = useState('');
 
   useEffect(() => {
-    // Mocking support tickets
-    const mockTickets: SupportTicket[] = [
-      {
-        id: 'T-1001',
-        userId: 'u1',
-        userName: 'Carlos Oliveira',
-        subject: 'Não consigo realizar o saque do saldo',
-        status: 'open',
-        priority: 'high',
-        category: 'financeiro',
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        updatedAt: new Date(Date.now() - 3600000).toISOString(),
-        lastMessage: 'Tentei realizar o PIX e deu erro.'
-      },
-      {
-        id: 'T-1002',
-        userId: 'u4',
-        userName: 'Expresso Norte',
-        subject: 'Dúvida sobre cadastro de frota',
-        status: 'in_progress',
-        priority: 'medium',
-        category: 'cadastro',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 43200000).toISOString(),
-        lastMessage: 'Obrigado pelo retorno, vou enviar os documentos.'
-      },
-      {
-        id: 'T-1003',
-        userId: 'u5',
-        userName: 'Pedro Motta',
-        subject: 'App fechando sozinho ao abrir mapa',
-        status: 'open',
-        priority: 'urgent',
-        category: 'tecnico',
-        createdAt: new Date(Date.now() - 7200000).toISOString(),
-        updatedAt: new Date(Date.now() - 7200000).toISOString(),
-        lastMessage: 'Uso Android 13 e o app fecha sempre.'
-      }
-    ];
-    setTickets(mockTickets);
-    setLoading(false);
+    fetchSupportTickets().then(data => {
+      setTickets(data);
+      setLoading(false);
+    });
   }, []);
 
   const handleSendReply = () => {

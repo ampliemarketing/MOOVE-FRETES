@@ -5,58 +5,20 @@ import type { VerificationRequest } from './admin-mock-data';
 import { toast } from 'sonner@2.0.3';
 import { supabase } from '../../utils/supabase/client';
 
+import { fetchVerificationRequests } from '../../utils/admin-supabase-service';
+
 export function AdminApprovals() {
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<VerificationRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  // Fetch from a hypothetical 'verification_requests' table or mock it
+  // Fetch from profiles table
   useEffect(() => {
-    const fetchApprovals = async () => {
-      // Mocking for now, but ready for real Supabase join
-      // Real code would be: 
-      // const { data } = await supabase.from('verification_requests').select('*, profile:profiles(name, user_type)');
-      
-      const mockData: VerificationRequest[] = [
-        {
-          id: 'v1',
-          userId: 'u1',
-          userName: 'João Silva',
-          userType: 'caminhoneiro',
-          documentType: 'cnh',
-          documentUrl: 'https://via.placeholder.com/600x400?text=CNH+Front',
-          status: 'pending',
-          submittedAt: new Date().toISOString(),
-        },
-        {
-          id: 'v2',
-          userId: 'u2',
-          userName: 'Transportes Rápidos Ltda',
-          userType: 'transportadora',
-          documentType: 'contrato_social',
-          documentUrl: 'https://via.placeholder.com/600x400?text=Contrato+Social',
-          status: 'pending',
-          submittedAt: new Date(Date.now() - 86400000).toISOString(),
-        },
-        {
-          id: 'v3',
-          userId: 'u3',
-          userName: 'Maria Santos',
-          userType: 'caminhoneiro',
-          documentType: 'crlv',
-          documentUrl: 'https://via.placeholder.com/600x400?text=CRLV',
-          status: 'approved',
-          submittedAt: new Date(Date.now() - 172800000).toISOString(),
-          reviewedAt: new Date(Date.now() - 152800000).toISOString(),
-        }
-      ];
-      
-      setRequests(mockData);
+    fetchVerificationRequests().then(data => {
+      setRequests(data);
       setLoading(false);
-    };
-
-    fetchApprovals();
+    });
   }, []);
 
   const handleApprove = async (id: string) => {

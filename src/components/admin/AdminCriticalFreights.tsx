@@ -4,55 +4,17 @@ import { AdminDataTable } from './AdminDataTable';
 import type { CriticalFreight } from './admin-mock-data';
 import { toast } from 'sonner@2.0.3';
 
+import { fetchCriticalFreights } from '../../utils/admin-supabase-service';
+
 export function AdminCriticalFreights() {
   const [items, setItems] = useState<CriticalFreight[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mocking critical freights
-    const mockData: CriticalFreight[] = [
-      {
-        id: '1',
-        freightCode: 'MV-8821',
-        status: 'active',
-        issue: 'sem_motorista',
-        severity: 'high',
-        shipper: 'Indústrias Matos',
-        origin: 'São Paulo, SP',
-        destination: 'Curitiba, PR',
-        value: 1250,
-        timeInStatus: '48h',
-        lastAction: 'Tentativa de impulsionamento'
-      },
-      {
-        id: '2',
-        freightCode: 'MV-9012',
-        status: 'in_transit',
-        issue: 'atrasado',
-        severity: 'critical',
-        shipper: 'Comercial Silva',
-        origin: 'Belo Horizonte, MG',
-        destination: 'Vitória, ES',
-        value: 850,
-        timeInStatus: '6h atraso',
-        lastAction: 'Motorista não responde'
-      },
-      {
-        id: '3',
-        freightCode: 'MV-7741',
-        status: 'active',
-        issue: 'suspeita_fraude',
-        severity: 'critical',
-        shipper: 'User-7812',
-        origin: 'Rio de Janeiro, RJ',
-        destination: 'Manaus, AM',
-        value: 15000,
-        timeInStatus: '2h',
-        lastAction: 'Bloqueio preventivo'
-      }
-    ];
-    setItems(mockData);
-    setLoading(false);
+    fetchCriticalFreights().then(data => {
+      setItems(data);
+      setLoading(false);
+    });
   }, []);
 
   const severityColors = {

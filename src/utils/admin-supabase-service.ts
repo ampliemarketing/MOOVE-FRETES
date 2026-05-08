@@ -292,31 +292,38 @@ export interface AdminKPI {
   criticalFreights: number;
 }
 
-export async function fetchAdminKPI(): Promise<AdminKPI> {
   const [
     profilesCount, 
     pendingProfiles,
+    blockedProfiles,
+    suspendedProfiles,
     freightsCount, 
     activeFreights,
     completedFreights,
     cancelledFreights,
     scheduledFreights,
+    criticalFreightsCount,
     reviewsRes, 
     companiesCount, 
     pendingCompanies,
-    messagesCount
+    messagesCount,
+    openSupportChats
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).or('status.eq.pending,verification_status.eq.pending'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'blocked'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'suspended'),
     supabase.from('freights').select('*', { count: 'exact', head: true }),
     supabase.from('freights').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supabase.from('freights').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
     supabase.from('freights').select('*', { count: 'exact', head: true }).eq('status', 'cancelled'),
     supabase.from('freights').select('*', { count: 'exact', head: true }).eq('status', 'scheduled'),
+    supabase.from('freights').select('*', { count: 'exact', head: true }).eq('is_urgent', true).eq('status', 'active'),
     supabase.from('ratings').select('reported, overall_rating'),
     supabase.from('companies').select('*', { count: 'exact', head: true }),
     supabase.from('companies').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('messages').select('*', { count: 'exact', head: true }).eq('reported', true),
+    supabase.from('chats').select('*', { count: 'exact', head: true }).eq('type', 'support').eq('is_archived', false),
   ]);
 
   const reviews = reviewsRes.data || [];
@@ -328,10 +335,10 @@ export async function fetchAdminKPI(): Promise<AdminKPI> {
 
   return {
     totalUsers: profilesCount.count || 0,
-    activeUsers: (profilesCount.count || 0) - (pendingProfiles.count || 0), // Approximation
+    activeUsers: (profilesCount.count || 0) - (pendingProfiles.count || 0) - (blockedProfiles.count || 0),
     pendingUsers: pendingProfiles.count || 0,
-    blockedUsers: 0, // Need specific query if needed
-    suspendedUsers: 0, // Need specific query if needed
+    blockedUsers: blockedProfiles.count || 0,
+    suspendedUsers: suspendedProfiles.count || 0,
     totalFreights: freightsCount.count || 0,
     activeFreights: activeFreights.count || 0,
     completedFreights: completedFreights.count || 0,
@@ -342,8 +349,8 @@ export async function fetchAdminKPI(): Promise<AdminKPI> {
     totalCompanies: companiesCount.count || 0,
     pendingCompanies: pendingCompanies.count || 0,
     reportedMessages: messagesCount.count || 0,
-    openTickets: 3,
-    criticalFreights: activeFreights.count || 0, // Using active as proxy for critical for now
+    openTickets: openSupportChats.count || 0,
+    criticalFreights: criticalFreightsCount.count || 0,
   };
 }
 
@@ -448,24 +455,132 @@ export async function fetchUserTypeDistribution(): Promise<UserTypePoint[]> {
 }
 
 // ─── Verification & Approvals ──────────────────────────────────────────────────
-export async function fetchVerificationRequests() {
-  // const { data } = await supabase.from('verification_requests').select('*').order('created_at', { ascending: false });
-  return []; // Placeholder
+import type { VerificationRequest, SupportTicket, CriticalFreight } from '../components/admin/admin-mock-data';
+
+export async function fetchVerificationRequests(): Promise<VerificationRequest[]> {
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id, name, user_type, avatar_url, created_at, status, verification_status')
+    .or('status.eq.pending,verification_status.eq.pending')
+    .order('created_at', { ascending: false });
+
+  if (error || !profiles) return [];
+
+  return profiles.map((p: any) => ({
+    id: p.id,
+    userId: p.id,
+    userName: p.name || 'Usuário',
+    userType: p.user_type,
+    documentType: 'cnh', // Defaulting to CNH if not specified in profiles
+    documentUrl: p.avatar_url || 'https://via.placeholder.com/600x400?text=Documento',
+    status: p.verification_status === 'verified' ? 'approved' : (p.verification_status === 'rejected' ? 'rejected' : 'pending'),
+    submittedAt: p.created_at,
+  }));
 }
 
 // ─── Support Tickets ──────────────────────────────────────────────────────────
-export async function fetchSupportTickets() {
-  // const { data } = await supabase.from('support_tickets').select('*').order('updated_at', { ascending: false });
-  return []; // Placeholder
+export async function fetchSupportTickets(): Promise<SupportTicket[]> {
+  const { data: chats, error } = await supabase
+    .from('chats')
+    .select('id, last_message, created_at, updated_at, participants')
+    .eq('type', 'support')
+    .order('updated_at', { ascending: false });
+
+  if (error || !chats) return [];
+
+  // Fetch names of participants
+  const userIds = new Set<string>();
+  chats.forEach((c: any) => (c.participants || []).forEach((p: any) => userIds.add(p)));
+  
+  const { data: profiles } = userIds.size
+    ? await supabase.from('profiles').select('id, name').in('id', [...userIds])
+    : { data: [] };
+  const nameMap = new Map((profiles || []).map((p: any) => [p.id, p.name]));
+
+  return chats.map((c: any) => {
+    const userId = c.participants?.find((p: string) => p !== 'admin-system') || 'system';
+    return {
+      id: c.id,
+      userId: userId,
+      userName: nameMap.get(userId) || 'Usuário',
+      subject: c.last_message?.content || 'Sem assunto',
+      status: c.is_archived ? 'closed' : 'open',
+      priority: 'medium',
+      category: 'outro',
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
+      lastMessage: c.last_message?.content || '',
+    };
+  });
+}
+
+// ─── Critical Freights ────────────────────────────────────────────────────────
+export async function fetchCriticalFreights(): Promise<CriticalFreight[]> {
+  const { data: freights, error } = await supabase
+    .from('freights')
+    .select('id, freight_code, status, origin_city, destination_city, value_estimate, publisher_id, is_urgent, created_at')
+    .eq('status', 'active')
+    .or('is_urgent.eq.true,created_at.lt.' + new Date(Date.now() - 86400000).toISOString())
+    .order('created_at', { ascending: false });
+
+  if (error || !freights) return [];
+
+  const publisherIds = [...new Set(freights.map((f: any) => f.publisher_id))];
+  const { data: profiles } = publisherIds.length
+    ? await supabase.from('profiles').select('id, name').in('id', publisherIds)
+    : { data: [] };
+  const nameMap = new Map((profiles || []).map((p: any) => [p.id, p.name]));
+
+  return freights.map((f: any) => ({
+    id: f.id,
+    freightCode: f.freight_code || f.id.slice(0, 8).toUpperCase(),
+    status: f.status,
+    issue: f.is_urgent ? 'atrasado' : 'sem_motorista',
+    severity: f.is_urgent ? 'critical' : 'high',
+    shipper: nameMap.get(f.publisher_id) || 'Embarcador',
+    origin: f.origin_city,
+    destination: f.destination_city,
+    value: Number(f.value_estimate) || 0,
+    timeInStatus: '—',
+  }));
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+export async function fetchAdminNotifications() {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('type', 'system')
+    .order('created_at', { ascending: false })
+    .limit(50);
+  
+  if (error || !data) return [];
+  return data;
+}
+
+export async function sendAdminNotification(payload: { title: string, message: string, audience: string, userTypes?: string[] }) {
+  // If audience is all, we might need an edge function to fan out
+  // For now, let's just insert one 'system' notification if target is specific
+  // or a broadcast mechanism if supported.
+  // Placeholder for real broadcast logic:
+  const { error } = await supabase.from('notifications').insert({
+    user_id: '00000000-0000-0000-0000-000000000000', // System target
+    title: payload.title,
+    message: payload.message,
+    type: 'system',
+    metadata: { audience: payload.audience, userTypes: payload.userTypes }
+  });
+  return { error };
 }
 
 // ─── Master Settings ─────────────────────────────────────────────────────────
 export async function fetchMasterSettings() {
-  // const { data } = await supabase.from('system_settings').select('*').single();
-  return null; // Placeholder
+  const { data, error } = await supabase.from('admin_config').select('*').single();
+  if (error) return null;
+  return data.config;
 }
 
-export async function updateMasterSettings(settings: any) {
-  // await supabase.from('system_settings').upsert(settings);
+export async function updateMasterSettings(config: any) {
+  await supabase.from('admin_config').upsert({ id: 1, config, updated_at: new Date().toISOString() });
 }
 

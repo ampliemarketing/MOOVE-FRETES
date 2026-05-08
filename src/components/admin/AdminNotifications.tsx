@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Send, Users, MapPin, Bell, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
+import { fetchAdminNotifications, sendAdminNotification } from '../../utils/admin-supabase-service';
+
 export function AdminNotifications() {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
@@ -9,12 +11,11 @@ export function AdminNotifications() {
   const [userTypes, setUserTypes] = useState<string[]>([]);
   const [region, setRegion] = useState('all');
   const [sending, setSending] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
 
-  const [history] = useState([
-    { id: '1', title: 'Manutenção Programada', message: 'O sistema passará por manutenção dia 15/03 das 02h às 04h.', audience: 'Todos', sentAt: '2026-03-10T08:00:00Z', delivered: 1247 },
-    { id: '2', title: 'Nova Funcionalidade: Fretes Agendados', message: 'Agora você pode agendar fretes para datas futuras!', audience: 'Embarcadores, Transportadoras', sentAt: '2026-03-05T10:00:00Z', delivered: 525 },
-    { id: '3', title: 'Promoção: Taxa Zero', message: 'Até dia 20/03, todos os fretes com taxa zero da plataforma.', audience: 'Todos', sentAt: '2026-03-01T09:00:00Z', delivered: 1180 },
-  ]);
+  useEffect(() => {
+    fetchAdminNotifications().then(setHistory);
+  }, []);
 
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) {
@@ -22,11 +23,17 @@ export function AdminNotifications() {
       return;
     }
     setSending(true);
-    await new Promise(r => setTimeout(r, 1200));
+    const { error } = await sendAdminNotification({ title, message, audience, userTypes });
     setSending(false);
-    toast.success('Notificação enviada com sucesso para ' + (audience === 'all' ? 'todos os usuários' : 'usuários selecionados'));
-    setTitle('');
-    setMessage('');
+    
+    if (error) {
+      toast.error('Erro ao enviar notificação');
+    } else {
+      toast.success('Notificação enviada com sucesso');
+      setTitle('');
+      setMessage('');
+      fetchAdminNotifications().then(setHistory);
+    }
   };
 
   const toggleUserType = (type: string) => {
