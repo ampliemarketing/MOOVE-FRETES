@@ -584,3 +584,63 @@ export async function updateMasterSettings(config: any) {
   await supabase.from('admin_config').upsert({ id: 1, config, updated_at: new Date().toISOString() });
 }
 
+
+export async function approveVerificationRequest(userId: string) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      verification_status: 'verified', 
+      status: 'active',
+      updated_at: new Date().toISOString() 
+    })
+    .eq('id', userId);
+  return { error };
+}
+
+export async function rejectVerificationRequest(userId: string, reason: string) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      verification_status: 'rejected', 
+      status: 'pending',
+      metadata: { rejection_reason: reason },
+      updated_at: new Date().toISOString() 
+    })
+    .eq('id', userId);
+  return { error };
+}
+
+export async function updateSupportTicketStatus(chatId: string, status: string) {
+  const isArchived = status === 'resolved' || status === 'closed';
+  const { error } = await supabase
+    .from('chats')
+    .update({ 
+      is_archived: isArchived,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', chatId);
+  return { error };
+}
+
+export async function sendSupportReply(chatId: string, content: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const adminId = user?.id || '00000000-0000-0000-0000-000000000000';
+
+  const { error } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: chatId,
+      sender_id: adminId,
+      content: content,
+      message_type: 'text'
+    });
+  
+  if (!error) {
+    await supabase.from('chats').update({
+      last_message: { content, sender_id: adminId, created_at: new Date().toISOString() },
+      updated_at: new Date().toISOString()
+    }).eq('id', chatId);
+  }
+
+  return { error };
+}

@@ -5,7 +5,7 @@ import type { VerificationRequest } from './admin-mock-data';
 import { toast } from 'sonner@2.0.3';
 import { supabase } from '../../utils/supabase/client';
 
-import { fetchVerificationRequests } from '../../utils/admin-supabase-service';
+import { fetchVerificationRequests, approveVerificationRequest, rejectVerificationRequest } from '../../utils/admin-supabase-service';
 
 export function AdminApprovals() {
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
@@ -22,7 +22,10 @@ export function AdminApprovals() {
   }, []);
 
   const handleApprove = async (id: string) => {
-    toast.promise(new Promise(resolve => setTimeout(resolve, 1000)), {
+    const request = requests.find(r => r.id === id);
+    if (!request) return;
+
+    toast.promise(approveVerificationRequest(request.userId), {
       loading: 'Aprovando documento...',
       success: () => {
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'approved', reviewedAt: new Date().toISOString() } : r));
@@ -34,11 +37,14 @@ export function AdminApprovals() {
   };
 
   const handleReject = async (id: string) => {
+    const request = requests.find(r => r.id === id);
+    if (!request) return;
+
     if (!rejectionReason.trim()) {
       toast.error('Informe o motivo da rejeição');
       return;
     }
-    toast.promise(new Promise(resolve => setTimeout(resolve, 1000)), {
+    toast.promise(rejectVerificationRequest(request.userId, rejectionReason), {
       loading: 'Rejeitando documento...',
       success: () => {
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected', reviewedAt: new Date().toISOString(), rejectionReason } : r));

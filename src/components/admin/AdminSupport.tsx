@@ -4,7 +4,7 @@ import { AdminDataTable } from './AdminDataTable';
 import type { SupportTicket } from './admin-mock-data';
 import { toast } from 'sonner@2.0.3';
 
-import { fetchSupportTickets } from '../../utils/admin-supabase-service';
+import { fetchSupportTickets, sendSupportReply, updateSupportTicketStatus } from '../../utils/admin-supabase-service';
 
 export function AdminSupport() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -19,15 +19,29 @@ export function AdminSupport() {
     });
   }, []);
 
-  const handleSendReply = () => {
-    if (!reply.trim()) return;
-    toast.success('Resposta enviada com sucesso!');
-    setReply('');
+  const handleSendReply = async () => {
+    if (!reply.trim() || !selectedTicket) return;
+    
+    const { error } = await sendSupportReply(selectedTicket.id, reply);
+    if (!error) {
+      toast.success('Resposta enviada com sucesso!');
+      setReply('');
+    } else {
+      toast.error('Erro ao enviar resposta');
+    }
   };
 
-  const handleStatusChange = (id: string, newStatus: SupportTicket['status']) => {
-    setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t));
-    toast.success(`Ticket ${id} marcado como ${newStatus}`);
+  const handleStatusChange = async (id: string, newStatus: SupportTicket['status']) => {
+    const { error } = await updateSupportTicketStatus(id, newStatus);
+    if (!error) {
+      setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t));
+      if (selectedTicket?.id === id) {
+        setSelectedTicket(prev => prev ? { ...prev, status: newStatus } : null);
+      }
+      toast.success(`Ticket atualizado para ${newStatus}`);
+    } else {
+      toast.error('Erro ao atualizar status');
+    }
   };
 
   const priorityColors = {
