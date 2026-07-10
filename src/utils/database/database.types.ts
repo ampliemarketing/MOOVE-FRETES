@@ -132,6 +132,9 @@ export interface Database {
           main_cpf: string | null
           corporate_email: string | null
           logo_url: string | null
+          company_subtype: string
+          rntrc_status: string
+          ocb_registration: string | null
         }
         Insert: {
           id?: string
@@ -164,6 +167,9 @@ export interface Database {
           main_cpf?: string | null
           corporate_email?: string | null
           logo_url?: string | null
+          company_subtype?: string
+          rntrc_status?: string
+          ocb_registration?: string | null
         }
         Update: Partial<Database['public']['Tables']['companies']['Insert']>
       }
@@ -203,6 +209,11 @@ export interface Database {
           trailer_type: string | null
           address: Json
           availability_expires_at: string | null
+          rntrc_status: string
+          driver_classification: string
+          payment_account_holder: string
+          payment_account_holder_name: string | null
+          payment_account_holder_doc: string | null
         }
         Insert: {
           id?: string
@@ -239,6 +250,11 @@ export interface Database {
           trailer_type?: string | null
           address?: Json
           availability_expires_at?: string | null
+          rntrc_status?: string
+          driver_classification?: string
+          payment_account_holder?: string
+          payment_account_holder_name?: string | null
+          payment_account_holder_doc?: string | null
         }
         Update: Partial<Database['public']['Tables']['drivers']['Insert']>
       }
@@ -286,6 +302,15 @@ export interface Database {
           distance_km: number | null
           duration_hours: number | null
           publisher_phone: string | null
+          operation_type: string | null
+          load_classification: string | null
+          piso_minimo_valor: number | null
+          piso_minimo_calculado_em: string | null
+          abaixo_do_piso: boolean
+          ciot_status: string
+          vale_pedagio_status: string
+          payment_account_type: string | null
+          advance_payment_percent: number | null
         }
         Insert: {
           id?: string
@@ -330,6 +355,15 @@ export interface Database {
           distance_km?: number | null
           duration_hours?: number | null
           publisher_phone?: string | null
+          operation_type?: string | null
+          load_classification?: string | null
+          piso_minimo_valor?: number | null
+          piso_minimo_calculado_em?: string | null
+          abaixo_do_piso?: boolean
+          ciot_status?: string
+          vale_pedagio_status?: string
+          payment_account_type?: string | null
+          advance_payment_percent?: number | null
         }
         Update: Partial<Database['public']['Tables']['freights']['Insert']>
       }
@@ -530,6 +564,192 @@ export interface Database {
           metadata?: Json
         }
         Update: Partial<Database['public']['Tables']['transactions']['Insert']>
+      }
+      piso_minimo_coefficients: {
+        Row: {
+          id: string
+          categoria_carga: string
+          tabela: string
+          eixos: number
+          ccd: number
+          cc: number
+          fonte: string | null
+          needs_verification: boolean
+          vigente_desde: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          categoria_carga: string
+          tabela?: string
+          eixos: number
+          ccd: number
+          cc: number
+          fonte?: string | null
+          needs_verification?: boolean
+          vigente_desde?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['piso_minimo_coefficients']['Insert']>
+      }
+      insurance_policies: {
+        Row: {
+          id: string
+          owner_type: string
+          owner_id: string
+          policy_type: string
+          insurer_name: string | null
+          policy_number: string | null
+          valid_from: string | null
+          valid_until: string
+          status: string
+          document_url: string | null
+          verified_by: string | null
+          verified_at: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_type: string
+          owner_id: string
+          policy_type: string
+          insurer_name?: string | null
+          policy_number?: string | null
+          valid_from?: string | null
+          valid_until: string
+          status?: string
+          document_url?: string | null
+          verified_by?: string | null
+          verified_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['insurance_policies']['Insert']>
+      }
+      rntrc_verifications: {
+        Row: {
+          id: string
+          owner_type: string
+          owner_id: string
+          rntrc_number: string | null
+          status: string
+          method: string
+          checked_by: string | null
+          checked_at: string
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          owner_type: string
+          owner_id: string
+          rntrc_number?: string | null
+          status?: string
+          method?: string
+          checked_by?: string | null
+          checked_at?: string
+          notes?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['rntrc_verifications']['Insert']>
+      }
+      ciot_operations: {
+        Row: {
+          id: string
+          freight_id: string
+          ciot_number: string | null
+          status: string
+          provider: string
+          operation_type: string | null
+          contratante_id: string | null
+          contratado_id: string | null
+          subcontratado_id: string | null
+          valor_operacao: number | null
+          piso_minimo_aplicavel: number | null
+          generated_at: string | null
+          generated_by: string | null
+          blocked_reason: string | null
+          raw_response: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          freight_id: string
+          ciot_number?: string | null
+          status?: string
+          provider?: string
+          operation_type?: string | null
+          contratante_id?: string | null
+          contratado_id?: string | null
+          subcontratado_id?: string | null
+          valor_operacao?: number | null
+          piso_minimo_aplicavel?: number | null
+          generated_at?: string | null
+          generated_by?: string | null
+          blocked_reason?: string | null
+          raw_response?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['ciot_operations']['Insert']>
+      }
+      mdfe_records: {
+        Row: {
+          id: string
+          freight_id: string
+          numero_mdfe: string | null
+          chave_acesso: string | null
+          status: string
+          ciot_operation_id: string | null
+          issued_at: string | null
+          issued_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          freight_id: string
+          numero_mdfe?: string | null
+          chave_acesso?: string | null
+          status?: string
+          ciot_operation_id?: string | null
+          issued_at?: string | null
+          issued_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['mdfe_records']['Insert']>
+      }
+      vale_pedagio_records: {
+        Row: {
+          id: string
+          freight_id: string
+          provider: string
+          tag_number: string | null
+          valor: number | null
+          status: string
+          registered_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          freight_id: string
+          provider?: string
+          tag_number?: string | null
+          valor?: number | null
+          status?: string
+          registered_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['vale_pedagio_records']['Insert']>
       }
     }
     Views: {}

@@ -69,6 +69,17 @@ export class FreightRepository {
             views_count: 0,
             created_at: now,
             updated_at: now,
+            // ✅ ANTT 2026 — colunas de conformidade (CIOT universal, piso mínimo)
+            operation_type: (freight as any).operationType || null,
+            load_classification: (freight as any).loadClassification || null,
+            piso_minimo_valor: (freight as any).pisoMinimoValor ?? null,
+            piso_minimo_calculado_em: (freight as any).pisoMinimoValor != null ? now : null,
+            abaixo_do_piso: (freight as any).abaixoDoPiso || false,
+            ciot_status: (freight as any).ciotStatus || 'pending',
+            vale_pedagio_status: (freight as any).valePedagioStatus || 'pending',
+            payment_account_type: (freight as any).paymentAccountType || null,
+            advance_payment_percent: (freight as any).advancePaymentPercent ?? null,
+            distance_km: (freight as any).distanceKm ?? null,
             metadata: {
               customerName: freight.customerName,
               freightType: freight.type,
@@ -248,8 +259,17 @@ export class FreightRepository {
         createdAt: sf.created_at,
         updatedAt: sf.updated_at || sf.created_at,
         responsibleContacts: sf.metadata?.responsibleContacts || [],
+        operationType: sf.operation_type || undefined,
+        loadClassification: sf.load_classification || undefined,
+        pisoMinimoValor: sf.piso_minimo_valor ?? undefined,
+        abaixoDoPiso: sf.abaixo_do_piso || false,
+        ciotStatus: sf.ciot_status || 'pending',
+        valePedagioStatus: sf.vale_pedagio_status || 'pending',
+        paymentAccountType: sf.payment_account_type || undefined,
+        advancePaymentPercent: sf.advance_payment_percent ?? undefined,
+        distanceKm: sf.distance_km ?? undefined,
       };
-      
+
       // Cachear no LocalStorage para próximas consultas
       await db.set(KeyPatterns.freight(id), freight);
       
@@ -331,7 +351,21 @@ export class FreightRepository {
           if (updates.pickupDate) supabaseUpdates.pickup_date = updates.pickupDate;
           if (updates.deliveryDate) supabaseUpdates.delivery_date = updates.deliveryDate;
           if (updates.observations) supabaseUpdates.description = updates.observations;
-          
+
+          // ✅ ANTT 2026 — permite atualizar status de conformidade após a criação do frete
+          if ((updates as any).operationType !== undefined) supabaseUpdates.operation_type = (updates as any).operationType;
+          if ((updates as any).loadClassification !== undefined) supabaseUpdates.load_classification = (updates as any).loadClassification;
+          if ((updates as any).pisoMinimoValor !== undefined) {
+            supabaseUpdates.piso_minimo_valor = (updates as any).pisoMinimoValor;
+            supabaseUpdates.piso_minimo_calculado_em = new Date().toISOString();
+          }
+          if ((updates as any).abaixoDoPiso !== undefined) supabaseUpdates.abaixo_do_piso = (updates as any).abaixoDoPiso;
+          if ((updates as any).ciotStatus !== undefined) supabaseUpdates.ciot_status = (updates as any).ciotStatus;
+          if ((updates as any).valePedagioStatus !== undefined) supabaseUpdates.vale_pedagio_status = (updates as any).valePedagioStatus;
+          if ((updates as any).paymentAccountType !== undefined) supabaseUpdates.payment_account_type = (updates as any).paymentAccountType;
+          if ((updates as any).advancePaymentPercent !== undefined) supabaseUpdates.advance_payment_percent = (updates as any).advancePaymentPercent;
+          if ((updates as any).distanceKm !== undefined) supabaseUpdates.distance_km = (updates as any).distanceKm;
+
           // ✅ LOG COMPLETO ANTES DE ENVIAR
           logger.log('🚀 ENVIANDO UPDATE PARA SUPABASE:', {
             id,
@@ -532,12 +566,19 @@ export class FreightRepository {
             views: sf.views_count || 0,
             createdAt: sf.created_at,
             updatedAt: sf.updated_at || sf.created_at,
-          }));
+            operationType: sf.operation_type || undefined,
+            loadClassification: sf.load_classification || undefined,
+            pisoMinimoValor: sf.piso_minimo_valor ?? undefined,
+            abaixoDoPiso: sf.abaixo_do_piso || false,
+            ciotStatus: sf.ciot_status || 'pending',
+            valePedagioStatus: sf.vale_pedagio_status || 'pending',
+            distanceKm: sf.distance_km ?? undefined,
+          } as any));
         }
       } catch (supabaseError) {
         logger.error('❌ Erro ao buscar do Supabase:', supabaseError);
       }
-      
+
       // 2. FALLBACK: Se Supabase falhar, buscar do LocalStorage
       if (freights.length === 0) {
         const listResponse = await db.get<string[]>(KeyPatterns.freightsList());
@@ -1002,6 +1043,15 @@ export class FreightRepository {
       createdAt: sf.created_at,
       updatedAt: sf.updated_at || sf.created_at,
       responsibleContacts: sf.metadata?.responsibleContacts || [],
+      operationType: sf.operation_type || undefined,
+      loadClassification: sf.load_classification || undefined,
+      pisoMinimoValor: sf.piso_minimo_valor ?? undefined,
+      abaixoDoPiso: sf.abaixo_do_piso || false,
+      ciotStatus: sf.ciot_status || 'pending',
+      valePedagioStatus: sf.vale_pedagio_status || 'pending',
+      paymentAccountType: sf.payment_account_type || undefined,
+      advancePaymentPercent: sf.advance_payment_percent ?? undefined,
+      distanceKm: sf.distance_km ?? undefined,
     };
   }
 }

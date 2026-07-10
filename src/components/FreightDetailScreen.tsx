@@ -58,6 +58,8 @@ import { fetchCompleteUserProfile } from '../utils/user-profile-helper';
 import { RatingDialog } from './RatingDialog';
 import { getAvatarUrl } from '../utils/storage-helper'; // ✅ IMPORTAR HELPER
 import { generateDeepLinkUrl } from '../utils/deep-link';
+import { ciotRepository, mdfeRepository, valePedagioRepository } from '../utils/antt/repositories';
+import { CIOT_PROVIDER_LABELS, VALE_PEDAGIO_PROVIDER_LABELS, type CiotOperationRecord, type MdfeRecord, type ValePedagioRecord } from '../utils/antt/types';
 
 interface Freight {
   id: string;
@@ -141,6 +143,13 @@ interface Freight {
   schedulingDate?: string;
   urgencyType?: 'normal' | 'urgent' | 'scheduled';
   scheduledDate?: string;
+
+  // ✅ ANTT 2026 — CIOT universal e piso mínimo
+  operationType?: string;
+  pisoMinimoValor?: number;
+  abaixoDoPiso?: boolean;
+  ciotStatus?: string;
+  valePedagioStatus?: string;
 }
 
 interface User {
@@ -238,6 +247,89 @@ export function FreightDetailScreen({
   const responsibleContacts = loadedContacts.length > 0
     ? loadedContacts
     : (freight.responsibleContacts || []);
+
+  // ✅ ANTT 2026 — CIOT, MDF-e e vale-pedágio deste frete
+  const [ciotRecord, setCiotRecord] = useState<CiotOperationRecord | null>(null);
+  const [mdfeRecord, setMdfeRecord] = useState<MdfeRecord | null>(null);
+  const [valePedagioRecord, setValePedagioRecord] = useState<ValePedagioRecord | null>(null);
+  const [showCiotDialog, setShowCiotDialog] = useState(false);
+  const [showMdfeDialog, setShowMdfeDialog] = useState(false);
+  const [ciotNumberInput, setCiotNumberInput] = useState('');
+  const [mdfeNumberInput, setMdfeNumberInput] = useState('');
+  const [savingCompliance, setSavingCompliance] = useState(false);
+
+  const loadComplianceRecords = async () => {
+    const [ciotRes, mdfeRes, valePedagioRes] = await Promise.all([
+      ciotRepository.getByFreight(freight.id),
+      mdfeRepository.getByFreight(freight.id),
+      valePedagioRepository.getByFreight(freight.id),
+    ]);
+    if (ciotRes.success) setCiotRecord(ciotRes.data || null);
+    if (mdfeRes.success) setMdfeRecord(mdfeRes.data || null);
+    if (valePedagioRes.success) setValePedagioRecord(valePedagioRes.data || null);
+  };
+
+  useEffect(() => {
+    if (freight.id) loadComplianceRecords();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [freight.id]);
+
+  const handleConfirmCiotNumber = async () => {
+    if (!ciotNumberInput.trim()) {
+      toast.error('Informe o número do CIOT');
+      return;
+    }
+    setSavingCompliance(true);
+    try {
+      const result = await ciotRepository.createOrUpdate({
+        freightId: freight.id,
+        status: 'generated',
+        provider: ciotRecord?.provider || 'manual',
+        operationType: (freight.operationType as any) || ciotRecord?.operationType || null,
+        valorOperacao: ciotRecord?.valorOperacao ?? null,
+        pisoMinimoAplicavel: ciotRecord?.pisoMinimoAplicavel ?? null,
+        ciotNumber: ciotNumberInput.trim(),
+        generatedBy: user?.id,
+      });
+      if (result.success) {
+        toast.success('CIOT registrado para este frete');
+        setShowCiotDialog(false);
+        setCiotNumberInput('');
+        await loadComplianceRecords();
+      } else {
+        toast.error(result.error || 'Erro ao registrar CIOT');
+      }
+    } finally {
+      setSavingCompliance(false);
+    }
+  };
+
+  const handleConfirmMdfeNumber = async () => {
+    if (!mdfeNumberInput.trim()) {
+      toast.error('Informe o número do MDF-e');
+      return;
+    }
+    if (!user?.id) return;
+    setSavingCompliance(true);
+    try {
+      const result = await mdfeRepository.registerManualMdfe({
+        freightId: freight.id,
+        numeroMdfe: mdfeNumberInput.trim(),
+        ciotOperationId: ciotRecord?.id || null,
+        issuedBy: user.id,
+      });
+      if (result.success) {
+        toast.success('MDF-e registrado para este frete');
+        setShowMdfeDialog(false);
+        setMdfeNumberInput('');
+        await loadComplianceRecords();
+      } else {
+        toast.error(result.error || 'Erro ao registrar MDF-e');
+      }
+    } finally {
+      setSavingCompliance(false);
+    }
+  };
 
   // Estados para avaliação
   const [showRatingDialog, setShowRatingDialog] = useState(false);
@@ -746,7 +838,16 @@ ${generateDeepLinkUrl('profile', params.driverId)}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onToggleStatus(freight.id, 'completed')}
+                    onClick={() => {
+                      if (ciotRecord?.status !== 'generated') {
+                        const proceed = window.confirm(
+                          'Este frete ainda não tem um CIOT registrado (obrigatório pela MP 1.343/2026). ' +
+                          'Deseja concluir mesmo assim? Recomendamos registrar o CIOT antes de finalizar.'
+                        );
+                        if (!proceed) return;
+                      }
+                      onToggleStatus(freight.id, 'completed');
+                    }}
                     className="flex items-center gap-2"
                   >
                     <CheckCircle className="w-4 h-4" />
@@ -795,7 +896,84 @@ ${generateDeepLinkUrl('profile', params.driverId)}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="col-span-full space-y-6">
-            
+
+            {/* ✅ ANTT 2026 — Conformidade: CIOT, MDF-e, vale-pedágio e piso mínimo */}
+            {(isOwnFreight || freight.acceptedDriverId === user?.id) && freight.status !== 'draft' && freight.status !== 'cancelled' && (
+              <Card className="border-[#e5e7eb]">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Shield className="w-4 h-4 text-[#253663]" />
+                    <h3 className="text-sm font-medium text-[#111827]">Conformidade ANTT</h3>
+                  </div>
+
+                  {freight.abaixoDoPiso && (
+                    <div className="flex items-start gap-2 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-red-700">
+                        Valor abaixo do piso mínimo ANTT{freight.pisoMinimoValor ? ` (R$ ${freight.pisoMinimoValor.toFixed(2)})` : ''} — o CIOT não pode ser emitido enquanto o valor não for ajustado.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {/* CIOT */}
+                    <div className="border border-[#e5e7eb] rounded-lg p-3">
+                      <p className="text-xs text-[#6b7280] mb-1">CIOT</p>
+                      {ciotRecord?.status === 'generated' ? (
+                        <>
+                          <Badge className="bg-green-100 text-green-700 border-green-300 mb-1">Emitido</Badge>
+                          <p className="text-xs text-[#111827] font-mono">{ciotRecord.ciotNumber}</p>
+                        </>
+                      ) : ciotRecord?.status === 'blocked_below_piso' ? (
+                        <Badge className="bg-red-100 text-red-700 border-red-300">Bloqueado (abaixo do piso)</Badge>
+                      ) : (
+                        <>
+                          <Badge variant="secondary" className="mb-2">Pendente</Badge>
+                          {isOwnFreight && (
+                            <Button size="sm" variant="outline" className="w-full text-xs h-7" onClick={() => setShowCiotDialog(true)}>
+                              Registrar número do CIOT
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* MDF-e */}
+                    <div className="border border-[#e5e7eb] rounded-lg p-3">
+                      <p className="text-xs text-[#6b7280] mb-1">MDF-e</p>
+                      {mdfeRecord?.status === 'issued' ? (
+                        <>
+                          <Badge className="bg-green-100 text-green-700 border-green-300 mb-1">Emitido</Badge>
+                          <p className="text-xs text-[#111827] font-mono">{mdfeRecord.numeroMdfe}</p>
+                        </>
+                      ) : (
+                        <>
+                          <Badge variant="secondary" className="mb-2">Não emitido</Badge>
+                          {isOwnFreight && (
+                            <Button size="sm" variant="outline" className="w-full text-xs h-7" onClick={() => setShowMdfeDialog(true)}>
+                              Registrar número do MDF-e
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Vale-pedágio */}
+                    <div className="border border-[#e5e7eb] rounded-lg p-3">
+                      <p className="text-xs text-[#6b7280] mb-1">Vale-pedágio (FVPO)</p>
+                      <Badge variant={valePedagioRecord?.status === 'registered' ? 'default' : 'secondary'} className={valePedagioRecord?.status === 'registered' ? 'bg-green-100 text-green-700 border-green-300' : ''}>
+                        {valePedagioRecord ? VALE_PEDAGIO_PROVIDER_LABELS[valePedagioRecord.provider] : 'Pendente'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[#9ca3af] mt-3">
+                    Sem integração automática de CIOT/MDF-e contratada — registre aqui o número obtido junto ao provedor (Roadcard, TruckPad, FreteBras...) até a plataforma integrar diretamente.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Status and Type */}
             <div className="border-b border-gray-200 pb-8 mb-8">
               <div className="flex items-start justify-between mb-6 pb-6 border-b">
@@ -1384,6 +1562,65 @@ ${generateDeepLinkUrl('profile', params.driverId)}
           }}
         />
       )}
+
+      {/* ✅ ANTT 2026 — Registrar número do CIOT obtido fora da plataforma */}
+      <Dialog open={showCiotDialog} onOpenChange={setShowCiotDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Registrar CIOT</DialogTitle>
+            <DialogDescription>
+              Informe o número do CIOT gerado junto a um provedor autorizado (Roadcard, TruckPad, FreteBras, Repom...).
+              A plataforma ainda não emite o CIOT automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="ciot-number">Número do CIOT</Label>
+              <Input
+                id="ciot-number"
+                value={ciotNumberInput}
+                onChange={(e) => setCiotNumberInput(e.target.value)}
+                placeholder="Ex: 000000000000"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCiotDialog(false)} disabled={savingCompliance}>Cancelar</Button>
+            <Button onClick={handleConfirmCiotNumber} disabled={savingCompliance} className="bg-[#253663] hover:bg-[#1a2847] text-white">
+              {savingCompliance ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ✅ ANTT 2026 — Registrar número do MDF-e obtido fora da plataforma */}
+      <Dialog open={showMdfeDialog} onOpenChange={setShowMdfeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Registrar MDF-e</DialogTitle>
+            <DialogDescription>
+              Informe o número do Manifesto Eletrônico de Documentos Fiscais emitido para esta viagem.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="mdfe-number">Número do MDF-e</Label>
+              <Input
+                id="mdfe-number"
+                value={mdfeNumberInput}
+                onChange={(e) => setMdfeNumberInput(e.target.value)}
+                placeholder="Ex: 35260000000000000000000000000000000000000000"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMdfeDialog(false)} disabled={savingCompliance}>Cancelar</Button>
+            <Button onClick={handleConfirmMdfeNumber} disabled={savingCompliance} className="bg-[#253663] hover:bg-[#1a2847] text-white">
+              {savingCompliance ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
         </div>
       </div>
     </div>

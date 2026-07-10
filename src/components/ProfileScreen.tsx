@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { AnttComplianceTab } from './AnttComplianceTab';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { TermsOfUseModal } from './TermsOfUseModal';
@@ -278,6 +279,8 @@ const mockUserData: UserData = {
 export function ProfileScreen({ user, onBack, onLogout, showActivity, activities, isCollaborator, companyId, companyName }: ProfileScreenProps) {
   const [userData, setUserData] = useState<UserData>(mockUserData);
   const [activeTab, setActiveTab] = useState('data');
+  // ✅ ANTT 2026 — RNTRC/seguros obrigatórios não se aplicam a embarcadores
+  const showComplianceTab = user.userType !== 'embarcador';
   const [loading, setLoading] = useState(true);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
@@ -1139,7 +1142,12 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
             animate={{ opacity: 1 }}
             transition={{ delay: 1.4, duration: 0.6 }}
           >
-            <TabsList className={`grid w-full mb-8 h-12 bg-white border border-gray-200 gap-2 px-2 ${showActivity ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            <TabsList className={`grid w-full mb-8 h-12 bg-white border border-gray-200 gap-2 px-2 ${
+              (() => {
+                const total = 4 + (showActivity ? 1 : 0) + (showComplianceTab ? 1 : 0);
+                return { 4: 'grid-cols-4', 5: 'grid-cols-5', 6: 'grid-cols-6' }[total] || 'grid-cols-6';
+              })()
+            }`}>
 
               {showActivity && (
                 <TabsTrigger value="activity">
@@ -1152,6 +1160,11 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
               <TabsTrigger value="vehicle">
                 Veículo
               </TabsTrigger>
+              {showComplianceTab && (
+                <TabsTrigger value="compliance">
+                  Conformidade ANTT
+                </TabsTrigger>
+              )}
               <TabsTrigger value="ratings">
                 Avaliações
               </TabsTrigger>
@@ -1164,6 +1177,12 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
           {showActivity && (
             <TabsContent value="activity" className="space-y-6">
               {renderActivityContent()}
+            </TabsContent>
+          )}
+
+          {showComplianceTab && (
+            <TabsContent value="compliance" className="space-y-6">
+              <AnttComplianceTab user={user} />
             </TabsContent>
           )}
 

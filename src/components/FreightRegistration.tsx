@@ -46,6 +46,16 @@ import { logUserAction } from '../utils/collaborator-activity-logger';
 import { savedContactRepository, freightContactRepository } from '../utils/database/repositories/saved-contact-repository';
 import { brazilianStates, getCitiesByState } from '../utils/brazil-locations';
 import { CityAutocomplete } from './CityAutocomplete';
+import { calculatePisoMinimo, parseCurrencyToNumber } from '../utils/antt/pisoMinimo';
+import { estimateRouteDistanceKm } from '../utils/antt/distance';
+import { ciotRepository } from '../utils/antt/repositories';
+import {
+  OPERATION_TYPE_LABELS,
+  VALE_PEDAGIO_PROVIDER_LABELS,
+  type OperationType,
+  type PisoMinimoResult,
+  type ValePedagioProviderId,
+} from '../utils/antt/types';
 
 interface FreightRegistrationProps {
   user: AppUser;
@@ -121,7 +131,14 @@ interface FreightData {
   paymentMethod: string;
   advancePayment: string;
   schedulingDate: string;
-  
+
+  // ✅ ANTT 2026 — CIOT universal, piso mínimo e classificação da operação
+  operationType: OperationType;
+  distanceKm: string;
+  valePedagioProvider: ValePedagioProviderId;
+  valePedagioTagNumber: string;
+  paymentAccountType: 'propria' | 'terceiro_autorizado';
+
   // Urgência e data
   urgencyType: 'normal' | 'urgent' | 'scheduled';
   scheduledDate: string;
@@ -193,7 +210,12 @@ export function FreightRegistration({
       urgencyType: 'normal',
       scheduledDate: '',
       observations: '',
-      freightType: 'plus'
+      freightType: 'plus',
+      operationType: user.userType === 'transportadora' ? 'ETC_FROTA_PROPRIA' : 'TAC',
+      distanceKm: '',
+      valePedagioProvider: 'pending_integration',
+      valePedagioTagNumber: '',
+      paymentAccountType: 'propria',
     };
 
     if (initialData) {
@@ -226,7 +248,12 @@ export function FreightRegistration({
         selectedClosedTrailers: initialData.selectedClosedTrailers || [],
         selectedOpenTrailers: initialData.selectedOpenTrailers || [],
         selectedSpecialTrailers: initialData.selectedSpecialTrailers || [],
-        responsibleCollaborators: initialData.responsibleCollaborators || initialData.responsibleContacts || []
+        responsibleCollaborators: initialData.responsibleCollaborators || initialData.responsibleContacts || [],
+        operationType: initialData.operationType || defaultData.operationType,
+        distanceKm: initialData.distanceKm ? String(initialData.distanceKm) : '',
+        valePedagioProvider: initialData.valePedagioProvider || 'pending_integration',
+        valePedagioTagNumber: initialData.valePedagioTagNumber || '',
+        paymentAccountType: initialData.paymentAccountType || 'propria',
       };
     }
 
@@ -234,6 +261,72 @@ export function FreightRegistration({
   };
   
   const [freightData, setFreightData] = useState<FreightData>(getInitialFreightData());
+
+  // ✅ ANTT 2026 — piso mínimo e distância estimada da rota
+  const [pisoMinimo, setPisoMinimo] = useState<PisoMinimoResult | null>(null);
+  const [isEstimatingDistance, setIsEstimatingDistance] = useState(false);
+
+  // Estima automaticamente a distância da rota (origem → destino) via Mapbox
+  // quando ambas as cidades estão preenchidas e a distância ainda não foi informada manualmente.
+  useEffect(() => {
+    let cancelled = false;
+    const { originCity, originState, destinationCity, destinationState, distanceKm } = freightData;
+    if (!originCity || !originState || !destinationCity || !destinationState || distanceKm) return;
+
+    setIsEstimatingDistance(true);
+    estimateRouteDistanceKm(originCity, originState, destinationCity, destinationState)
+      .then((km) => {
+        if (!cancelled && km) {
+          setFreightData(prev => (prev.distanceKm ? prev : { ...prev, distanceKm: String(km) }));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsEstimatingDistance(false);
+      });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [freightData.originCity, freightData.originState, freightData.destinationCity, freightData.destinationState]);
+
+  // Recalcula o piso mínimo ANTT sempre que carga, veículo ou distância mudarem
+  useEffect(() => {
+    let cancelled = false;
+    const distance = parseFloat(freightData.distanceKm);
+    if (!distance || distance <= 0 || !freightData.cargoType) {
+      setPisoMinimo(null);
+      return;
+    }
+
+    const vehicleLabels = [
+      ...freightData.selectedLightVehicles,
+      ...freightData.selectedMediumVehicles,
+      ...freightData.selectedHeavyVehicles,
+      ...freightData.selectedClosedTrailers,
+      ...freightData.selectedOpenTrailers,
+      ...freightData.selectedSpecialTrailers,
+    ];
+
+    calculatePisoMinimo({ cargoTypeLabel: freightData.cargoType, vehicleLabels, distanceKm: distance })
+      .then((result) => { if (!cancelled) setPisoMinimo(result); });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    freightData.distanceKm,
+    freightData.cargoType,
+    freightData.selectedLightVehicles,
+    freightData.selectedMediumVehicles,
+    freightData.selectedHeavyVehicles,
+    freightData.selectedClosedTrailers,
+    freightData.selectedOpenTrailers,
+    freightData.selectedSpecialTrailers,
+  ]);
+
+  const freightValueNumber = freightData.freightValueType === 'known' ? parseCurrencyToNumber(freightData.freightValue) : 0;
+  const isBelowPisoMinimo = !!(pisoMinimo && freightData.freightValueType === 'known' && freightValueNumber > 0 && freightValueNumber < pisoMinimo.valor);
+  const isTacOperation = freightData.operationType === 'TAC' || freightData.operationType === 'TAC_AGREGADO';
+  const advancePaymentNumber = parseFloat(freightData.advancePayment) || 0;
+  const advancePaymentBelowMinimum = isTacOperation && freightData.advancePayment !== '' && advancePaymentNumber < 70;
 
   // Estados para diálogo de contato manual
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
@@ -531,7 +624,20 @@ export function FreightRegistration({
 
   const handleSubmit = async () => {
     try {
-      
+      // ✅ ANTT 2026 — bloqueio na origem: frete com valor conhecido abaixo do piso mínimo
+      // não pode ser publicado (MP 1.343/2026 + Resoluções ANTT 6.077/6.078/2026).
+      if (isBelowPisoMinimo && pisoMinimo) {
+        toast.error(
+          `Valor abaixo do piso mínimo ANTT (R$ ${pisoMinimo.valor.toFixed(2)} para esta rota/carga). ` +
+          `Ajuste o valor ou consulte calculadorafrete.antt.gov.br.`
+        );
+        return;
+      }
+      if (advancePaymentBelowMinimum) {
+        toast.error('Para operações com Transportador Autônomo (TAC), o adiantamento mínimo obrigatório é de 70% do valor do frete.');
+        return;
+      }
+
       // Determinar tipo de veículo baseado nas seleções
       const allVehicles = [
         ...freightData.selectedLightVehicles,
@@ -624,9 +730,20 @@ export function FreightRegistration({
         })),
         hasAdditionalCargo: !!freightData.additionalCargoDetails,
         additionalCargoDetails: freightData.additionalCargoDetails,
+
+        // ✅ ANTT 2026
+        operationType: freightData.operationType,
+        loadClassification: freightData.occupancyType === 'completa' ? 'lotacao' : 'fracionada',
+        pisoMinimoValor: pisoMinimo?.valor,
+        abaixoDoPiso: isBelowPisoMinimo,
+        ciotStatus: isBelowPisoMinimo ? 'blocked_below_piso' : 'manual_pending',
+        valePedagioStatus: freightData.valePedagioProvider === 'pending_integration' ? 'pending' : 'registered',
+        paymentAccountType: freightData.paymentAccountType,
+        advancePaymentPercent: advancePaymentNumber || undefined,
+        distanceKm: freightData.distanceKm ? parseFloat(freightData.distanceKm) : undefined,
       };
-      
-      
+
+
       let result;
       if (isEditing && freightId) {
         // Atualizar frete existente
@@ -640,6 +757,27 @@ export function FreightRegistration({
       if (result.success) {
         // Salvar contatos responsáveis na tabela freight_responsible_contacts
         const createdFreightId = result.data?.id || freightId;
+
+        // ✅ ANTT 2026 — abre o registro de CIOT do frete (gate obrigatório antes do início da viagem).
+        // Sem integração automática contratada, o CIOT fica "manual_pending" até alguém inserir o
+        // número obtido fora da plataforma (ver Central de Conformidade do frete).
+        if (createdFreightId) {
+          try {
+            await ciotRepository.createOrUpdate({
+              freightId: createdFreightId,
+              status: isBelowPisoMinimo ? 'blocked_below_piso' : 'manual_pending',
+              provider: 'pending_integration',
+              operationType: freightData.operationType,
+              valorOperacao: freightValueNumber || null,
+              pisoMinimoAplicavel: pisoMinimo?.valor ?? null,
+              blockedReason: isBelowPisoMinimo ? 'Valor do frete abaixo do piso mínimo ANTT calculado para a rota/carga.' : null,
+              generatedBy: user.id,
+            });
+          } catch (ciotError) {
+            console.error('⚠️ Erro ao registrar operação de CIOT:', ciotError);
+          }
+        }
+
         if (createdFreightId && freightData.responsibleCollaborators.length > 0) {
           try {
             await freightContactRepository.setForFreight(
@@ -700,13 +838,26 @@ export function FreightRegistration({
 
   const handleSchedule = async () => {
     try {
-      
+
       // Validar data de agendamento
       if (!freightData.scheduledDate) {
         toast.error('Por favor, selecione uma data de agendamento');
         return;
       }
-      
+
+      // ✅ ANTT 2026 — mesmo bloqueio de piso mínimo/adiantamento aplicado ao agendar
+      if (isBelowPisoMinimo && pisoMinimo) {
+        toast.error(
+          `Valor abaixo do piso mínimo ANTT (R$ ${pisoMinimo.valor.toFixed(2)} para esta rota/carga). ` +
+          `Ajuste o valor ou consulte calculadorafrete.antt.gov.br.`
+        );
+        return;
+      }
+      if (advancePaymentBelowMinimum) {
+        toast.error('Para operações com Transportador Autônomo (TAC), o adiantamento mínimo obrigatório é de 70% do valor do frete.');
+        return;
+      }
+
       // Determinar tipo de veículo baseado nas seleções
       const allVehicles = [
         ...freightData.selectedLightVehicles,
@@ -793,13 +944,42 @@ export function FreightRegistration({
         })),
         hasAdditionalCargo: !!freightData.additionalCargoDetails,
         additionalCargoDetails: freightData.additionalCargoDetails,
+
+        // ✅ ANTT 2026
+        operationType: freightData.operationType,
+        loadClassification: freightData.occupancyType === 'completa' ? 'lotacao' : 'fracionada',
+        pisoMinimoValor: pisoMinimo?.valor,
+        abaixoDoPiso: isBelowPisoMinimo,
+        ciotStatus: isBelowPisoMinimo ? 'blocked_below_piso' : 'manual_pending',
+        valePedagioStatus: freightData.valePedagioProvider === 'pending_integration' ? 'pending' : 'registered',
+        paymentAccountType: freightData.paymentAccountType,
+        advancePaymentPercent: advancePaymentNumber || undefined,
+        distanceKm: freightData.distanceKm ? parseFloat(freightData.distanceKm) : undefined,
       };
-      
+
       const result = await database.freights.create(freightPayload);
-      
+
       if (result.success) {
         // Salvar contatos responsáveis na tabela freight_responsible_contacts
         const scheduledFreightId = result.data?.id;
+
+        if (scheduledFreightId) {
+          try {
+            await ciotRepository.createOrUpdate({
+              freightId: scheduledFreightId,
+              status: isBelowPisoMinimo ? 'blocked_below_piso' : 'manual_pending',
+              provider: 'pending_integration',
+              operationType: freightData.operationType,
+              valorOperacao: freightValueNumber || null,
+              pisoMinimoAplicavel: pisoMinimo?.valor ?? null,
+              blockedReason: isBelowPisoMinimo ? 'Valor do frete abaixo do piso mínimo ANTT calculado para a rota/carga.' : null,
+              generatedBy: user.id,
+            });
+          } catch (ciotError) {
+            console.error('⚠️ Erro ao registrar operação de CIOT:', ciotError);
+          }
+        }
+
         if (scheduledFreightId && freightData.responsibleCollaborators.length > 0) {
           try {
             await freightContactRepository.setForFreight(
@@ -1952,6 +2132,144 @@ export function FreightRegistration({
                 )}
               </div>
             </div>
+
+            {/* Conformidade ANTT 2026 — CIOT, piso mínimo e classificação da operação */}
+            <div className="bg-white border border-[#e5e7eb] rounded-lg">
+              <div className="border-b border-[#e5e7eb] px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <Shield className="w-5 h-5 text-[#253663]" />
+                  <div>
+                    <h2 className="text-base font-medium text-[#111827]">Conformidade ANTT</h2>
+                    <p className="text-sm text-[#6b7280] mt-0.5">
+                      CIOT obrigatório e piso mínimo do frete (MP 1.343/2026)
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <Label>Modalidade da operação</Label>
+                  <Select
+                    value={freightData.operationType}
+                    onValueChange={(value: OperationType) => updateFreightData('operationType', value)}
+                  >
+                    <SelectTrigger className="bg-input-background border-input-border">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(OPERATION_TYPE_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-[#6b7280]">
+                    Define quem é responsável por emitir o CIOT desta operação e se o adiantamento mínimo de 70% ao TAC é obrigatório.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Distância estimada da rota (km)</Label>
+                    <Input
+                      value={freightData.distanceKm}
+                      onChange={(e) => updateFreightData('distanceKm', e.target.value)}
+                      placeholder={isEstimatingDistance ? 'Calculando automaticamente...' : '0'}
+                      type="number"
+                      className="bg-input-background border-input-border"
+                    />
+                    <p className="text-xs text-[#6b7280]">
+                      {isEstimatingDistance
+                        ? 'Estimando via rota rodoviária...'
+                        : 'Preenchida automaticamente quando possível. Necessária para calcular o piso mínimo ANTT.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Piso mínimo ANTT calculado</Label>
+                    <div className={`px-3 py-2.5 rounded-lg border text-sm font-medium ${
+                      isBelowPisoMinimo
+                        ? 'border-red-300 bg-red-50 text-red-700'
+                        : pisoMinimo
+                          ? 'border-green-300 bg-green-50 text-green-700'
+                          : 'border-[#e5e7eb] bg-[#fafafa] text-[#6b7280]'
+                    }`}>
+                      {pisoMinimo
+                        ? `R$ ${pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                        : 'Informe distância e tipo de carga'}
+                    </div>
+                    {pisoMinimo?.needsVerification && (
+                      <p className="text-xs text-amber-600">
+                        Coeficiente estimado — confira o valor oficial em calculadorafrete.antt.gov.br antes de fechar o frete.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {isBelowPisoMinimo && pisoMinimo && (
+                  <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-700">Valor abaixo do piso mínimo do frete</p>
+                      <p className="text-xs text-red-600 mt-0.5">
+                        O CIOT não pode ser gerado com o frete abaixo do piso. Ajuste o valor para pelo menos R$ {pisoMinimo.valor.toFixed(2)} para publicar.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Vale-pedágio eletrônico (FVPO)</Label>
+                  <Select
+                    value={freightData.valePedagioProvider}
+                    onValueChange={(value: ValePedagioProviderId) => updateFreightData('valePedagioProvider', value)}
+                  >
+                    <SelectTrigger className="bg-input-background border-input-border">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(VALE_PEDAGIO_PROVIDER_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-[#6b7280]">
+                    O vale-pedágio é 100% eletrônico (TAG/OCR) — dinheiro e cupom em papel não são mais aceitos.
+                  </p>
+                </div>
+
+                {isTacOperation && (
+                  <div className="space-y-2">
+                    <Label>Pagamento do frete será feito para</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        className={`p-3 border rounded-lg cursor-pointer transition-all text-left ${
+                          freightData.paymentAccountType === 'propria' ? 'border-[#253663] bg-[#253663]/5 text-[#253663]' : 'border-[#e5e7eb] hover:bg-[#fafafa] text-[#6b7280]'
+                        }`}
+                        onClick={() => updateFreightData('paymentAccountType', 'propria')}
+                      >
+                        <span className="text-sm font-medium">Conta própria do TAC</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`p-3 border rounded-lg cursor-pointer transition-all text-left ${
+                          freightData.paymentAccountType === 'terceiro_autorizado' ? 'border-[#253663] bg-[#253663]/5 text-[#253663]' : 'border-[#e5e7eb] hover:bg-[#fafafa] text-[#6b7280]'
+                        }`}
+                        onClick={() => updateFreightData('paymentAccountType', 'terceiro_autorizado')}
+                      >
+                        <span className="text-sm font-medium">Terceiro indicado pelo TAC</span>
+                      </button>
+                    </div>
+                    <p className="text-xs text-[#6b7280]">
+                      A conta de recebimento não pode ser imposta pelo contratante — apenas própria do motorista ou de terceiro por ele indicado.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Valor e Pagamento - Seção Unificada */}
             <div className="bg-white border border-[#e5e7eb] rounded-lg">
               <div className="border-b border-[#e5e7eb] px-6 py-4">

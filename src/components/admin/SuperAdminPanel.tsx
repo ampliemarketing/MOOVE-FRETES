@@ -19,6 +19,7 @@ import { AdminTools } from './AdminTools';
 import { AdminApprovals } from './AdminApprovals';
 import { AdminSupport } from './AdminSupport';
 import { AdminCriticalFreights } from './AdminCriticalFreights';
+import { AdminAnttCompliance } from './AdminAnttCompliance';
 import { fetchAdminKPI, type AdminKPI } from '../../utils/admin-supabase-service';
 import { supabase } from '../../utils/supabase/client';
 
@@ -72,6 +73,7 @@ export function SuperAdminPanel({ onExit, userEmail }: SuperAdminPanelProps) {
     { id: 'drivers', label: 'Motoristas', icon: Truck },
     { id: 'freights', label: 'Fretes & Cotações', icon: Package },
     { id: 'critical', label: 'Fretes Críticos', icon: AlertCircle, badge: kpi?.criticalFreights },
+    { id: 'antt-compliance', label: 'Conformidade ANTT', icon: Shield },
     { id: 'messages', label: 'Monitoramento Chat', icon: MessageSquare, badge: kpi?.reportedMessages },
     { id: 'support', label: 'Tickets de Suporte', icon: LifeBuoy, badge: kpi?.openTickets },
     { id: 'reviews', label: 'Avaliações & Denúncias', icon: Star, badge: kpi?.pendingReports },
@@ -113,6 +115,7 @@ export function SuperAdminPanel({ onExit, userEmail }: SuperAdminPanelProps) {
       case 'drivers': return <AdminDrivers />;
       case 'freights': return <AdminFreights />;
       case 'critical': return <AdminCriticalFreights />;
+      case 'antt-compliance': return <AdminAnttCompliance />;
       case 'messages': return <AdminMessages />;
       case 'support': return <AdminSupport />;
       case 'reviews': return <AdminReviews />;

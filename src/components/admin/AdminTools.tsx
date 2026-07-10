@@ -233,7 +233,3 @@ export function AdminTools() {
     </div>
   );
 }
-      </div>
-    </div>
-  );
-}

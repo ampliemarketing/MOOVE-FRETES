@@ -4,6 +4,7 @@
  */
 
 import type { CollaboratorRole } from '../collaborator-types';
+import type { OperationType, LoadClassification, PaymentAccountType, RntrcStatus } from '../antt/types';
 
 // ============================================
 // USER ENTITIES
@@ -68,8 +69,13 @@ export interface Driver {
   cnhCategory: string;
   cnhValidity: string;
   rntrc?: string;
+  rntrcExpiry?: string;
+  rntrcStatus?: RntrcStatus; // ✅ ANTT 2026: status estruturado (ativo/suspenso/cancelado/pendente_verificacao)
+  driverClassification?: 'TAC' | 'TAC_AGREGADO'; // ✅ ANTT 2026: classificação regulatória do motorista
+  paymentAccountHolder?: PaymentAccountType; // ✅ ANTT 2026: conta própria ou terceiro autorizado pelo TAC
+  paymentAccountHolderName?: string;
   avatarUrl?: string; // Avatar do motorista (de profiles.avatar_url ou users.avatar_url)
-  
+
   // Vehicle information
   vehicle: {
     type: string;
@@ -141,7 +147,14 @@ export interface Company {
   employeeCount?: string;
   fleetSize?: number;
   operationalAreas?: string[];
-  
+
+  // ✅ ANTT 2026
+  companySubtype?: 'etc_padrao' | 'ctc_cooperativa' | 'tac_equiparado'; // classificação ETC/CTC/TAC-equiparado
+  rntrc?: string;
+  rntrcExpiry?: string;
+  rntrcStatus?: RntrcStatus;
+  ocbRegistration?: string; // registro na OCB, exigido para cooperativas (CTC)
+
   // Verification
   verificationStatus: 'pending' | 'verified' | 'rejected';
   documents: {
@@ -197,7 +210,18 @@ export interface Freight {
   // Pricing
   price: string | 'A combinar';
   paymentTerms?: string;
-  
+
+  // ✅ ANTT 2026 — CIOT universal, piso mínimo e classificação da operação
+  operationType?: OperationType; // TAC / TAC_AGREGADO / ETC_FROTA_PROPRIA / ETC_SUBCONTRATACAO / CTC
+  loadClassification?: LoadClassification; // lotacao | fracionada
+  pisoMinimoValor?: number; // piso calculado (R$) no momento da publicação
+  abaixoDoPiso?: boolean; // true quando o valor informado está abaixo do piso — bloqueia CIOT
+  ciotStatus?: 'not_required' | 'pending' | 'blocked_below_piso' | 'manual_pending' | 'generated' | 'cancelled';
+  valePedagioStatus?: 'pending' | 'registered' | 'not_applicable';
+  paymentAccountType?: PaymentAccountType; // conta própria do motorista ou terceiro autorizado
+  advancePaymentPercent?: number; // adiantamento mínimo de 70% obrigatório para operações TAC
+  distanceKm?: number; // usado para calcular o piso mínimo (d × CCD + CC)
+
   // Schedule
   pickupDate?: string;
   deliveryDate?: string;

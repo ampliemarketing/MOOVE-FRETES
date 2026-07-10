@@ -292,8 +292,9 @@ export interface AdminKPI {
   criticalFreights: number;
 }
 
+export async function fetchAdminKPI(): Promise<AdminKPI> {
   const [
-    profilesCount, 
+    profilesCount,
     pendingProfiles,
     blockedProfiles,
     suspendedProfiles,
