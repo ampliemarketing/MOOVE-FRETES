@@ -328,6 +328,47 @@ export function FreightRegistration({
   const advancePaymentNumber = parseFloat(freightData.advancePayment) || 0;
   const advancePaymentBelowMinimum = isTacOperation && freightData.advancePayment !== '' && advancePaymentNumber < 70;
 
+  // Estados de conformidade em tempo real para painel informativo
+  let pisoMinimoStatus: 'pending' | 'success' | 'error' = 'pending';
+  let pisoMinimoMessage = 'Aguardando preenchimento de rota, carga e veículos.';
+  if (pisoMinimo) {
+    if (freightData.freightValueType === 'negotiable') {
+      pisoMinimoStatus = 'success';
+      pisoMinimoMessage = `Valor a combinar. Piso mínimo calculado é R$ ${pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.`;
+    } else {
+      if (freightValueNumber === 0) {
+        pisoMinimoStatus = 'pending';
+        pisoMinimoMessage = `Piso mínimo calculado é R$ ${pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Digite o valor do frete.`;
+      } else if (isBelowPisoMinimo) {
+        pisoMinimoStatus = 'error';
+        const diff = pisoMinimo.valor - freightValueNumber;
+        pisoMinimoMessage = `Abaixo do Piso ANTT por R$ ${diff.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (Mínimo: R$ ${pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}).`;
+      } else {
+        pisoMinimoStatus = 'success';
+        pisoMinimoMessage = `Valor atende ao piso mínimo de R$ ${pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.`;
+      }
+    }
+  }
+
+  let adiantamentoStatus: 'pending' | 'success' | 'error' | 'neutral' = 'neutral';
+  let adiantamentoMessage = 'Não aplicável para esta modalidade.';
+  if (isTacOperation) {
+    if (freightData.advancePayment === '') {
+      adiantamentoStatus = 'pending';
+      adiantamentoMessage = 'Aguardando definição do percentual de adiantamento (mínimo 70%).';
+    } else if (advancePaymentBelowMinimum) {
+      adiantamentoStatus = 'error';
+      adiantamentoMessage = `Adiantamento de ${freightData.advancePayment}% está abaixo do mínimo regulamentar de 70%.`;
+    } else {
+      adiantamentoStatus = 'success';
+      adiantamentoMessage = `Adiantamento de ${freightData.advancePayment}% atende ao mínimo legal de 70%.`;
+    }
+  }
+
+  const isFormCompliant = 
+    (pisoMinimoStatus === 'success') && 
+    (adiantamentoStatus === 'success' || adiantamentoStatus === 'neutral');
+
   // Estados para diálogo de contato manual
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
   const [manualContact, setManualContact] = useState({
@@ -2147,6 +2188,55 @@ export function FreightRegistration({
                 </div>
               </div>
               <div className="p-6 space-y-6">
+                {/* Painel de Status de Conformidade em Tempo Real */}
+                <div className={`p-4 rounded-lg border flex flex-col gap-3 transition-all ${
+                  isFormCompliant 
+                    ? 'bg-green-50/70 border-green-200 text-green-800' 
+                    : (pisoMinimoStatus === 'error' || adiantamentoStatus === 'error')
+                      ? 'bg-red-50/70 border-red-200 text-red-800'
+                      : 'bg-amber-50/70 border-amber-200 text-amber-800'
+                }`}>
+                  <div className="flex items-center gap-2 font-bold text-sm">
+                    {isFormCompliant ? (
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    ) : (pisoMinimoStatus === 'error' || adiantamentoStatus === 'error') ? (
+                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    ) : (
+                      <Clock className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                    )}
+                    <span>
+                      {isFormCompliant 
+                        ? 'Frete em Conformidade ANTT' 
+                        : (pisoMinimoStatus === 'error' || adiantamentoStatus === 'error')
+                          ? 'Frete Não Conforme (Ajustes Necessários)'
+                          : 'Aguardando Dados de Conformidade'}
+                    </span>
+                  </div>
+
+                  <div className="text-xs space-y-2 font-medium">
+                    {/* Linha Piso Mínimo */}
+                    <div className="flex items-start gap-2">
+                      <span className={`inline-block w-2.5 h-2.5 rounded-full mt-0.5 ${
+                        pisoMinimoStatus === 'success' ? 'bg-green-500' : pisoMinimoStatus === 'error' ? 'bg-red-500' : 'bg-amber-400'
+                      }`} />
+                      <div>
+                        <span className="font-semibold text-gray-900 block">Piso Mínimo ANTT:</span>
+                        <span className="text-gray-600">{pisoMinimoMessage}</span>
+                      </div>
+                    </div>
+
+                    {/* Linha Adiantamento TAC */}
+                    <div className="flex items-start gap-2">
+                      <span className={`inline-block w-2.5 h-2.5 rounded-full mt-0.5 ${
+                        adiantamentoStatus === 'success' ? 'bg-green-500' : adiantamentoStatus === 'error' ? 'bg-red-500' : adiantamentoStatus === 'neutral' ? 'bg-gray-300' : 'bg-amber-400'
+                      }`} />
+                      <div>
+                        <span className="font-semibold text-gray-900 block">Adiantamento Obrigatório (TAC):</span>
+                        <span className="text-gray-600">{adiantamentoMessage}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label>Modalidade da operação</Label>
                   <Select
@@ -2360,9 +2450,26 @@ export function FreightRegistration({
                           placeholder="0,00"
                           type="number"
                           step="0.01"
-                          className="bg-input-background border-input-border pl-10"
+                          className={`bg-input-background border-input-border pl-10 ${
+                            isBelowPisoMinimo ? 'border-red-300 focus-visible:ring-red-500 focus-visible:border-red-500' : ''
+                          }`}
                         />
                       </div>
+                      {isBelowPisoMinimo && pisoMinimo && (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs">
+                          <span className="text-red-600 font-medium flex items-center gap-1.5">
+                            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                            Abaixo do piso mínimo ANTT (Mínimo: R$ {pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateFreightData('freightValue', pisoMinimo.valor.toFixed(2))}
+                            className="text-[#253663] hover:underline font-semibold cursor-pointer underline text-[11px]"
+                          >
+                            Ajustar para o valor correto
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                   
@@ -2397,13 +2504,13 @@ export function FreightRegistration({
 
                 <Separator />
                 {/* Pedágio */}
-                <div className="space-y-1">
-                  <Label className="text-sm font-medium text-[#111827]">Pedágio</Label>
-                  <p className="text-sm text-[#111827] font-medium">
-                    Pago à parte
-                  </p>
-                  <p className="text-xs text-[#ea742a] font-medium mt-1">
-                    Nota: O pedágio sempre deve ser pago a parte.
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-1.5">
+                  <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
+                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span>Vale-Pedágio Obrigatório (Lei nº 10.209/2001)</span>
+                  </div>
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    O valor do pedágio <strong>sempre deve ser pago à parte</strong> e antecipadamente ao motorista. É expressamente proibido por lei descontar o pedágio do valor do frete ou embuti-lo no frete líquido.
                   </p>
                 </div>
 
@@ -2418,10 +2525,18 @@ export function FreightRegistration({
                       type="number"
                       min="0"
                       max="100"
-                      className="bg-input-background border-input-border pr-8"
+                      className={`bg-input-background border-input-border pr-8 ${
+                        advancePaymentBelowMinimum ? 'border-red-300 focus-visible:ring-red-500 focus-visible:border-red-500' : ''
+                      }`}
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
                   </div>
+                  {advancePaymentBelowMinimum && (
+                    <p className="text-xs text-red-600 font-medium flex items-center gap-1.5 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      Para TAC/TAC-Agregado, a lei exige adiantamento mínimo de 70% do frete.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
