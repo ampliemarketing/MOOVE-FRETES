@@ -2197,6 +2197,34 @@ export function FreightRegistration({
                         ? `R$ ${pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                         : 'Informe distância e tipo de carga'}
                     </div>
+                    {pisoMinimo && (
+                      <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-lg text-xs text-[#1e40af] space-y-2">
+                        <p className="font-semibold flex items-center gap-1.5 text-[#1e3a8a]">
+                          <Info className="w-3.5 h-3.5" /> Memória de Cálculo (ANTT 2026)
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[#4b5563]">
+                          <div><span className="font-medium text-[#374151]">Fórmula:</span> (Distância × CCD) + CC</div>
+                          <div><span className="font-medium text-[#374151]">Distância:</span> {pisoMinimo.distanciaKm} km</div>
+                          <div><span className="font-medium text-[#374151]">Veículo estimado:</span> {pisoMinimo.eixosConsiderados} eixos</div>
+                          <div><span className="font-medium text-[#374151]">Categoria ANTT:</span> {
+                            pisoMinimo.categoriaCarga === 'carga_geral' ? 'Carga Geral' :
+                            pisoMinimo.categoriaCarga === 'granel_solido' ? 'Granel Sólido' :
+                            pisoMinimo.categoriaCarga === 'granel_liquido' ? 'Granel Líquido' :
+                            pisoMinimo.categoriaCarga === 'granel_pressurizada' ? 'Granel Pressurizada' :
+                            pisoMinimo.categoriaCarga === 'conteinerizada' ? 'Conteinerizada' :
+                            pisoMinimo.categoriaCarga === 'frigorificada' ? 'Frigorificada' :
+                            pisoMinimo.categoriaCarga === 'neogranel' ? 'Neogranel' :
+                            pisoMinimo.categoriaCarga.replace(/_/g, ' ')
+                          }</div>
+                          <div><span className="font-medium text-[#374151]">Coeficiente CCD:</span> R$ {pisoMinimo.ccdUsado.toFixed(4)}/km</div>
+                          <div><span className="font-medium text-[#374151]">Coeficiente CC:</span> R$ {pisoMinimo.ccUsado.toFixed(2)}</div>
+                        </div>
+                        <div className="pt-1.5 border-t border-blue-100/70 text-[#1e3a8a] font-mono text-[11px] flex justify-between items-center">
+                          <span>({pisoMinimo.distanciaKm} km × R$ {pisoMinimo.ccdUsado.toFixed(4)}) + R$ {pisoMinimo.ccUsado.toFixed(2)}</span>
+                          <span className="font-bold">Total: R$ {pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      </div>
+                    )}
                     {pisoMinimo?.needsVerification && (
                       <p className="text-xs text-amber-600">
                         Coeficiente estimado — confira o valor oficial em calculadorafrete.antt.gov.br antes de fechar o frete.
