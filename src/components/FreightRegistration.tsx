@@ -327,6 +327,22 @@ export function FreightRegistration({
   const isTacOperation = freightData.operationType === 'TAC' || freightData.operationType === 'TAC_AGREGADO';
   const advancePaymentNumber = parseFloat(freightData.advancePayment) || 0;
   const advancePaymentBelowMinimum = isTacOperation && freightData.advancePayment !== '' && advancePaymentNumber < 70;
+  const hasAllFreightData = !!(
+    freightData.originCity &&
+    freightData.destinationCity &&
+    freightData.product &&
+    freightData.cargoType &&
+    freightData.totalWeight &&
+    (
+      freightData.selectedLightVehicles.length > 0 ||
+      freightData.selectedMediumVehicles.length > 0 ||
+      freightData.selectedHeavyVehicles.length > 0 ||
+      freightData.selectedClosedTrailers.length > 0 ||
+      freightData.selectedOpenTrailers.length > 0 ||
+      freightData.selectedSpecialTrailers.length > 0
+    ) &&
+    freightData.distanceKm
+  );
 
   // Estados de conformidade em tempo real para painel informativo
   let pisoMinimoStatus: 'pending' | 'success' | 'error' = 'pending';
@@ -665,15 +681,8 @@ export function FreightRegistration({
 
   const handleSubmit = async () => {
     try {
-      // ✅ ANTT 2026 — bloqueio na origem: frete com valor conhecido abaixo do piso mínimo
-      // não pode ser publicado (MP 1.343/2026 + Resoluções ANTT 6.077/6.078/2026).
-      if (isBelowPisoMinimo && pisoMinimo) {
-        toast.error(
-          `Valor abaixo do piso mínimo ANTT (R$ ${pisoMinimo.valor.toFixed(2)} para esta rota/carga). ` +
-          `Ajuste o valor ou consulte calculadorafrete.antt.gov.br.`
-        );
-        return;
-      }
+      // ✅ ANTT 2026 — Removido bloqueio de publicação por valor abaixo do piso minimo.
+      // O usuário pode prosseguir mesmo abaixo do piso, mas com avisos/recomendações.
       if (advancePaymentBelowMinimum) {
         toast.error('Para operações com Transportador Autônomo (TAC), o adiantamento mínimo obrigatório é de 70% do valor do frete.');
         return;
@@ -886,14 +895,7 @@ export function FreightRegistration({
         return;
       }
 
-      // ✅ ANTT 2026 — mesmo bloqueio de piso mínimo/adiantamento aplicado ao agendar
-      if (isBelowPisoMinimo && pisoMinimo) {
-        toast.error(
-          `Valor abaixo do piso mínimo ANTT (R$ ${pisoMinimo.valor.toFixed(2)} para esta rota/carga). ` +
-          `Ajuste o valor ou consulte calculadorafrete.antt.gov.br.`
-        );
-        return;
-      }
+      // ✅ ANTT 2026 — Removido bloqueio de agendamento por valor abaixo do piso minimo.
       if (advancePaymentBelowMinimum) {
         toast.error('Para operações com Transportador Autônomo (TAC), o adiantamento mínimo obrigatório é de 70% do valor do frete.');
         return;
@@ -2329,7 +2331,7 @@ export function FreightRegistration({
                     <div>
                       <p className="text-sm font-medium text-red-700">Valor abaixo do piso mínimo do frete</p>
                       <p className="text-xs text-red-600 mt-0.5">
-                        O CIOT não pode ser gerado com o frete abaixo do piso. Ajuste o valor para pelo menos R$ {pisoMinimo.valor.toFixed(2)} para publicar.
+                        O CIOT não poderá ser gerado automaticamente com o frete abaixo do piso. Para conformidade total da ANTT, recomendamos ajustar o valor para pelo menos R$ {pisoMinimo.valor.toFixed(2)}.
                       </p>
                     </div>
                   </div>
@@ -2487,6 +2489,37 @@ export function FreightRegistration({
                     </Select>
                   </div>
                 </div>
+
+                {hasAllFreightData && pisoMinimo && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3 mt-4">
+                    <Zap className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-blue-800">Recomendação de Valor para Publicação</p>
+                      <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                        Com base nos dados fornecidos para a rota de <strong>{freightData.distanceKm} km</strong>, o piso mínimo ANTT calculado é de <strong>R$ {pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>.
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Sugerimos publicar o frete a partir de <strong>R$ {(pisoMinimo.valor * 1.1).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> (piso + 10%) para atrair mais motoristas rapidamente.
+                      </p>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          type="button"
+                          onClick={() => updateFreightData('freightValue', pisoMinimo.valor.toFixed(2))}
+                          className="text-xs bg-white text-blue-800 border border-blue-300 hover:bg-blue-50 px-3 py-1.5 rounded font-medium transition-colors cursor-pointer"
+                        >
+                          Usar Piso Mínimo (R$ {pisoMinimo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateFreightData('freightValue', (pisoMinimo.valor * 1.1).toFixed(2))}
+                          className="text-xs bg-[#253663] hover:bg-[#1e2d52] text-white px-3 py-1.5 rounded font-medium transition-colors cursor-pointer"
+                        >
+                          Usar Sugerido (R$ {(pisoMinimo.valor * 1.1).toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label>Forma de pagamento (opcional)</Label>
