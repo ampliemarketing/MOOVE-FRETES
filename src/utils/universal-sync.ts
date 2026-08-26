@@ -978,7 +978,7 @@ export async function syncSocialPosts(userId: string): Promise<SyncResult> {
               id: post.id,
               author_id: userId,
               content: post.content,
-              post_type: 'text',
+              type: 'text',
               images: post.images || [],
               likes_count: post.likes || 0,
               comments_count: post.comments || 0,
@@ -1337,6 +1337,15 @@ export async function syncCompanyProfile(userId: string): Promise<SyncResult> {
 /**
  * Sincroniza rotas preferidas do motorista
  */
+// ⚠️ FUNÇÃO DESATUALIZADA: escreve em colunas (origin_city, origin_state,
+// is_public, frequency) que não existem no schema real de preferred_routes
+// (ver preferred-route-repository-v2.ts / adapters.ts, que usam origin/
+// destination como jsonb, priority, notes, is_active). `route.frequency`,
+// `route.visibility` e `route.preferences` também não existem no tipo
+// PreferredRoute atual (schema.ts). Provavelmente já falha silenciosamente
+// hoje (erros só vão para o array `errors`, sem lançar exceção). Precisa de
+// uma reescrita dedicada antes de confiar nela — não tentei adivinhar a
+// lógica de negócio original aqui.
 export async function syncPreferredRoutes(userId: string): Promise<SyncResult> {
   const errors: string[] = [];
   let synced = 0;

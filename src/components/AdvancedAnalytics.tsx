@@ -70,6 +70,17 @@ export function AdvancedAnalytics({ user }: AdvancedAnalyticsProps) {
 
   useEffect(() => {
     loadAnalyticsData();
+
+    const supabase = getSupabaseClient();
+    const channel = supabase
+      .channel('analytics-freights-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'freights' }, () => {
+        loadAnalyticsData();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedCompanyId, timeRange]);
 
   const loadAnalyticsData = async () => {

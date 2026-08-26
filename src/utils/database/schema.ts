@@ -68,6 +68,8 @@ export interface Driver {
   cnh: string;
   cnhCategory: string;
   cnhValidity: string;
+  rg?: string;
+  birthDate?: string;
   rntrc?: string;
   rntrcExpiry?: string;
   rntrcStatus?: RntrcStatus; // ✅ ANTT 2026: status estruturado (ativo/suspenso/cancelado/pendente_verificacao)
@@ -75,6 +77,15 @@ export interface Driver {
   paymentAccountHolder?: PaymentAccountType; // ✅ ANTT 2026: conta própria ou terceiro autorizado pelo TAC
   paymentAccountHolderName?: string;
   avatarUrl?: string; // Avatar do motorista (de profiles.avatar_url ou users.avatar_url)
+  address?: {
+    cep: string;
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+  };
 
   // Vehicle information
   vehicle: {
@@ -84,6 +95,8 @@ export interface Driver {
     year: string;
     capacity: string;
   };
+  renavam?: string;
+  anttVehicle?: string;
   
   // Vehicle and trailer types (multiple selection)
   vehicleTypes?: string[];

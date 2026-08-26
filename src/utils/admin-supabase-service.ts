@@ -459,23 +459,38 @@ export async function fetchUserTypeDistribution(): Promise<UserTypePoint[]> {
 import type { VerificationRequest, SupportTicket, CriticalFreight } from '../components/admin/admin-mock-data';
 
 export async function fetchVerificationRequests(): Promise<VerificationRequest[]> {
-  const { data: profiles, error } = await supabase
+  const { data: docs, error } = await supabase
+    .from('documents')
+    .select('id, user_id, owner_type, document_type, file_path, status, rejection_reason, created_at, reviewed_at')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (error || !docs || docs.length === 0) return [];
+
+  const userIds = [...new Set(docs.map((d: any) => d.user_id))];
+  const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, name, user_type, avatar_url, created_at, status, verification_status')
-    .or('status.eq.pending,verification_status.eq.pending')
-    .order('created_at', { ascending: false });
+    .select('id, name, user_type')
+    .in('id', userIds);
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
-  if (error || !profiles) return [];
+  const { getDocumentUrl } = await import('./storage-helper');
 
-  return profiles.map((p: any) => ({
-    id: p.id,
-    userId: p.id,
-    userName: p.name || 'Usuário',
-    userType: p.user_type,
-    documentType: 'cnh', // Defaulting to CNH if not specified in profiles
-    documentUrl: p.avatar_url || 'https://via.placeholder.com/600x400?text=Documento',
-    status: p.verification_status === 'verified' ? 'approved' : (p.verification_status === 'rejected' ? 'rejected' : 'pending'),
-    submittedAt: p.created_at,
+  return Promise.all(docs.map(async (d: any) => {
+    const profile = profileMap.get(d.user_id);
+    const url = await getDocumentUrl(d.file_path);
+    return {
+      id: d.id,
+      userId: d.user_id,
+      userName: profile?.name || 'Usuário',
+      userType: profile?.user_type || d.owner_type,
+      documentType: d.document_type,
+      documentUrl: url || 'https://via.placeholder.com/600x400?text=Documento+indisponivel',
+      status: d.status,
+      submittedAt: d.created_at,
+      reviewedAt: d.reviewed_at || undefined,
+      rejectionReason: d.rejection_reason || undefined,
+    };
   }));
 }
 
@@ -586,28 +601,33 @@ export async function updateMasterSettings(config: any) {
 }
 
 
-export async function approveVerificationRequest(userId: string) {
+export async function approveVerificationRequest(documentId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
   const { error } = await supabase
-    .from('profiles')
-    .update({ 
-      verification_status: 'verified', 
-      status: 'active',
-      updated_at: new Date().toISOString() 
+    .from('documents')
+    .update({
+      status: 'approved',
+      rejection_reason: null,
+      reviewed_by: user?.id || null,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .eq('id', userId);
+    .eq('id', documentId);
   return { error };
 }
 
-export async function rejectVerificationRequest(userId: string, reason: string) {
+export async function rejectVerificationRequest(documentId: string, reason: string) {
+  const { data: { user } } = await supabase.auth.getUser();
   const { error } = await supabase
-    .from('profiles')
-    .update({ 
-      verification_status: 'rejected', 
-      status: 'pending',
-      metadata: { rejection_reason: reason },
-      updated_at: new Date().toISOString() 
+    .from('documents')
+    .update({
+      status: 'rejected',
+      rejection_reason: reason,
+      reviewed_by: user?.id || null,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .eq('id', userId);
+    .eq('id', documentId);
   return { error };
 }
 

@@ -170,7 +170,21 @@ export function useFreightById(freightId: string) {
 
   useEffect(() => {
     loadFreight();
-  }, [loadFreight]);
+
+    if (!freightId) return;
+
+    const supabase = getSupabaseClient();
+    const channel = supabase
+      .channel(`freight-detail-realtime-${freightId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'freights', filter: `id=eq.${freightId}` },
+        () => loadFreight()
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [freightId, loadFreight]);
 
   return { freight, loading, error, reload: loadFreight };
 }

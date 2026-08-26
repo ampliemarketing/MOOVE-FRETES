@@ -24,11 +24,15 @@ export function getSupabaseClient() {
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'maisfrete-auth-token', // Unique key to avoid conflicts
+        // Mesma storageKey usada no app mobile (src/lib/supabase.ts) — não é
+        // estritamente necessário que bata (localStorage do browser e
+        // AsyncStorage do app nunca se veem), mas evita confusão ao debugar
+        // os dois lados do mesmo banco lado a lado.
+        storageKey: 'moovefretes-auth-token',
       },
       global: {
         headers: {
-          'X-Client-Info': 'maisfrete-web',
+          'X-Client-Info': 'moovefretes-web',
         },
       },
       db: {

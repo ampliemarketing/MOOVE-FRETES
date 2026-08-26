@@ -297,20 +297,21 @@ export class PreferredRouteRepository {
         query = query.eq('is_active', true);
       }
 
+      // origin/destination são jsonb ({ city, state }) — filtra via path operator
       if (originCity) {
-        query = query.eq('origin_city', originCity);
+        query = query.eq('origin->>city', originCity);
       }
 
       if (originState) {
-        query = query.eq('origin_state', originState);
+        query = query.eq('origin->>state', originState);
       }
 
       if (destinationCity) {
-        query = query.eq('destination_city', destinationCity);
+        query = query.eq('destination->>city', destinationCity);
       }
 
       if (destinationState) {
-        query = query.eq('destination_state', destinationState);
+        query = query.eq('destination->>state', destinationState);
       }
 
       if (vehicleType) {

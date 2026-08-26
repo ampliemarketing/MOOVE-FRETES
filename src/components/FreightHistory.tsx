@@ -78,6 +78,17 @@ export function FreightHistory({ user }: FreightHistoryProps) {
   // 🔥 CARREGAR HISTÓRICO REAL DO SUPABASE
   useEffect(() => {
     loadHistoricalFreights();
+
+    const supabase = getSupabaseClient();
+    const channel = supabase
+      .channel('freight-history-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'freights' }, () => {
+        loadHistoricalFreights();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedCompanyId]);
 
   const loadHistoricalFreights = async () => {

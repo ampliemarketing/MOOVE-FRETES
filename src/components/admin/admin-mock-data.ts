@@ -104,7 +104,7 @@ export interface VerificationRequest {
   userId: string;
   userName: string;
   userType: string;
-  documentType: 'cnh' | 'rg' | 'crlv' | 'contrato_social' | 'outros';
+  documentType: 'rg' | 'cpf' | 'cnh' | 'rntrc' | 'vehicleDocument' | 'addressProof' | 'selfie' | 'cnpjDocument' | 'contractSocial';
   documentUrl: string;
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: string;

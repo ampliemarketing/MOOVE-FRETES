@@ -25,7 +25,7 @@ export function AdminApprovals() {
     const request = requests.find(r => r.id === id);
     if (!request) return;
 
-    toast.promise(approveVerificationRequest(request.userId), {
+    toast.promise(approveVerificationRequest(request.id), {
       loading: 'Aprovando documento...',
       success: () => {
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'approved', reviewedAt: new Date().toISOString() } : r));
@@ -44,7 +44,7 @@ export function AdminApprovals() {
       toast.error('Informe o motivo da rejeição');
       return;
     }
-    toast.promise(rejectVerificationRequest(request.userId, rejectionReason), {
+    toast.promise(rejectVerificationRequest(request.id, rejectionReason), {
       loading: 'Rejeitando documento...',
       success: () => {
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected', reviewedAt: new Date().toISOString(), rejectionReason } : r));

@@ -348,7 +348,7 @@ export class MessageRepository {
           conversation_id: message.conversationId,
           sender_id: message.senderId,
           content: message.content,
-          type: message.type || 'text',
+          message_type: message.type || 'text',
           attachments: message.attachments || [],
           is_read: false,
           created_at: now,

@@ -456,13 +456,28 @@ export function useFreights() {
 
   useEffect(() => {
     loadFreights();
-    
-    // 🔄 Polling a cada 1 minuto (60000ms) para atualizar fretes
+
+    // 🔴 Realtime: qualquer INSERT/UPDATE/DELETE em freights recarrega a
+    // lista na hora — cobre fretes criados por outra transportadora, pelo
+    // app mobile, ou aceitos por um motorista.
+    const supabase = getSupabaseClient();
+    const channel = supabase
+      .channel('freight-management-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'freights' }, () => {
+        loadFreights();
+      })
+      .subscribe();
+
+    // 🔄 Polling a cada 1 minuto continua como rede de segurança, caso a
+    // conexão realtime caia silenciosamente.
     const interval = setInterval(() => {
       loadFreights();
     }, 60000); // 60 segundos = 1 minuto
-    
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // ✅ EXECUTAR APENAS UMA VEZ na montagem do componente
 

@@ -267,7 +267,7 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
                 .from('companies')
                 .select('trading_name, company_name, logo_url')
                 .eq('user_id', session.user.id)
-                .single();
+                .maybeSingle();
               
               if (company) {
                 displayName = company.trading_name || company.company_name || displayName;

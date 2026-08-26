@@ -140,19 +140,24 @@ export function driverToSQL(driver: Driver): DriverInsert {
     user_id: driver.userId,
     name: driver.name,
     cpf: driver.cpf,
+    rg: driver.rg || null,
+    birth_date: driver.birthDate || null,
     phone: driver.phone,
     cnh: driver.cnh,
     cnh_category: driver.cnhCategory || 'B', // ✅ NOT NULL no banco - default 'B'
     cnh_expiry: driver.cnhValidity || null,
     rntrc: driver.rntrc || null,
     profile_image: driver.avatarUrl || null,
-    
+    address: driver.address || null,
+
     // ✅ Converter objeto vehicle para campos separados
     vehicle_type: driver.vehicle?.type || null,
     vehicle_plate: driver.vehicle?.plate || null,
     vehicle_model: driver.vehicle?.model || null,
     vehicle_year: driver.vehicle?.year || null,
     vehicle_capacity: driver.vehicle?.capacity ? parseFloat(driver.vehicle.capacity) : null,
+    renavam: driver.renavam || null,
+    antt_vehicle: driver.anttVehicle || null,
     
     // ✅ Arrays de tipos de veículo
     vehicle_types: driver.vehicleTypes || null,
@@ -197,12 +202,15 @@ export function sqlToDriver(row: DriverRow): Driver {
     name: row.name || '',
     phone: row.phone || '',
     cpf: row.cpf || '',
+    rg: row.rg || undefined,
+    birthDate: row.birth_date || undefined,
     cnh: row.cnh,
     cnhCategory: row.cnh_category,
     cnhValidity: row.cnh_expiry || '',
     rntrc: row.rntrc || undefined,
     avatarUrl: row.profile_image || undefined,
-    
+    address: (row.address as any) || undefined,
+
     // ✅ Reconstruir objeto vehicle de campos separados
     vehicle: {
       type: row.vehicle_type || '',
@@ -211,6 +219,8 @@ export function sqlToDriver(row: DriverRow): Driver {
       year: row.vehicle_year || '',
       capacity: row.vehicle_capacity?.toString() || '',
     },
+    renavam: row.renavam || undefined,
+    anttVehicle: row.antt_vehicle || undefined,
     
     vehicleTypes: row.vehicle_types || undefined,
     trailerTypes: row.body_types || undefined,

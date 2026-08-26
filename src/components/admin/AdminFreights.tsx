@@ -3,6 +3,7 @@ import { Eye, XCircle, RefreshCw, MessageSquare, ArrowRight, DollarSign } from '
 import { AdminDataTable } from './AdminDataTable';
 import type { AdminFreight } from './admin-mock-data';
 import { fetchAdminFreights, updateFreightStatus } from '../../utils/admin-supabase-service';
+import { supabase } from '../../utils/supabase/client';
 import { toast } from 'sonner@2.0.3';
 
 const statusColors: Record<string, string> = {
@@ -29,6 +30,15 @@ export function AdminFreights() {
 
   useEffect(() => {
     fetchAdminFreights().then((data) => { setFreights(data); setLoading(false); });
+
+    const channel = supabase
+      .channel('admin-freights-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'freights' }, () => {
+        fetchAdminFreights().then(setFreights);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const filtered = filterStatus === 'all' ? freights : freights.filter(f => f.status === filterStatus);

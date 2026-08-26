@@ -6,12 +6,13 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Progress } from './ui/progress';
 import { Checkbox } from './ui/checkbox';
-import { 
+import {
   CPFInput,
   PhoneInput,
   CEPInput,
   CNPJInput
 } from './ui/enhanced-inputs';
+import { validateCPF, validateCNPJ } from '../utils/formatters';
 import { 
   ArrowLeft, 
   ArrowRight,
@@ -262,14 +263,57 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
     }
   }
 
+  // ── Helpers de validação (tamanho de campo, datas, formato) ──────────────
+
+  function isValidDateString(dateStr: string): boolean {
+    if (!dateStr) return false;
+    const d = new Date(`${dateStr}T00:00:00`);
+    return !isNaN(d.getTime());
+  }
+
+  // Idade mínima (nascimento não pode ser no futuro nem indicar menor de idade)
+  function isAdult(dateStr: string, minAge = 18): boolean {
+    if (!isValidDateString(dateStr)) return false;
+    const birth = new Date(`${dateStr}T00:00:00`);
+    const today = new Date();
+    if (birth > today) return false;
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+    return age >= minAge;
+  }
+
+  // Documento com validade não pode já estar vencido
+  function isNotExpired(dateStr: string): boolean {
+    if (!isValidDateString(dateStr)) return false;
+    const d = new Date(`${dateStr}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return d >= today;
+  }
+
+  // Placa Mercosul (AAA9A99) ou padrão antigo (AAA9999)
+  function isValidPlate(plate: string): boolean {
+    const cleaned = plate.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    return /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(cleaned);
+  }
+
+  function inRange(value: string, min: number, max: number): boolean {
+    const len = value.trim().length;
+    return len >= min && len <= max;
+  }
+
   // Validações por step
   function isCredentialsStepValid() {
     const base =
-      name.trim().length > 0 &&
+      inRange(name, 3, 100) &&
       phone.replace(/\D/g, '').length >= 10 &&
+      phone.replace(/\D/g, '').length <= 11 &&
       isEmailValid() &&
+      email.trim().length <= 150 &&
       emailAvailable === true &&
       passwordStrength?.isStrong &&
+      password.length <= 72 &&
       isPasswordMatch() &&
       acceptedTerms;
 
@@ -281,39 +325,41 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
 
   function isAddressStepValid() {
     return cep.replace(/\D/g, '').length === 8 &&
-           street.trim().length > 0 &&
-           number.trim().length > 0 &&
-           neighborhood.trim().length > 0 &&
-           city.trim().length > 0 &&
-           state.trim().length > 0;
+           inRange(street, 3, 150) &&
+           inRange(number, 1, 10) &&
+           inRange(neighborhood, 2, 100) &&
+           inRange(city, 2, 100) &&
+           state.trim().length === 2;
   }
 
   function isSpecificStepValid() {
     if (userType === 'caminhoneiro') {
-      return cpf.replace(/\D/g, '').length === 11 &&
-             rg.trim().length > 0 &&
-             birthDate.trim().length > 0 &&
-             cnh.trim().length > 0 &&
+      return validateCPF(cpf) &&
+             inRange(rg, 5, 15) &&
+             isAdult(birthDate, 18) &&
+             cnh.replace(/\D/g, '').length === 11 &&
              cnhCategory.trim().length > 0 &&
-             cnhValidity.trim().length > 0 &&
-             rntrc.trim().length > 0 &&
-             rntrcValidity.trim().length > 0 &&
-             vehiclePlate.trim().length > 0 &&
-             vehicleModel.trim().length > 0 &&
-             vehicleYear.trim().length > 0 &&
+             isNotExpired(cnhValidity) &&
+             inRange(rntrc.replace(/\D/g, ''), 8, 9) &&
+             isNotExpired(rntrcValidity) &&
+             isValidPlate(vehiclePlate) &&
+             inRange(vehicleModel, 2, 60) &&
+             /^(19[5-9]\d|20\d{2})$/.test(vehicleYear.trim()) &&
              vehicleTypes.length > 0 &&
              bodyTypes.length > 0;
     } else {
       const baseValid =
-        cnpj.replace(/\D/g, '').length === 14 &&
-        companyName.trim().length > 0 &&
-        representativeName.trim().length > 0 &&
-        representativeCpf.replace(/\D/g, '').length === 11 &&
-        representativeRg.trim().length > 0 &&
-        representativeRole.trim().length > 0 &&
+        validateCNPJ(cnpj) &&
+        inRange(companyName, 2, 150) &&
+        inRange(representativeName, 3, 100) &&
+        validateCPF(representativeCpf) &&
+        inRange(representativeRg, 5, 15) &&
+        inRange(representativeRole, 2, 60) &&
         (isentoIE || stateRegistration.trim().length > 0);
       if (userType === 'transportadora') {
-        return baseValid && companyRntrc.trim().length > 0 && companyRntrcValidity.trim().length > 0;
+        return baseValid &&
+               inRange(companyRntrc.replace(/\D/g, ''), 8, 9) &&
+               isNotExpired(companyRntrcValidity);
       }
       return baseValid;
     }
@@ -351,9 +397,103 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
     }
   }
 
+  function getMissingCredentialsFields(): string[] {
+    const missing: string[] = [];
+    if (!inRange(name, 3, 100)) missing.push(name.trim() ? 'nome (entre 3 e 100 caracteres)' : 'nome');
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) missing.push('telefone (DDD + número, 10 ou 11 dígitos)');
+    if (!isEmailValid()) missing.push('e-mail válido');
+    else if (email.trim().length > 150) missing.push('e-mail muito longo');
+    else if (emailAvailable === null || checkingEmail) missing.push('aguarde a verificação do e-mail');
+    else if (emailAvailable === false) missing.push('e-mail já cadastrado (use outro)');
+    if (!passwordStrength?.isStrong) missing.push('senha forte (mín. 8 caracteres, maiúscula, minúscula e número)');
+    else if (password.length > 72) missing.push('senha muito longa (máx. 72 caracteres)');
+    if (!isPasswordMatch()) missing.push('confirmação de senha (não confere)');
+    if (!acceptedTerms) missing.push('aceite dos termos de uso');
+    if (userType === 'caminhoneiro' && profilePhoto === null) missing.push('foto de perfil');
+    return missing;
+  }
+
+  function getMissingAddressFields(): string[] {
+    const missing: string[] = [];
+    if (cep.replace(/\D/g, '').length !== 8) missing.push('CEP (8 dígitos)');
+    if (!inRange(street, 3, 150)) missing.push('rua/logradouro (mín. 3 caracteres)');
+    if (!inRange(number, 1, 10)) missing.push('número');
+    if (!inRange(neighborhood, 2, 100)) missing.push('bairro (mín. 2 caracteres)');
+    if (!inRange(city, 2, 100)) missing.push('cidade (mín. 2 caracteres)');
+    if (state.trim().length !== 2) missing.push('estado');
+    return missing;
+  }
+
+  function getMissingSpecificFields(): string[] {
+    const missing: string[] = [];
+    if (userType === 'caminhoneiro') {
+      if (!validateCPF(cpf)) missing.push(cpf.replace(/\D/g, '').length > 0 ? 'CPF inválido' : 'CPF');
+      if (!inRange(rg, 5, 15)) missing.push('RG (entre 5 e 15 caracteres)');
+      if (!birthDate.trim()) missing.push('data de nascimento');
+      else if (!isAdult(birthDate, 18)) missing.push('data de nascimento (motorista deve ser maior de 18 anos e a data não pode ser futura)');
+      if (cnh.replace(/\D/g, '').length !== 11) missing.push('número da CNH (11 dígitos)');
+      if (!cnhCategory.trim()) missing.push('categoria da CNH');
+      if (!cnhValidity.trim()) missing.push('validade da CNH');
+      else if (!isNotExpired(cnhValidity)) missing.push('validade da CNH (está vencida)');
+      if (!inRange(rntrc.replace(/\D/g, ''), 8, 9)) missing.push('RNTRC (8 a 9 dígitos)');
+      if (!rntrcValidity.trim()) missing.push('validade do RNTRC');
+      else if (!isNotExpired(rntrcValidity)) missing.push('validade do RNTRC (está vencida)');
+      if (!isValidPlate(vehiclePlate)) missing.push('placa do veículo (formato inválido)');
+      if (!inRange(vehicleModel, 2, 60)) missing.push('modelo do veículo (mín. 2 caracteres)');
+      if (!/^(19[5-9]\d|20\d{2})$/.test(vehicleYear.trim())) missing.push('ano do veículo (ano válido de 4 dígitos)');
+      if (vehicleTypes.length === 0) missing.push('tipo de veículo (selecione ao menos um)');
+      if (bodyTypes.length === 0) missing.push('tipo de carroceria (selecione ao menos um)');
+    } else {
+      if (!validateCNPJ(cnpj)) missing.push(cnpj.replace(/\D/g, '').length > 0 ? 'CNPJ inválido' : 'CNPJ');
+      if (!inRange(companyName, 2, 150)) missing.push('razão social');
+      if (!inRange(representativeName, 3, 100)) missing.push('nome do representante');
+      if (!validateCPF(representativeCpf)) missing.push(representativeCpf.replace(/\D/g, '').length > 0 ? 'CPF do representante inválido' : 'CPF do representante');
+      if (!inRange(representativeRg, 5, 15)) missing.push('RG do representante');
+      if (!inRange(representativeRole, 2, 60)) missing.push('cargo/vínculo do representante');
+      if (!isentoIE && !stateRegistration.trim()) missing.push('inscrição estadual (ou marque isento)');
+      if (userType === 'transportadora') {
+        if (!inRange(companyRntrc.replace(/\D/g, ''), 8, 9)) missing.push('RNTRC da empresa (8 a 9 dígitos)');
+        if (!companyRntrcValidity.trim()) missing.push('validade do RNTRC da empresa');
+        else if (!isNotExpired(companyRntrcValidity)) missing.push('validade do RNTRC da empresa (está vencida)');
+      }
+    }
+    return missing;
+  }
+
+  function getMissingDocumentsFields(): string[] {
+    const missing: string[] = [];
+    if (userType === 'caminhoneiro') {
+      if (rgDoc === null) missing.push('foto/scan do RG');
+      if (cpfDoc === null) missing.push('foto/scan do CPF');
+      if (cnhDoc === null) missing.push('foto/scan da CNH');
+      if (rntrcDoc === null) missing.push('foto/scan do RNTRC');
+      if (vehicleDoc === null) missing.push('documento do veículo');
+      if (addressDoc === null) missing.push('comprovante de endereço');
+      if (selfieDoc === null) missing.push('selfie de verificação');
+    } else {
+      if (cnpjDoc === null) missing.push('cartão CNPJ');
+      if (contractDoc === null) missing.push('contrato social');
+      if (addressDoc === null) missing.push('comprovante de endereço');
+      if (userType === 'transportadora' && rntrcDoc === null) missing.push('documento do RNTRC');
+    }
+    return missing;
+  }
+
   function handleNext() {
     if (!canProceedToNextStep()) {
-      toast.error('Preencha todos os campos obrigatórios');
+      const missingByStep: Record<string, () => string[]> = {
+        credentials: getMissingCredentialsFields,
+        address: getMissingAddressFields,
+        specific: getMissingSpecificFields,
+        documents: getMissingDocumentsFields,
+      };
+      const missing = missingByStep[currentStep]?.() || [];
+      toast.error(
+        missing.length > 0
+          ? `Falta preencher: ${missing.join(', ')}`
+          : 'Preencha todos os campos obrigatórios',
+      );
       return;
     }
 
@@ -474,6 +614,19 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
             const result = await uploadDocument(userId, doc.file, doc.key);
             if (result.success && result.path) {
               documentPaths[doc.key] = result.path;
+
+              // Registrar o documento pra fila de aprovação do painel admin
+              // (CNH, CNPJ etc. precisam ser revisados manualmente).
+              const { error: docError } = await supabase.from('documents').insert({
+                owner_type: userType === 'caminhoneiro' ? 'driver' : 'company',
+                user_id: userId,
+                document_type: doc.key,
+                file_path: result.path,
+                status: 'pending',
+              });
+              if (docError) {
+                console.error(`❌ Erro ao registrar documento ${doc.name} para aprovação:`, docError);
+              }
             }
           } catch (error) {
             console.error(`❌ Erro ao fazer upload de ${doc.name}:`, error);
@@ -497,7 +650,7 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
         state: state.trim() || null,
         avatar_url: avatarPath || null,
         verification_status: 'verified',
-        is_active: true,
+        status: 'active',
         email_verified: false,
         rating: 0,
         total_freights: 0,
@@ -558,13 +711,11 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           vehicle_year: vehicleYear.trim() || null,
           vehicle_types: vehicleTypes.length > 0 ? vehicleTypes : null,
           body_types: bodyTypes.length > 0 ? bodyTypes : null,
-          document_paths: Object.keys(documentPaths).length > 0 ? documentPaths : null,
           available: true,
           rating: 0,
           completed_trips: 0,
           experience_years: 0,
           specializations: [],
-          preferred_routes: [],
           profile_image: avatarPath || null,
           current_location: null,
           rg: rg.trim() || null,
@@ -605,7 +756,7 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           company_type: userType,
           rntrc: companyRntrc.trim() || null,
           phone: phone.replace(/\D/g, '') || null,
-          corporate_email: email.trim().toLowerCase() || null, // ✅ CORRIGIDO: coluna 'email' não existe, usar corporate_email
+          email: email.trim().toLowerCase() || null,
           website: null,
           description: null,
           address: {
@@ -633,7 +784,6 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
           is_individual: false,
           main_cpf: representativeCpf.replace(/\D/g, ''),
           logo_url: avatarPath || null,
-          document_paths: Object.keys(documentPaths).length > 0 ? documentPaths : null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -1326,9 +1476,9 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
               </div>
 
               <VehicleTypeSelector
-                selectedVehicleTypes={vehicleTypes}
+                selectedTypes={vehicleTypes}
                 selectedBodyTypes={bodyTypes}
-                onVehicleTypesChange={setVehicleTypes}
+                onTypesChange={setVehicleTypes}
                 onBodyTypesChange={setBodyTypes}
               />
             </div>
@@ -1702,8 +1852,9 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
               ) : (
                 <Button
                   onClick={handleNext}
-                  disabled={!canProceedToNextStep()}
-                  className="w-full bg-[#253663] hover:bg-[#253663]/90 text-white"
+                  className={`w-full bg-[#253663] hover:bg-[#253663]/90 text-white ${
+                    !canProceedToNextStep() ? 'opacity-50' : ''
+                  }`}
                 >
                   Próximo
                   <ArrowRight className="w-4 h-4 ml-2" />

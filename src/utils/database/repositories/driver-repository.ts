@@ -23,23 +23,19 @@ export class DriverRepository {
       // 🔥 1. SALVAR NO SUPABASE PRIMEIRO (prioridade) - deixar Supabase gerar UUID
       try {
         const supabase = getSupabaseClient();
-        
+
+        // ✅ Usa o mesmo adapter que update() já usava — o insert manual
+        // anterior só gravava um subconjunto de colunas (faltavam name,
+        // phone, rg, birth_date, rntrc, vehicle_model/year, renavam,
+        // antt_vehicle, vehicle_types, body_types, address...) e lia
+        // `driver.available` em vez de `driver.status`, então todo motorista
+        // cadastrado ficava com available=false e a maioria dos campos vazia.
+        const sqlPayload = driverToSQL({ ...driver, id: '', createdAt: now, updatedAt: now } as Driver);
+        delete (sqlPayload as any).id;
+
         const { data: supabaseData, error: supabaseError } = await supabase
           .from('drivers')
-          .insert({
-            // ❌ NÃO passar ID - deixar Supabase gerar UUID automaticamente
-            user_id: driver.userId,
-            cpf: driver.cpf || null,
-            cnh: driver.cnh || null,
-            cnh_category: driver.cnhCategory || 'B', // ✅ NOT NULL no banco - default 'B'
-            vehicle_type: driver.vehicleType || null,
-            vehicle_plate: driver.vehiclePlate || null,
-            available: driver.available ?? false,
-            current_location: driver.currentLocation || null,
-            availability_expires_at: driver.availabilityExpiresAt || null,
-            created_at: now,
-            updated_at: now,
-          })
+          .insert(sqlPayload)
           .select()
           .single();
         
