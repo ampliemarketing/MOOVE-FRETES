@@ -556,7 +556,9 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
                 id: newMessage.id,
                 chatId: newMessage.conversation_id,
                 senderId: newMessage.sender_id,
-                senderName: newMessage.sender_id === user.id ? chatDisplayName : 'Outro usuário',
+                senderName: newMessage.sender_id === user.id
+                  ? chatDisplayName
+                  : (selectedChat?.otherUser?.name || 'Usuário'),
                 content: newMessage.content,
                 type: newMessage.message_type || 'text',
                 attachments: newMessage.attachments || [],
@@ -985,14 +987,14 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
     if (showLoading) setIsLoadingMessages(true);
     try {
       
-      // ✅ OTIMIZAÇÃO: Carregar apenas 100 mensagens mais recentes COM NOMES
+      // Carrega as 100 mensagens mais recentes.
+      // ⚠️ NÃO usar embed `profiles!sender_id`: messages.sender_id tem FK para
+      // auth.users, não para public.profiles → PostgREST devolve PGRST200.
+      // A conversa é 1:1, então o nome do remetente sai do próprio selectedChat.
       const supabase = (await import('../utils/supabase/client')).getSupabaseClient();
       const { data: supabaseMessages, error: supabaseError } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender:profiles!sender_id(name)
-        `)
+        .select('*')
         .eq('conversation_id', chatId)
         .order('created_at', { ascending: false })
         .limit(100);
@@ -1018,7 +1020,9 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
           id: msg.id,
           chatId: msg.conversation_id,
           senderId: msg.sender_id,
-          senderName: msg.sender?.name || (msg.sender_id === user.id ? chatDisplayName : 'Usuário'), // ✅ Nome do JOIN / empresa se colaborador
+          senderName: msg.sender_id === user.id
+            ? chatDisplayName
+            : (selectedChat?.otherUser?.name || 'Usuário'),
           content: msg.content,
           type: msg.message_type || 'text',
           status: 'sent',
