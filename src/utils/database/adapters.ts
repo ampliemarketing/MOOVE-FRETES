@@ -138,7 +138,7 @@ export function driverToSQL(driver: Driver): DriverInsert {
   const sqlData = {
     id: driver.id,
     user_id: driver.userId,
-    name: driver.name,
+    name: driver.name || 'Motorista', // ✅ NOT NULL no banco — nunca deixar chegar null/vazio
     cpf: driver.cpf,
     rg: driver.rg || null,
     birth_date: driver.birthDate || null,
@@ -444,12 +444,12 @@ type PreferredRouteInsert = Database['public']['Tables']['preferred_routes']['In
 export function preferredRouteToSQL(route: any): PreferredRouteInsert {
   const sqlData: PreferredRouteInsert = {
     driver_id: route.driverId,
+    // origin/destination são jsonb ({ city, state }); a tabela NÃO possui
+    // colunas escalares origin_city/origin_state/destination_city/destination_state.
+    // Enviá-las fazia o PostgREST recusar o INSERT (PGRST204) e o erro real
+    // ficava mascarado como "Failed to create preferred route".
     origin: route.origin,
     destination: route.destination,
-    origin_city: route.origin.city || null,
-    origin_state: route.origin.state || null,
-    destination_city: route.destination.city || null,
-    destination_state: route.destination.state || null,
     priority: route.priority || 'medium',
     notes: route.notes || null,
     description: route.description || null,

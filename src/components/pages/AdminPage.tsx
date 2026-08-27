@@ -12,20 +12,18 @@ export function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    console.log('🛡️ AdminPage: Monitorando estado de auth', { loading, authenticated, email: user?.email });
+    // Não logar e-mail do usuário nem a lista de admins: em produção qualquer
+    // visitante de /admin veria isso no console e teria alvos de phishing.
+    if (import.meta.env.DEV) {
+      console.log('🛡️ AdminPage: Monitorando estado de auth', { loading, authenticated });
+    }
     if (!loading && authenticated && user?.email) {
       const authorized = SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
-      console.log('🛡️ AdminPage: Resultado da autorização:', authorized);
       setIsAdmin(authorized);
     } else {
       setIsAdmin(false);
     }
   }, [loading, authenticated, user]);
-
-  // Debug initial mount
-  useEffect(() => {
-    console.log('🛡️ AdminPage: Componente montado. Lista de admins autorizados:', SUPER_ADMIN_EMAILS);
-  }, []);
 
   if (loading) {
     return (

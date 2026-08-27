@@ -1,9 +1,27 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-);
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Segredo dedicado, opcional. Se definido, os triggers do banco devem mandar
+// `x-push-secret: <valor>`; permite rotacionar sem tocar na service_role key.
+const PUSH_FUNCTION_SECRET = Deno.env.get('PUSH_FUNCTION_SECRET') ?? '';
+
+const supabase = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_ROLE_KEY);
+
+// Comparação de tempo ~constante pra não vazar o segredo por timing.
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length || a.length === 0) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+function isAuthorized(req: Request): boolean {
+  const bearer = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+  if (bearer && safeEqual(bearer, SERVICE_ROLE_KEY)) return true;
+  const pushSecret = req.headers.get('x-push-secret') ?? '';
+  if (PUSH_FUNCTION_SECRET && safeEqual(pushSecret, PUSH_FUNCTION_SECRET)) return true;
+  return false;
+}
 
 interface NotificationRecord {
   id: string;
@@ -17,6 +35,12 @@ interface NotificationRecord {
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
+  }
+
+  // Sem isto, qualquer um com a anon key (que é pública) dispara push
+  // falsificado para qualquer usuário e enumera push_tokens.
+  if (!isAuthorized(req)) {
+    return new Response('Unauthorized', { status: 401 });
   }
 
   const body = await req.json();

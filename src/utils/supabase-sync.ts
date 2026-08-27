@@ -221,87 +221,78 @@ export async function updatePreferredRouteAndSync(
   }
 }
 
+function mapRealtimeRowToRoute(row: any): PreferredRoute {
+  return {
+    id: row.id,
+    driverId: row.driver_id,
+    origin: row.origin,
+    destination: row.destination,
+    priority: row.priority as 'high' | 'medium' | 'low',
+    notes: row.notes || '',
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  } as PreferredRoute;
+}
+
 /**
- * Subscrever em tempo real a mudanças em rotas no Supabase
+ * Subscrever em tempo real a mudanças em rotas no Supabase.
+ *
+ * É `async` porque precisa garantir que o socket de Realtime esteja
+ * autenticado ANTES de assinar — o RLS de `postgres_changes` roda com o
+ * papel do JWT, e a policy de preferred_routes é `to authenticated`, então
+ * sem token nenhum evento é entregue.
  */
-export function subscribeToRoutesRealtime(callbacks: {
+export async function subscribeToRoutesRealtime(callbacks: {
   onRoutePublished?: (route: PreferredRoute) => void;
   onRouteUpdated?: (route: PreferredRoute) => void;
   onRouteDeleted?: (routeId: string) => void;
-}): any {
+}): Promise<any> {
   try {
     const supabase = getSupabaseClient();
-    
-    
+
+    // 1. Autenticar o socket de realtime (idempotente)
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        (supabase as any).realtime?.setAuth(session.access_token);
+      }
+    } catch (e) {
+      console.warn('⚠️ Não foi possível autenticar o realtime:', e);
+    }
+
+    // 2. Nome de canal ÚNICO por assinatura — evita colisão/dedupe quando
+    //    mais de uma tela (ou o StrictMode em dev) assina ao mesmo tempo.
+    const channelName = `preferred_routes_changes_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+
     const channel = supabase
-      .channel('preferred_routes_changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'preferred_routes',
-        },
-        (payload) => {
-          
-          if (callbacks.onRoutePublished) {
-            const newRoute: PreferredRoute = {
-              id: payload.new.id,
-              driverId: payload.new.driver_id,
-              origin: payload.new.origin,
-              destination: payload.new.destination,
-              priority: payload.new.priority as 'high' | 'medium' | 'low',
-              notes: payload.new.notes || '',
-              isActive: payload.new.is_active,
-              createdAt: payload.new.created_at,
-              updatedAt: payload.new.updated_at,
-            };
-            
-            callbacks.onRoutePublished(newRoute);
+        { event: '*', schema: 'public', table: 'preferred_routes' },
+        (payload: any) => {
+          try {
+            if (payload.eventType === 'INSERT') {
+              callbacks.onRoutePublished?.(mapRealtimeRowToRoute(payload.new));
+            } else if (payload.eventType === 'UPDATE') {
+              callbacks.onRouteUpdated?.(mapRealtimeRowToRoute(payload.new));
+            } else if (payload.eventType === 'DELETE') {
+              const id = payload.old?.id;
+              if (id) callbacks.onRouteDeleted?.(id);
+            }
+          } catch (err) {
+            console.error('❌ Erro ao processar evento realtime de rota:', err);
           }
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'preferred_routes',
-        },
-        (payload) => {
-          
-          if (callbacks.onRouteUpdated) {
-            const updatedRoute: PreferredRoute = {
-              id: payload.new.id,
-              driverId: payload.new.driver_id,
-              origin: payload.new.origin,
-              destination: payload.new.destination,
-              priority: payload.new.priority as 'high' | 'medium' | 'low',
-              notes: payload.new.notes || '',
-              isActive: payload.new.is_active,
-              createdAt: payload.new.created_at,
-              updatedAt: payload.new.updated_at,
-            };
-            
-            callbacks.onRouteUpdated(updatedRoute);
-          }
+      .subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          console.info('✅ Realtime de rotas preferidas conectado.');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`⚠️ Realtime de rotas preferidas: ${status}. ` +
+            'Verifique se a tabela preferred_routes está na publicação supabase_realtime.');
         }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'preferred_routes',
-        },
-        (payload) => {
-          
-          if (callbacks.onRouteDeleted) {
-            callbacks.onRouteDeleted(payload.old.id);
-          }
-        }
-      )
-      .subscribe();
+      });
 
     return channel;
   } catch (error) {
@@ -314,8 +305,11 @@ export function subscribeToRoutesRealtime(callbacks: {
  * Cancelar subscription em tempo real
  */
 export function unsubscribeFromRealtime(channel?: any): void {
-  if (channel) {
+  try {
+    if (!channel) return;
     const supabase = getSupabaseClient();
     supabase.removeChannel(channel);
+  } catch (e) {
+    console.warn('⚠️ Erro ao remover canal realtime:', e);
   }
 }

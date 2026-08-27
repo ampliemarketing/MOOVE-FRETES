@@ -78,8 +78,18 @@ export function useAvailableRoutesRealtime({ onNewRoute }: UsePreferredRoutesRea
 
   // Callback para rota atualizada
   const handleRouteUpdated = useCallback((route: PreferredRoute) => {
-    
-    setRoutes(prev => prev.map(r => r.id === route.id ? route : r));
+    setRoutes(prev => {
+      const exists = prev.some(r => r.id === route.id);
+      // Rota desativada some da lista pública ao vivo
+      if (!route.isActive) {
+        return prev.filter(r => r.id !== route.id);
+      }
+      // Rota reativada que não estava na lista entra ao vivo
+      if (!exists) {
+        return [route, ...prev];
+      }
+      return prev.map(r => r.id === route.id ? route : r);
+    });
   }, []);
 
   // Callback para rota deletada
@@ -89,18 +99,27 @@ export function useAvailableRoutesRealtime({ onNewRoute }: UsePreferredRoutesRea
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     loadRoutes();
 
-    // Inscrever no realtime
-    channelRef.current = subscribeToRoutesRealtime({
+    // Inscrever no realtime (async — garante socket autenticado antes de assinar)
+    subscribeToRoutesRealtime({
       onRoutePublished: handleRoutePublished,
       onRouteUpdated: handleRouteUpdated,
       onRouteDeleted: handleRouteDeleted,
+    }).then((channel) => {
+      if (cancelled) {
+        unsubscribeFromRealtime(channel);
+      } else {
+        channelRef.current = channel;
+      }
     });
 
     // Cleanup
     return () => {
-      unsubscribeFromRealtime();
+      cancelled = true;
+      unsubscribeFromRealtime(channelRef.current);
+      channelRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // ✅ EXECUTAR APENAS UMA VEZ - Os callbacks são estáveis
@@ -318,34 +337,54 @@ export function useMyPreferredRoutes(driverId: string) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    let channel: any = null;
+    let refetchTimer: any = null;
     loadRoutes();
-    
-    // ✅ Se for visualização pública (driverId vazio), inscrever no realtime
-    if (!driverId || driverId === '') {
-      
-      const channel = subscribeToRoutesRealtime({
-        onRoutePublished: (route) => {
-          setRoutes(prev => {
-            // Evitar duplicatas
-            if (prev.some(r => r.id === route.id)) {
-              return prev;
-            }
-            return [route, ...prev];
-          });
-        },
-        onRouteUpdated: (route) => {
-          setRoutes(prev => prev.map(r => r.id === route.id ? route : r));
-        },
-        onRouteDeleted: (routeId) => {
-          setRoutes(prev => prev.filter(r => r.id !== routeId));
+
+    const isPublic = !driverId || driverId === '';
+
+    // Recarrega a lista com debounce — usado na visão pessoal do motorista,
+    // onde os eventos vêm com drivers.id (não o user_id) e não dá para casar
+    // incrementalmente sem uma consulta.
+    const scheduleRefetch = () => {
+      if (refetchTimer) clearTimeout(refetchTimer);
+      refetchTimer = setTimeout(() => { if (!cancelled) loadRoutes(); }, 250);
+    };
+
+    const callbacks = isPublic
+      ? {
+          onRoutePublished: (route: PreferredRoute) => {
+            setRoutes(prev => (prev.some(r => r.id === route.id) ? prev : [route, ...prev]));
+          },
+          onRouteUpdated: (route: PreferredRoute) => {
+            setRoutes(prev => {
+              const exists = prev.some(r => r.id === route.id);
+              if (!route.isActive) return prev.filter(r => r.id !== route.id);
+              if (!exists) return [route, ...prev];
+              return prev.map(r => (r.id === route.id ? route : r));
+            });
+          },
+          onRouteDeleted: (routeId: string) => {
+            setRoutes(prev => prev.filter(r => r.id !== routeId));
+          },
         }
-      });
-      
-      // Cleanup
-      return () => {
-        unsubscribeFromRealtime();
-      };
-    }
+      : {
+          onRoutePublished: scheduleRefetch,
+          onRouteUpdated: scheduleRefetch,
+          onRouteDeleted: scheduleRefetch,
+        };
+
+    subscribeToRoutesRealtime(callbacks).then((ch) => {
+      if (cancelled) unsubscribeFromRealtime(ch);
+      else channel = ch;
+    });
+
+    return () => {
+      cancelled = true;
+      if (refetchTimer) clearTimeout(refetchTimer);
+      unsubscribeFromRealtime(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driverId]); // ✅ Apenas driverId como dependência - loadRoutes é estável
 

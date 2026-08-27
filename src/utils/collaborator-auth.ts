@@ -284,22 +284,44 @@ export async function checkEmailAvailable(email: string): Promise<boolean> {
 }
 
 /**
- * Gera senha temporária segura
+ * Gera senha temporária segura.
+ *
+ * Usa `crypto.getRandomValues` (CSPRNG) — não `Math.random()`, cujo estado é
+ * previsível e cujo `sort(() => Math.random() - 0.5)` é enviesado. Essa senha
+ * é a credencial de acesso do colaborador, então a entropia importa.
  */
 export function generateTemporaryPassword(): string {
-  const length = 12;
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
-  let password = '';
-  
-  // Garantir pelo menos 1 de cada tipo
-  password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
-  password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)];
-  password += '0123456789'[Math.floor(Math.random() * 10)];
-  password += '!@#$%&*'[Math.floor(Math.random() * 7)];
-  
-  for (let i = password.length; i < length; i++) {
-    password += charset[Math.floor(Math.random() * charset.length)];
+  const length = 16;
+  const groups = [
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    'abcdefghijklmnopqrstuvwxyz',
+    '0123456789',
+    '!@#$%&*',
+  ];
+  const charset = groups.join('');
+
+  // Inteiro uniforme em [0, maxExclusive) via rejection sampling — sem o viés
+  // de `% n` sobre um byte quando 256 não é múltiplo de n.
+  const randInt = (maxExclusive: number): number => {
+    const limit = 256 - (256 % maxExclusive);
+    const buf = new Uint8Array(1);
+    let v: number;
+    do {
+      crypto.getRandomValues(buf);
+      v = buf[0];
+    } while (v >= limit);
+    return v % maxExclusive;
+  };
+
+  const pick = (set: string): string => set[randInt(set.length)];
+
+  const chars: string[] = groups.map((set) => pick(set));
+  while (chars.length < length) chars.push(pick(charset));
+
+  // Fisher–Yates com CSPRNG
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randInt(i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
   }
-  
-  return password.split('').sort(() => Math.random() - 0.5).join('');
+  return chars.join('');
 }

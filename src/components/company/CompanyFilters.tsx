@@ -2,8 +2,8 @@ import React from 'react';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
 import { CityAutocomplete } from '../CityAutocomplete';
-import { Separator } from '../ui/separator';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { FilterAccordion, FilterSection, FilterCountBadge } from '../filters/FilterAccordion';
 
 export interface CompanyFiltersState {
   location: { city: string; state: string };
@@ -31,8 +31,47 @@ interface CompanyFiltersProps {
   className?: string;
 }
 
+const COMPANY_TYPES = [
+  { value: 'transportadora', label: 'Transportadora' },
+  { value: 'embarcador', label: 'Embarcador' },
+  { value: 'agenciador', label: 'Agenciador' },
+];
+
+const SERVICES = [
+  'Transporte Rodoviário',
+  'Transporte Aéreo',
+  'Transporte Marítimo',
+  'Armazenagem',
+  'Cross-Docking',
+  'Rastreamento',
+  'Seguro de Carga',
+  'Logística Reversa',
+];
+
+const FLEET_SIZES = [
+  { value: 'pequena', label: 'Pequena (1-10 veículos)' },
+  { value: 'media', label: 'Média (11-50 veículos)' },
+  { value: 'grande', label: 'Grande (51-200 veículos)' },
+  { value: 'muito-grande', label: 'Muito Grande (200+ veículos)' },
+];
+
+const PAYMENT_METHODS = [
+  'PIX',
+  'Boleto',
+  'Transferência',
+  'Cartão de Crédito',
+  'Cartão de Débito',
+  'Faturado (30/60/90 dias)',
+];
+
+const RATING_OPTIONS = [
+  { value: '4', label: '4+ estrelas' },
+  { value: '3', label: '3+ estrelas' },
+  { value: '2', label: '2+ estrelas' },
+];
+
 export function CompanyFilters({ filters, onFilterChange, className = '' }: CompanyFiltersProps) {
-  
+
   const updateFilter = (key: keyof CompanyFiltersState, value: any) => {
     onFilterChange({ ...filters, [key]: value });
   };
@@ -62,11 +101,13 @@ export function CompanyFilters({ filters, onFilterChange, className = '' }: Comp
   const checkboxStyle = "bg-transparent border-gray-300 data-[state=checked]:bg-transparent data-[state=checked]:text-primary data-[state=checked]:border-primary";
 
   return (
-    <div className={`space-y-6 pr-4 ${className}`}>
+    <FilterAccordion defaultOpen={['location']} className={className}>
       {/* Localização */}
-      <section className="space-y-4">
-        <h3 className="font-semibold text-lg">Localização</h3>
-        
+      <FilterSection
+        value="location"
+        title="Localização"
+        badge={<FilterCountBadge count={filters.location.city ? 1 : 0} />}
+      >
         <div className="space-y-1">
           <CityAutocomplete
             label="Cidade"
@@ -75,22 +116,19 @@ export function CompanyFilters({ filters, onFilterChange, className = '' }: Comp
             placeholder="Escolha a localização"
           />
         </div>
-      </section>
-
-      <Separator />
+      </FilterSection>
 
       {/* Tipo de Empresa */}
-      <section className="space-y-3">
-        <h3 className="font-semibold text-base">Tipo de Empresa</h3>
+      <FilterSection
+        value="company-type"
+        title="Tipo de Empresa"
+        badge={<FilterCountBadge count={filters.companyTypes.length} />}
+      >
         <div className="space-y-2">
-          {[
-            { value: 'transportadora', label: 'Transportadora' },
-            { value: 'embarcador', label: 'Embarcador' },
-            { value: 'agenciador', label: 'Agenciador' }
-          ].map((type) => (
+          {COMPANY_TYPES.map((type) => (
             <div key={type.value} className="flex items-center space-x-2">
-              <Checkbox 
-                id={`company-type-${type.value}`} 
+              <Checkbox
+                id={`company-type-${type.value}`}
                 checked={filters.companyTypes.includes(type.value)}
                 onCheckedChange={() => toggleListFilter('companyTypes', type.value)}
                 className={checkboxStyle}
@@ -101,27 +139,19 @@ export function CompanyFilters({ filters, onFilterChange, className = '' }: Comp
             </div>
           ))}
         </div>
-      </section>
-
-      <Separator />
+      </FilterSection>
 
       {/* Serviços Oferecidos */}
-      <section className="space-y-3">
-        <h3 className="font-semibold text-base">Serviços Oferecidos</h3>
+      <FilterSection
+        value="services"
+        title="Serviços Oferecidos"
+        badge={<FilterCountBadge count={filters.services.length} />}
+      >
         <div className="space-y-2">
-          {[
-            'Transporte Rodoviário',
-            'Transporte Aéreo',
-            'Transporte Marítimo',
-            'Armazenagem',
-            'Cross-Docking',
-            'Rastreamento',
-            'Seguro de Carga',
-            'Logística Reversa'
-          ].map((service) => (
+          {SERVICES.map((service) => (
             <div key={service} className="flex items-center space-x-2">
-              <Checkbox 
-                id={`service-${service}`} 
+              <Checkbox
+                id={`service-${service}`}
                 checked={filters.services.includes(service)}
                 onCheckedChange={() => toggleListFilter('services', service)}
                 className={checkboxStyle}
@@ -132,23 +162,19 @@ export function CompanyFilters({ filters, onFilterChange, className = '' }: Comp
             </div>
           ))}
         </div>
-      </section>
-
-      <Separator />
+      </FilterSection>
 
       {/* Tamanho da Frota */}
-      <section className="space-y-3">
-        <h3 className="font-semibold text-base">Tamanho da Frota</h3>
+      <FilterSection
+        value="fleet"
+        title="Tamanho da Frota"
+        badge={filters.fleetSize ? <FilterCountBadge count={1} /> : null}
+      >
         <div className="space-y-2">
-          {[
-            { value: 'pequena', label: 'Pequena (1-10 veículos)' },
-            { value: 'media', label: 'Média (11-50 veículos)' },
-            { value: 'grande', label: 'Grande (51-200 veículos)' },
-            { value: 'muito-grande', label: 'Muito Grande (200+ veículos)' }
-          ].map((size) => (
+          {FLEET_SIZES.map((size) => (
             <div key={size.value} className="flex items-center space-x-2">
-              <Checkbox 
-                id={`fleet-${size.value}`} 
+              <Checkbox
+                id={`fleet-${size.value}`}
                 checked={filters.fleetSize === size.value}
                 onCheckedChange={() => handleToggleSingleSelect('fleetSize', size.value)}
                 className={checkboxStyle}
@@ -159,25 +185,19 @@ export function CompanyFilters({ filters, onFilterChange, className = '' }: Comp
             </div>
           ))}
         </div>
-      </section>
-
-      <Separator />
+      </FilterSection>
 
       {/* Formas de Pagamento */}
-      <section className="space-y-3">
-        <h3 className="font-semibold text-base">Formas de Pagamento</h3>
+      <FilterSection
+        value="payment"
+        title="Formas de Pagamento"
+        badge={<FilterCountBadge count={filters.paymentMethods.length} />}
+      >
         <div className="space-y-2">
-          {[
-            'PIX',
-            'Boleto',
-            'Transferência',
-            'Cartão de Crédito',
-            'Cartão de Débito',
-            'Faturado (30/60/90 dias)'
-          ].map((method) => (
+          {PAYMENT_METHODS.map((method) => (
             <div key={method} className="flex items-center space-x-2">
-              <Checkbox 
-                id={`payment-${method}`} 
+              <Checkbox
+                id={`payment-${method}`}
                 checked={filters.paymentMethods.includes(method)}
                 onCheckedChange={() => toggleListFilter('paymentMethods', method)}
                 className={checkboxStyle}
@@ -188,54 +208,46 @@ export function CompanyFilters({ filters, onFilterChange, className = '' }: Comp
             </div>
           ))}
         </div>
-      </section>
-
-      <Separator />
+      </FilterSection>
 
       {/* Verificação */}
-      <section className="space-y-3">
-        <h3 className="font-semibold text-base">Verificação</h3>
-        <RadioGroup 
-          value={filters.verified} 
+      <FilterSection
+        value="verified"
+        title="Verificação"
+        badge={filters.verified !== 'ambos' ? <FilterCountBadge count={1} /> : null}
+      >
+        <RadioGroup
+          value={filters.verified}
           onValueChange={(value) => updateFilter('verified', value)}
         >
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="ambos" id="verified-both" />
-              <Label htmlFor="verified-both" className="font-normal text-gray-600">
-                Todas
-              </Label>
+              <Label htmlFor="verified-both" className="font-normal text-gray-600">Todas</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="sim" id="verified-yes" />
-              <Label htmlFor="verified-yes" className="font-normal text-gray-600">
-                Apenas verificadas
-              </Label>
+              <Label htmlFor="verified-yes" className="font-normal text-gray-600">Apenas verificadas</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="nao" id="verified-no" />
-              <Label htmlFor="verified-no" className="font-normal text-gray-600">
-                Não verificadas
-              </Label>
+              <Label htmlFor="verified-no" className="font-normal text-gray-600">Não verificadas</Label>
             </div>
           </div>
         </RadioGroup>
-      </section>
-
-      <Separator />
+      </FilterSection>
 
       {/* Avaliação Mínima */}
-      <section className="space-y-3">
-        <h3 className="font-semibold text-base">Avaliação Mínima</h3>
+      <FilterSection
+        value="rating"
+        title="Avaliação Mínima"
+        badge={filters.minRating ? <FilterCountBadge count={1} /> : null}
+      >
         <div className="space-y-2">
-          {[
-            { value: '4', label: '4+ estrelas' },
-            { value: '3', label: '3+ estrelas' },
-            { value: '2', label: '2+ estrelas' }
-          ].map((rating) => (
+          {RATING_OPTIONS.map((rating) => (
             <div key={rating.value} className="flex items-center space-x-2">
-              <Checkbox 
-                id={`rating-${rating.value}`} 
+              <Checkbox
+                id={`rating-${rating.value}`}
                 checked={filters.minRating === rating.value}
                 onCheckedChange={() => handleToggleSingleSelect('minRating', rating.value)}
                 className={checkboxStyle}
@@ -246,7 +258,7 @@ export function CompanyFilters({ filters, onFilterChange, className = '' }: Comp
             </div>
           ))}
         </div>
-      </section>
-    </div>
+      </FilterSection>
+    </FilterAccordion>
   );
 }

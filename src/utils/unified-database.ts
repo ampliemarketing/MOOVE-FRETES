@@ -267,10 +267,16 @@ export const database = {
     
     async search(query: string) {
       const supabase = getSupabaseClient();
+      // Sanitiza: caracteres com significado no mini-DSL de filtro do PostgREST
+      // (`,` `.` `(` `)` `*` `%` `\`) deixam o usuário injetar condições extras
+      // no `.or()` (ex.: `x,is_active.eq.false`). Também escapa os curingas do
+      // LIKE pra a busca casar o texto literal.
+      const safe = query.replace(/[,.()\\%*_"']/g, ' ').trim().slice(0, 100);
+      if (!safe) return { data: [], error: null };
       return await supabase
         .from('unified_users')
         .select('*')
-        .or(`name.ilike.%${query}%,email.ilike.%${query}%,trading_name.ilike.%${query}%`);
+        .or(`name.ilike.%${safe}%,email.ilike.%${safe}%,trading_name.ilike.%${safe}%`);
     }
   },
   

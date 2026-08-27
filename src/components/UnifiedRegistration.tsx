@@ -510,6 +510,97 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
     }
   }
 
+  // ── Preenchimento automático (só em dev) ──────────────────────────────
+  // Gera um File "de mentira" (PNG 1x1) pra satisfazer os campos de upload
+  // sem precisar escolher um arquivo real toda vez.
+  function makeFakeImageFile(fileName: string): File {
+    const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    const byteChars = atob(base64);
+    const bytes = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+    return new File([bytes], fileName, { type: 'image/png' });
+  }
+
+  function fillTestData() {
+    const stamp = Date.now();
+    const testEmail = `teste.${userType}.${stamp}@moovefretes.test`;
+    const twoYearsFromNow = new Date();
+    twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
+    const futureDate = twoYearsFromNow.toISOString().slice(0, 10);
+
+    // Passo 1 — Dados de acesso
+    setName(userType === 'caminhoneiro' ? 'Motorista Teste' : 'Responsável Teste');
+    setEmail(testEmail);
+    setPassword('Teste123!');
+    setConfirmPassword('Teste123!');
+    setAcceptedTerms(true);
+    checkEmailAvailability(testEmail);
+    if (userType === 'caminhoneiro') {
+      const photo = makeFakeImageFile('foto-perfil.png');
+      setProfilePhoto(photo);
+      const reader = new FileReader();
+      reader.onloadend = () => setProfilePhotoPreview(reader.result as string);
+      reader.readAsDataURL(photo);
+    }
+
+    // Passo 2 — Endereço
+    setCep('01310-100');
+    setStreet('Avenida Paulista');
+    setNumber('1000');
+    setNeighborhood('Bela Vista');
+    setCity('São Paulo');
+    setState('SP');
+
+    // Passo 3 — Dados específicos
+    if (userType === 'caminhoneiro') {
+      setCpf('529.982.247-25'); // CPF de teste válido (passa dígito verificador)
+      setRg('12.345.678-9');
+      setBirthDate('1990-05-15');
+      setCnh('12345678900');
+      setCnhCategory('E');
+      setCnhValidity(futureDate);
+      setRntrc('12345678');
+      setRntrcValidity(futureDate);
+      setVehiclePlate('ABC1D23');
+      setVehicleModel('Volvo FH 540');
+      setVehicleYear('2020');
+      setVehicleTypes(['Truck']);
+      setBodyTypes(['Baú']);
+
+      // Passo 4 — Documentos
+      setRgDoc(makeFakeImageFile('rg.png'));
+      setCpfDoc(makeFakeImageFile('cpf.png'));
+      setCnhDoc(makeFakeImageFile('cnh.png'));
+      setRntrcDoc(makeFakeImageFile('rntrc.png'));
+      setVehicleDoc(makeFakeImageFile('crlv.png'));
+      setAddressDoc(makeFakeImageFile('comprovante-endereco.png'));
+      setSelfieDoc(makeFakeImageFile('selfie.png'));
+    } else {
+      setCnpj('11.222.333/0001-81'); // CNPJ de teste válido
+      setCompanyName('Transportadora Teste LTDA');
+      setTradeName('Transportadora Teste');
+      setRepresentativeName('Responsável Teste');
+      setRepresentativeCpf('123.456.789-09'); // CPF de teste válido
+      setRepresentativeRg('98.765.432-1');
+      setRepresentativeRole('Diretor');
+      setStateRegistration('123456789');
+      if (userType === 'transportadora') {
+        setCompanyRntrc('87654321');
+        setCompanyRntrcValidity(futureDate);
+      }
+
+      // Passo 4 — Documentos
+      setCnpjDoc(makeFakeImageFile('cnpj.png'));
+      setContractDoc(makeFakeImageFile('contrato-social.png'));
+      setAddressDoc(makeFakeImageFile('comprovante-endereco.png'));
+      if (userType === 'transportadora') {
+        setRntrcDoc(makeFakeImageFile('rntrc.png'));
+      }
+    }
+
+    toast.success('Dados de teste preenchidos! Clique em "Próximo" pra avançar.');
+  }
+
   async function handleSubmit() {
     setLoading(true);
     let authUserId: string | null = null;
@@ -1775,7 +1866,20 @@ export function UnifiedRegistration({ userType, onComplete, onBack }: UnifiedReg
                 <div className="text-center flex-1">
                   <h1 className="text-xl text-foreground">Complete seu Perfil</h1>
                 </div>
-                <div className="w-10"></div>
+                {import.meta.env.DEV ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={fillTestData}
+                    className="p-2 text-xs"
+                    title="Preencher com dados de teste (só aparece em dev)"
+                  >
+                    🧪
+                  </Button>
+                ) : (
+                  <div className="w-10"></div>
+                )}
               </div>
 
               {/* Progress Bar */}

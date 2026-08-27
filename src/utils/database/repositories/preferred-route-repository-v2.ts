@@ -92,8 +92,14 @@ export class PreferredRouteRepository {
         .single();
 
       if (error) {
-        console.error('❌ Erro ao criar rota preferida no Supabase:', error.message, '| code:', error.code, '| details:', error.details);
-        throw error;
+        console.error('❌ Erro ao criar rota preferida no Supabase:', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint);
+        // Supabase retorna um objeto simples (não Error) — propaga a mensagem real
+        // para o usuário em vez do fallback genérico "Failed to create preferred route".
+        const detail = [error.message, error.details, error.hint].filter(Boolean).join(' — ');
+        return {
+          success: false,
+          error: detail || `Erro do banco de dados${error.code ? ` (${error.code})` : ''}`,
+        };
       }
 
       const created = sqlToPreferredRoute(data);
@@ -105,10 +111,17 @@ export class PreferredRouteRepository {
         success: true,
         data: created,
       };
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Falha inesperada ao criar rota preferida:', error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : error?.message || error?.details || error?.hint ||
+            (typeof error === 'string' ? error : null) ||
+            'Não foi possível cadastrar a rota';
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to create preferred route',
+        error: message,
       };
     }
   }
