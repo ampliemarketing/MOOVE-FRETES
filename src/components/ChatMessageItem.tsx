@@ -29,7 +29,7 @@ interface MessageWithReactions {
   content: string;
   type: 'text' | 'image' | 'file';
   createdAt: string;
-  status?: 'sending' | 'sent' | 'delivered' | 'read';
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
   reactions?: Record<string, string[]>;
   isEdited?: boolean;
   isPinned?: boolean;
@@ -67,6 +67,7 @@ interface ChatMessageItemProps {
   setShowReactionPicker: (messageId: string | null) => void;
   showReactionPicker: string | null;
   viewImage: (url: string) => void;
+  onRetryMessage?: (message: MessageWithReactions) => void;
   REACTIONS: string[];
 }
 
@@ -85,6 +86,7 @@ const ChatMessageItem = memo(({
   setShowReactionPicker,
   showReactionPicker,
   viewImage,
+  onRetryMessage,
   REACTIONS,
 }: ChatMessageItemProps) => {
   const isOwn = message.senderId === user.id;
@@ -372,6 +374,16 @@ const ChatMessageItem = memo(({
               <p className="text-base break-words whitespace-pre-wrap">{renderLinkedText(message.content)}</p>
             )}
           </div>
+
+          {/* Falha no envio — a mensagem não some, dá pra reenviar (mesmo id => idempotente) */}
+          {isOwn && (message.status as string) === 'failed' && (
+            <button
+              onClick={() => onRetryMessage?.(message)}
+              className="flex items-center gap-1 mt-1 px-2 text-xs text-red-500 hover:underline ml-auto"
+            >
+              <X className="w-3 h-3" /> Falha ao enviar — toque para reenviar
+            </button>
+          )}
 
           {/* Reactions */}
           {message.reactions && Object.keys(message.reactions).length > 0 && (

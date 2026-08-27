@@ -260,6 +260,50 @@ export class ConversationRepository {
   }
 
   /**
+   * Oculta a conversa apenas para um participante (soft delete).
+   * ✅ NUNCA apaga mensagens — o histórico continua para o outro lado.
+   * Espelha o comportamento do app mobile (ChatListScreen / ChatScreen).
+   */
+  async softDelete(conversationId: string, userId: string): Promise<DBResponse<boolean>> {
+    try {
+      const supabase = getSupabaseClient();
+
+      const { data: conv, error: readErr } = await supabase
+        .from('conversations')
+        .select('participant1_id')
+        .eq('id', conversationId)
+        .single();
+      if (readErr) throw readErr;
+
+      const column = conv?.participant1_id === userId
+        ? 'deleted_by_participant1'
+        : 'deleted_by_participant2';
+
+      const { data: updated, error } = await supabase
+        .from('conversations')
+        .update({ [column]: true })
+        .eq('id', conversationId)
+        .select('id');
+      if (error) throw error;
+
+      if (!updated || updated.length === 0) {
+        return {
+          success: false,
+          error: 'Não foi possível ocultar a conversa (sem permissão ou não encontrada).',
+        };
+      }
+
+      await db.del(KeyPatterns.chat(conversationId));
+      return { success: true, data: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to hide conversation',
+      };
+    }
+  }
+
+  /**
    * Reset unread count for a chat
    * ✅ Marca todas as mensagens não lidas como lidas
    */

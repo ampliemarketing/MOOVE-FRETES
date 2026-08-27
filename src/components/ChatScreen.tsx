@@ -182,28 +182,14 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
     return () => clearTimeout(timeoutId);
   }, [user.id]);
 
-  const createMessageNotification = useCallback(async (message: any, senderName: string) => {
-    try {
-      const { database } = await import('../utils/database');
-      
-      await database.notifications.create({
-        userId: user.id,
-        type: 'message',
-        title: `Nova mensagem de ${senderName}`,
-        message: message.content.substring(0, 100),
-        metadata: {
-          conversationId: message.conversation_id,
-          senderId: message.sender_id,
-          messageId: message.id,
-        },
-        createdAt: new Date().toISOString(),
-        is_read: false,
-      });
-      
-    } catch (error) {
-      console.error('❌ [Notificação] Erro:', error);
-    }
-  }, [user.id]);
+  // A notificação in-app de "nova mensagem" agora é criada no banco pelo trigger
+  // `on_message_insert_notification` (migration 0017). Criar do cliente aqui
+  // gerava linha DUPLICADA — e desde o 0017 o INSERT do cliente em
+  // `notifications` para outro user_id é bloqueado por RLS. Mantido como no-op
+  // para não mexer nas dependências dos useEffect/useCallback abaixo.
+  const createMessageNotification = useCallback(async (_message: any, _senderName: string) => {
+    /* server-side via trigger — ver comentário acima */
+  }, []);
 
   // Auto-refresh with optimization - less frequent
   useEffect(() => {
@@ -459,10 +445,9 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
               .single();
             
             const senderName = senderData?.name || 'Usuário';
-            
-            // Criar notificação
-            await createMessageNotification(newMessage, senderName);
-            
+            void senderName;
+            // notificação in-app é criada pelo trigger on_message_insert_notification (0017)
+
             // Atualizar contador de não lidas no chat
             setChats(prev => prev.map(chat => {
               if (chat.id === newMessage.conversation_id) {
@@ -589,8 +574,26 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
             scrollToBottom('auto');
             if (newMessage.sender_id !== user.id) {
               playNotificationSound();
-              createMessageNotification(newMessage, selectedChat.otherUser?.name || 'Usuário');
+              // notificação in-app é criada pelo trigger on_message_insert_notification
             }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${selectedChat.id}`,
+          },
+          (payload) => {
+            // Recibo de leitura em tempo real: reflete is_read/read_at sem recarregar.
+            const updated = payload.new as any;
+            setMessages(prev => prev.map(m => (
+              m.id === updated.id
+                ? { ...m, isRead: updated.is_read, readAt: updated.read_at }
+                : m
+            )));
           }
         )
         .subscribe((status: string) => {
@@ -859,7 +862,11 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         supabase
           .from('conversations')
           .select('id, participant1_id, participant2_id, freight_id, created_at, last_message_at, is_pinned, is_muted')
-          .or(`participant1_id.eq.${chatIdentityId},participant2_id.eq.${chatIdentityId}`)
+          // Respeita o soft delete: não traz conversas que ESTE participante ocultou.
+          .or(
+            `and(participant1_id.eq.${chatIdentityId},deleted_by_participant1.is.false),` +
+            `and(participant2_id.eq.${chatIdentityId},deleted_by_participant2.is.false)`
+          )
           .order('last_message_at', { ascending: false }),
         supabase
           .from('profiles')
@@ -1181,8 +1188,11 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
         }
       }
 
-      // Create optimistic message ID
-      const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // ID gerado no cliente (UUID real): a mensagem otimista e a linha do
+      // banco compartilham o mesmo id, então um retry após timeout é
+      // idempotente (a PK rejeita o segundo insert = 23505, tratado abaixo).
+      const tempId = (globalThis.crypto?.randomUUID?.())
+        || `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
       const now = new Date().toISOString();
 
       // Create optimistic message
@@ -1342,6 +1352,7 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
       const { data: savedMessage, error: messageError } = await supabase
         .from('messages')
         .insert({
+          id: tempId,
           conversation_id: selectedChat.id,
           sender_id: user.id,
           content,
@@ -1349,24 +1360,29 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
           attachments: attachments || [],
           // ❌ REMOVIDO: reply_to não existe na tabela messages do Supabase
           // ❌ REMOVIDO: status não existe na tabela messages do Supabase
+          // ❌ created_at é do banco (trigger enforce_messages_created_at) —
+          //    o relógio do cliente não pode ditar a ordem do histórico
           is_read: false,
-          created_at: now,
         })
         .select()
         .single();
 
-      if (messageError) {
+      const isDuplicate = messageError?.code === '23505'
+        || /duplicate key/i.test(messageError?.message || '');
+
+      if (messageError && !isDuplicate) {
         console.error('❌ Erro ao salvar mensagem no Supabase:', messageError);
-        // Remove optimistic message on error
-        setMessages(prev => prev.filter(m => m.id !== tempId));
-        toast.error('Erro ao enviar mensagem');
+        // Marca a mensagem otimista como falha (não some — dá pra reenviar)
+        setMessages(prev => prev.map(m => (
+          m.id === tempId ? { ...m, status: 'failed' as any } : m
+        )));
+        toast.error('Falha ao enviar. Toque na mensagem para reenviar.');
         return;
       }
 
       if (savedMessage) {
-        
-        // Replace optimistic message with real one
-        setMessages(prev => prev.map(m => 
+        // Substitui a mensagem otimista pela linha real do banco
+        setMessages(prev => prev.map(m =>
           m.id === tempId ? {
             id: savedMessage.id,
             chatId: savedMessage.conversation_id,
@@ -1383,21 +1399,58 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
             createdAt: savedMessage.created_at,
           } as MessageWithReactions : m
         ));
-        
-        // Update conversation's last message timestamp
-        await supabase
-          .from('conversations')
-          .update({ last_message_at: now })
-          .eq('id', selectedChat.id);
-
-
+      } else if (isDuplicate) {
+        // Retry de uma mensagem que já tinha sido gravada — só confirma o status.
+        setMessages(prev => prev.map(m => (
+          m.id === tempId ? { ...m, status: 'sent' as any } : m
+        )));
       }
+      // last_message_at da conversa é atualizado pelo trigger
+      // on_message_insert_update_conv — não precisa de UPDATE do cliente.
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Erro ao enviar mensagem');
       setSendingMessage(false);
     }
   };
+
+  // Reenvia uma mensagem que ficou com status 'failed'. Usa o MESMO id, então
+  // se o primeiro insert na verdade tinha ido (timeout na resposta) o segundo
+  // volta 23505 e a gente só confirma — nunca duplica no histórico.
+  const retryMessage = useCallback(async (message: MessageWithReactions) => {
+    if (!selectedChat) return;
+    setMessages(prev => prev.map(m => (m.id === message.id ? { ...m, status: 'sending' as any } : m)));
+    try {
+      const supabase = (await import('../utils/supabase/client')).getSupabaseClient();
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          id: message.id,
+          conversation_id: selectedChat.id,
+          sender_id: user.id,
+          content: message.content,
+          message_type: (message.type as string) || 'text',
+          attachments: message.attachments || [],
+          is_read: false,
+        })
+        .select()
+        .single();
+
+      const dup = error?.code === '23505' || /duplicate key/i.test(error?.message || '');
+      if (error && !dup) {
+        setMessages(prev => prev.map(m => (m.id === message.id ? { ...m, status: 'failed' as any } : m)));
+        toast.error('Ainda sem conexão. Tente de novo em instantes.');
+        return;
+      }
+      setMessages(prev => prev.map(m => (
+        m.id === message.id
+          ? { ...m, status: 'sent' as any, ...(data ? { createdAt: data.created_at, timestamp: data.created_at } : {}) }
+          : m
+      )));
+    } catch (e) {
+      setMessages(prev => prev.map(m => (m.id === message.id ? { ...m, status: 'failed' as any } : m)));
+    }
+  }, [selectedChat, user.id]);
 
   const handleDeleteMessage = async (messageId: string) => {
     if (!selectedChat) return;
@@ -1613,21 +1666,39 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
             participant1_id: p1,
             participant2_id: p2,
             freight_id: initialFreightId || null,
-            created_at: new Date().toISOString(),
-            last_message_at: new Date().toISOString(),
+            // created_at / last_message_at ficam a cargo do banco
           })
           .select()
           .single();
-        
+
         if (createError) {
-          console.error('❌ Erro ao criar conversa:', createError);
-          toast.error('Erro ao iniciar conversa');
-          setLoading(false);
-          return;
+          // Corrida com a outra ponta: o índice único uq_conversations_participant_pair
+          // (migration 0019) transformou isso em 23505 — reconsulta a conversa.
+          const raced = createError.code === '23505'
+            || /duplicate key/i.test(createError.message || '');
+          if (raced) {
+            const { data: retryConv } = await supabase
+              .from('conversations')
+              .select('*')
+              .eq('participant1_id', p1)
+              .eq('participant2_id', p2)
+              .maybeSingle();
+            if (retryConv) {
+              conversation = retryConv;
+            } else {
+              toast.error('Erro ao iniciar conversa');
+              setLoading(false);
+              return;
+            }
+          } else {
+            console.error('❌ Erro ao criar conversa:', createError);
+            toast.error('Erro ao iniciar conversa');
+            setLoading(false);
+            return;
+          }
+        } else {
+          conversation = newConv;
         }
-        
-        conversation = newConv;
-      } else {
       }
       
       // Buscar dados do outro usuário do Supabase
@@ -1704,9 +1775,10 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
     if (!chatToDelete) return;
 
     try {
-      const response = await database.chats.delete(chatToDelete.id);
+      // Soft delete: oculta só para nós, o histórico continua para o outro lado.
+      const response = await database.chats.softDelete(chatToDelete.id, chatIdentityId);
       if (response.success) {
-        toast.success('Conversa excluída com sucesso');
+        toast.success('Conversa removida da sua lista');
         setDeleteDialogOpen(false);
         setChatToDelete(null);
 
@@ -2302,6 +2374,7 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
                       setShowReactionPicker={setShowReactionPicker}
                       showReactionPicker={showReactionPicker}
                       viewImage={viewImage}
+                      onRetryMessage={retryMessage}
                       REACTIONS={REACTIONS}
                     />
                   ))}

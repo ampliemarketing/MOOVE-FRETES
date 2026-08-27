@@ -1,117 +1,15 @@
-import { useEffect } from 'react';
-import { getSupabaseClient } from '../utils/supabase/client';
-
 /**
- * Hook global para detectar novas mensagens e criar notificações automaticamente.
+ * Hook global para notificação de "nova mensagem".
+ *
+ * DESATIVADO: essa notificação in-app agora é criada no banco pelo trigger
+ * `on_message_insert_notification` (migration 0017), e o `AppContext` já
+ * assina o Realtime da tabela `notifications`. Criar a linha pelo cliente
+ * aqui gerava DUPLICATA — e desde o 0017 o INSERT do cliente em
+ * `notifications` para outro `user_id` é bloqueado por RLS (passava a só
+ * falhar silenciosamente).
+ *
+ * Mantido como no-op para não mexer no call site em `App.tsx`.
  */
-export function useGlobalMessageNotifications(userId: string | undefined) {
-  useEffect(() => {
-    if (!userId) {
-      return;
-    }
-
-    let channel: ReturnType<ReturnType<typeof getSupabaseClient>['channel']> | null = null;
-    let isActive = true;
-
-    const setupListener = async () => {
-      try {
-        const supabase = getSupabaseClient();
-
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError || !session) {
-          return;
-        }
-
-
-        channel = supabase
-          .channel('global_message_notifications')
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'messages',
-            },
-            async (payload) => {
-              if (!isActive) return;
-
-              const newMessage = payload.new as any;
-
-              if (newMessage.sender_id === userId) {
-                return;
-              }
-
-
-              const { data: senderData } = await supabase
-                .from('profiles')
-                .select('name, avatar_url')
-                .eq('id', newMessage.sender_id)
-                .single();
-
-              const senderName = senderData?.name || 'Usuário';
-
-              const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-              const notification = {
-                id: notificationId,
-                type: 'message',
-                title: `Nova mensagem de ${senderName}`,
-                message: newMessage.content || 'Enviou uma mensagem',
-                userId: userId,
-                relatedId: newMessage.conversation_id,
-                relatedType: 'conversation',
-                isRead: false,
-                createdAt: new Date().toISOString(),
-                metadata: {
-                  senderId: newMessage.sender_id,
-                  senderName: senderName,
-                  senderAvatar: senderData?.avatar_url,
-                  messageId: newMessage.id,
-                  conversationId: newMessage.conversation_id,
-                },
-              };
-
-              try {
-                const { database } = await import('../utils/database');
-                const createResult = await database.notifications.create(notification);
-
-                if (createResult.success) {
-                }
-              } catch (error) {
-                console.error('❌ [Global Notifications] Erro ao salvar:', error);
-              }
-
-              if (typeof window !== 'undefined' && window.dispatchEvent) {
-                try {
-                  window.dispatchEvent(new CustomEvent('notification-created', {
-                    detail: notification
-                  }));
-                } catch (error) {
-                  console.error('❌ [Global Notifications] Erro ao disparar evento:', error);
-                }
-              }
-            }
-          )
-          .subscribe((status) => {
-            if (status === 'CLOSED') {
-              return;
-            }
-
-            if (status === 'SUBSCRIBED') {
-            } else if (status === 'CHANNEL_ERROR') {
-            }
-          });
-      } catch (error) {
-      }
-    };
-
-    setupListener();
-
-    return () => {
-      isActive = false;
-      if (channel) {
-        channel.unsubscribe();
-      }
-    };
-  }, [userId]);
+export function useGlobalMessageNotifications(_userId: string | undefined): void {
+  // intencionalmente vazio — ver comentário acima
 }
