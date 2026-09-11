@@ -360,8 +360,8 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
                   companyName: supabaseCompany.company_name || supabaseCompany.trading_name,
                   cnpj: supabaseCompany.cnpj,
                   phone: supabaseCompany.phone,
-                  email: supabaseCompany.email, // ❌ PROBLEMA: Email deveria ter sido salvo no cadastro!
-                  corporateEmail: supabaseCompany.corporate_email,
+                  email: supabaseCompany.email,
+                  corporateEmail: supabaseCompany.email,
                   description: supabaseCompany.description || supabaseCompany.metadata?.description,
                   businessType: supabaseCompany.company_type || profileData.userType,
                   rating: supabaseCompany.rating || 0,
@@ -377,7 +377,7 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
                   },
                   contact: {
                     phone: supabaseCompany.phone || '',
-                    email: supabaseCompany.corporate_email || supabaseCompany.email || ''
+                    email: supabaseCompany.email || ''
                   },
                   stateRegistration: supabaseCompany.state_registration,
                   municipalRegistration: supabaseCompany.municipal_registration,
@@ -725,8 +725,8 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
             companyName: companyData.company_name,
             cnpj: companyData.cnpj,
             phone: companyData.phone,
-            email: companyData.corporate_email,
-            corporateEmail: companyData.corporate_email,
+            email: companyData.email,
+            corporateEmail: companyData.email,
             description: companyData.description,
             address: {
               cep: companyData.address?.cep || '',
@@ -739,7 +739,7 @@ export function ProfileScreen({ user, onBack, onLogout, showActivity, activities
             },
             contact: {
               phone: companyData.phone || '',
-              email: companyData.corporate_email || ''
+              email: companyData.email || ''
             },
             logo: companyData.logo_url,
             representativeName: companyData.representative_name,

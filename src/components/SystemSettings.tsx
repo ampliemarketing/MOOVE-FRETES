@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import type { User as AppUser } from './contexts/AppContext';
+import { getSupabaseClient } from '../utils/supabase/client';
 
 interface SystemSettingsProps {
   user: AppUser;
@@ -84,6 +85,193 @@ export function SystemSettings({ user, onBack }: SystemSettingsProps) {
   });
 
   const [hasChanges, setHasChanges] = useState(false);
+
+  // ── Alterar senha — única seção desta tela que é de verdade (o resto
+  // ainda não persiste em lugar nenhum, ver handleSave abaixo) ───────────
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  function isPasswordStrong(pwd: string): boolean {
+    return pwd.length >= 8 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /[0-9]/.test(pwd);
+  }
+
+  async function handleChangePassword() {
+    if (!currentPassword) {
+      toast.error('Informe sua senha atual.');
+      return;
+    }
+    if (!isPasswordStrong(newPassword)) {
+      toast.error('A nova senha precisa ter no mínimo 8 caracteres, com letra maiúscula, minúscula e número.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error('As senhas não conferem.');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const supabase = getSupabaseClient();
+
+      // Confirma a senha atual reautenticando antes de trocar — supabase-js
+      // não tem um "changePassword(old, new)" direto, então o jeito de
+      // validar a senha atual é tentar logar com ela.
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (signInError) {
+        toast.error('Senha atual incorreta.');
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+
+      toast.success('Senha alterada com sucesso!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (error: any) {
+      toast.error('Erro ao alterar senha: ' + (error?.message || 'tente novamente.'));
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
+  // ── Notificações, Aparência e Privacidade — também de verdade, persistidas
+  // em public.user_preferences (RLS: cada usuário só vê/edita a própria
+  // linha). Segurança (2FA/sessão) e Sistema continuam decorativas — não têm
+  // nenhuma funcionalidade real por trás pra salvar ainda. ─────────────────
+  const [loadingPrefs, setLoadingPrefs] = useState(true);
+  const [savingNotifications, setSavingNotifications] = useState(false);
+  const [savingAppearance, setSavingAppearance] = useState(false);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
+
+  // notification_settings / privacy_settings / ui_settings são jsonb
+  // compartilhados com o app mobile (SettingsScreen.tsx) — cada um grava só
+  // as chaves que conhece. Um upsert "ingênuo" ({sound_enabled: x}) SUBSTITUI
+  // o jsonb inteiro e apagaria as chaves que o outro app gravou (ex:
+  // vibration_enabled, rating_alerts, que só existem no mobile). Por isso
+  // guardamos o blob cru carregado do servidor e sempre fazemos
+  // {...blobCru, minhaChave: novoValor} antes de salvar.
+  const [rawNotificationSettings, setRawNotificationSettings] = useState<Record<string, any>>({});
+  const [rawPrivacySettings, setRawPrivacySettings] = useState<Record<string, any>>({});
+  const [rawUiSettings, setRawUiSettings] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPreferences() {
+      try {
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Erro ao carregar preferências:', error);
+          return;
+        }
+        if (!data || cancelled) return;
+
+        setRawNotificationSettings(data.notification_settings || {});
+        setRawPrivacySettings(data.privacy_settings || {});
+        setRawUiSettings(data.ui_settings || {});
+
+        setSettings(prev => ({
+          ...prev,
+          emailNotifications: data.email_alerts ?? prev.emailNotifications,
+          pushNotifications: data.push_notifications ?? prev.pushNotifications,
+          smsNotifications: data.sms_alerts ?? prev.smsNotifications,
+          soundEnabled: data.notification_settings?.sound_enabled ?? prev.soundEnabled,
+          theme: (data.theme === 'light' || data.theme === 'dark' || data.theme === 'system') ? data.theme : prev.theme,
+          fontSize: data.ui_settings?.font_size ?? prev.fontSize,
+          shareLocation: data.privacy_settings?.share_location ?? prev.shareLocation,
+          shareActivity: data.privacy_settings?.share_activity ?? prev.shareActivity,
+          profileVisibility: data.privacy_settings?.profile_visibility ?? prev.profileVisibility,
+        }));
+      } finally {
+        if (!cancelled) setLoadingPrefs(false);
+      }
+    }
+    loadPreferences();
+    return () => { cancelled = true; };
+  }, [user.id]);
+
+  async function handleSaveNotifications() {
+    setSavingNotifications(true);
+    try {
+      const supabase = getSupabaseClient();
+      const mergedNotificationSettings = { ...rawNotificationSettings, sound_enabled: settings.soundEnabled };
+      const { error } = await supabase.from('user_preferences').upsert({
+        user_id: user.id,
+        email_alerts: settings.emailNotifications,
+        push_notifications: settings.pushNotifications,
+        sms_alerts: settings.smsNotifications,
+        notification_settings: mergedNotificationSettings,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+      if (error) throw error;
+      setRawNotificationSettings(mergedNotificationSettings);
+      toast.success('Preferências de notificação salvas!');
+    } catch (error: any) {
+      toast.error('Erro ao salvar notificações: ' + (error?.message || 'tente novamente.'));
+    } finally {
+      setSavingNotifications(false);
+    }
+  }
+
+  async function handleSaveAppearance() {
+    setSavingAppearance(true);
+    try {
+      const supabase = getSupabaseClient();
+      const mergedUiSettings = { ...rawUiSettings, font_size: settings.fontSize };
+      const { error } = await supabase.from('user_preferences').upsert({
+        user_id: user.id,
+        theme: settings.theme,
+        language: 'pt-BR',
+        ui_settings: mergedUiSettings,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+      if (error) throw error;
+      setRawUiSettings(mergedUiSettings);
+      toast.success('Preferências de aparência salvas!');
+    } catch (error: any) {
+      toast.error('Erro ao salvar aparência: ' + (error?.message || 'tente novamente.'));
+    } finally {
+      setSavingAppearance(false);
+    }
+  }
+
+  async function handleSavePrivacy() {
+    setSavingPrivacy(true);
+    try {
+      const supabase = getSupabaseClient();
+      const mergedPrivacySettings = {
+        ...rawPrivacySettings,
+        share_location: settings.shareLocation,
+        share_activity: settings.shareActivity,
+        profile_visibility: settings.profileVisibility,
+      };
+      const { error } = await supabase.from('user_preferences').upsert({
+        user_id: user.id,
+        privacy_settings: mergedPrivacySettings,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+      if (error) throw error;
+      setRawPrivacySettings(mergedPrivacySettings);
+      toast.success('Preferências de privacidade salvas!');
+    } catch (error: any) {
+      toast.error('Erro ao salvar privacidade: ' + (error?.message || 'tente novamente.'));
+    } finally {
+      setSavingPrivacy(false);
+    }
+  }
 
   const updateSetting = <K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -150,6 +338,77 @@ export function SystemSettings({ user, onBack }: SystemSettingsProps) {
       </div>
 
       <div className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* Seção de Senha */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-primary" />
+              <CardTitle>Senha</CardTitle>
+            </div>
+            <CardDescription>
+              Altere a senha usada para entrar na sua conta
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 max-w-md">
+            <div className="space-y-2">
+              <Label htmlFor="current-password">Senha atual</Label>
+              <Input
+                id="current-password"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Digite sua senha atual"
+                maxLength={72}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Nova senha</Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  maxLength={72}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Mínimo 8 caracteres, com letra maiúscula, minúscula e número.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm-new-password">Confirmar nova senha</Label>
+              <Input
+                id="confirm-new-password"
+                type={showNewPassword ? 'text' : 'password'}
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                placeholder="Digite a senha novamente"
+                maxLength={72}
+              />
+            </div>
+
+            <Button
+              onClick={handleChangePassword}
+              disabled={changingPassword || !currentPassword || !newPassword || !confirmNewPassword}
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              {changingPassword ? 'Alterando...' : 'Alterar Senha'}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Seção de Notificações */}
         <Card>
           <CardHeader>
@@ -213,6 +472,11 @@ export function SystemSettings({ user, onBack }: SystemSettingsProps) {
                 onCheckedChange={(checked) => updateSetting('soundEnabled', checked)}
               />
             </div>
+
+            <Button onClick={handleSaveNotifications} disabled={savingNotifications || loadingPrefs}>
+              <Save className="w-4 h-4 mr-2" />
+              {savingNotifications ? 'Salvando...' : 'Salvar Notificações'}
+            </Button>
           </CardContent>
         </Card>
 
@@ -267,6 +531,11 @@ export function SystemSettings({ user, onBack }: SystemSettingsProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <Button onClick={handleSaveAppearance} disabled={savingAppearance || loadingPrefs}>
+              <Save className="w-4 h-4 mr-2" />
+              {savingAppearance ? 'Salvando...' : 'Salvar Aparência'}
+            </Button>
           </CardContent>
         </Card>
 
@@ -417,16 +686,24 @@ export function SystemSettings({ user, onBack }: SystemSettingsProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <Button onClick={handleSavePrivacy} disabled={savingPrivacy || loadingPrefs}>
+              <Save className="w-4 h-4 mr-2" />
+              {savingPrivacy ? 'Salvando...' : 'Salvar Privacidade'}
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Botões de Ação */}
+        {/* Botões de Ação — só cobrem Segurança e Sistema, que ainda não têm
+            nenhuma funcionalidade real por trás (2FA, sincronização, modo
+            offline...). Notificações, Aparência e Privacidade já salvam
+            direto pelos próprios botões, acima. */}
         <div className="flex items-center justify-between gap-4 pt-6 pb-8">
           <Button variant="outline" onClick={handleReset}>
             <RotateCcw className="w-4 h-4 mr-2" />
             Resetar para Padrão
           </Button>
-          
+
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={onBack}>
               Cancelar

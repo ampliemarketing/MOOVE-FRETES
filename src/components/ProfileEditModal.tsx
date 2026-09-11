@@ -311,7 +311,7 @@ export function ProfileEditModal({
           company_name: formData.razaoSocial || null,
           trading_name: formData.nomeFantasia || null,
           phone: formData.telefone || null,
-          corporate_email: formData.emailCorporativo || null,
+          email: formData.emailCorporativo || null,
           description: formData.descricao || null,
           state_registration: formData.inscricaoEstadual || null,
           municipal_registration: formData.inscricaoMunicipal || null,

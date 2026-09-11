@@ -37,7 +37,7 @@ export function AvatarUpload({
         
         const { error } = await supabase
           .storage
-          .from('profile-images')
+          .from('avatars')
           .upload(testPath, testFile, { upsert: true });
         
         if (error) {
@@ -50,12 +50,12 @@ export function AvatarUpload({
           }
           
           // Limpar arquivo de teste se foi criado
-          await supabase.storage.from('profile-images').remove([testPath]);
+          await supabase.storage.from('avatars').remove([testPath]);
         } else {
           setBucketExists(true);
           
           // Limpar arquivo de teste
-          await supabase.storage.from('profile-images').remove([testPath]);
+          await supabase.storage.from('avatars').remove([testPath]);
         }
       } catch (error: any) {
         // [REVISAR] console.log('⚠️ [AvatarUpload] Assumindo que bucket existe (erro ao testar):', error.message);
@@ -264,7 +264,8 @@ export function AvatarUpload({
             <div className="text-xs text-orange-800">
               <p className="font-medium mb-1">⚠️ Storage não configurado</p>
               <p className="text-orange-700">
-                Execute <code className="bg-orange-100 px-1 rounded">CRIAR_BUCKET_AGORA.sql</code> no Supabase SQL Editor para habilitar upload de avatares.
+                O bucket <code className="bg-orange-100 px-1 rounded">avatars</code> não foi encontrado no Supabase Storage.
+                Rode as migrations de <code className="bg-orange-100 px-1 rounded">moove-fretes-database/migrations</code> (0001 cria os buckets) no SQL Editor do projeto.
               </p>
             </div>
           </div>

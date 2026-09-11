@@ -147,7 +147,9 @@ export const lookupCEP = async (cep: string): Promise<{
   }
 };
 
-// CNPJ lookup function (mock implementation)
+// CNPJ lookup — consulta a BrasilAPI, que espelha os dados públicos da
+// Receita Federal (CNPJ, razão social, endereço, situação cadastral).
+// API pública, sem chave/custo: https://brasilapi.com.br/docs#tag/CNPJ
 export const lookupCNPJ = async (cnpj: string): Promise<{
   razao_social: string;
   nome_fantasia?: string;
@@ -162,29 +164,39 @@ export const lookupCNPJ = async (cnpj: string): Promise<{
   situacao: string;
 } | null> => {
   const cleaned = cleanNumbers(cnpj);
-  
+
   if (!validateCNPJ(cleaned)) {
     return null;
   }
-  
-  // Mock data - em produção seria integração com API da Receita Federal
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        razao_social: "EMPRESA EXEMPLO LTDA",
-        nome_fantasia: "Empresa Exemplo",
-        logradouro: "RUA EXEMPLO",
-        numero: "123",
-        bairro: "CENTRO",
-        municipio: "SAO PAULO",
-        uf: "SP",
-        cep: "01234567",
-        telefone: "1133334444",
-        email: "contato@exemplo.com.br",
-        situacao: "ATIVA"
-      });
-    }, 1500);
-  });
+
+  try {
+    const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleaned}`);
+
+    if (!response.ok) {
+      // 404 = CNPJ válido no dígito verificador mas não encontrado na base
+      // da Receita (ex: CNPJ de teste). Outros códigos = serviço indisponível.
+      return null;
+    }
+
+    const data = await response.json();
+
+    return {
+      razao_social: data.razao_social || '',
+      nome_fantasia: data.nome_fantasia || undefined,
+      logradouro: data.logradouro || '',
+      numero: data.numero || '',
+      bairro: data.bairro || '',
+      municipio: data.municipio || '',
+      uf: data.uf || '',
+      cep: data.cep ? formatCEP(String(data.cep)) : '',
+      telefone: data.ddd_telefone_1 || undefined,
+      email: data.email || undefined,
+      situacao: data.descricao_situacao_cadastral || '',
+    };
+  } catch (error) {
+    console.error('Erro ao consultar CNPJ na BrasilAPI:', error);
+    return null;
+  }
 };
 
 // File validation

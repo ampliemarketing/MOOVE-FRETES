@@ -303,6 +303,14 @@ export function AppLayout() {
                     <span className="text-sm font-medium">Meu Perfil</span>
                   </DropdownMenuItem>
 
+                  <DropdownMenuItem
+                    onClick={() => navigate('/configuracoes')}
+                    className="mx-2 rounded-lg px-3 py-2.5 cursor-pointer"
+                  >
+                    <Settings className="mr-3 h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium">Configurações</span>
+                  </DropdownMenuItem>
+
                   {(user.userType === 'transportadora' || user.userType === 'agenciador') && (
                     <>
                       <DropdownMenuItem

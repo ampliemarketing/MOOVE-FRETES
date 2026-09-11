@@ -771,7 +771,7 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
         return <ProfileScreen user={user} onLogout={onLogout} isCollaborator={isCollaborator} companyId={isCollaborator ? resolvedCompanyId : undefined} companyName={user.collaborator?.companyName} />;
 
       case 'settings':
-        return <SystemSettings user={user} onBack={() => setActiveTab('dashboard')} />;
+        return <SystemSettings user={user} onBack={() => setActiveTab(user.userType === 'caminhoneiro' ? 'all-freights' : 'dashboard')} />;
 
       case 'collaborators':
         return <CollaboratorManagement user={user} companyId={resolvedCompanyId} />;
@@ -890,14 +890,22 @@ export function MainDashboard({ user: initialUser, onLogout, initialDeepLink, on
                 
                 {/* Menu Items */}
                 <div className="py-2">
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => setActiveTab('profile')}
                     className="mx-2 rounded-lg px-3 py-2.5 cursor-pointer"
                   >
                     <UserIcon className="mr-3 h-4 w-4 text-gray-500" />
                     <span className="text-sm font-medium">Meu Perfil</span>
                   </DropdownMenuItem>
-                  
+
+                  <DropdownMenuItem
+                    onClick={() => setActiveTab('settings')}
+                    className="mx-2 rounded-lg px-3 py-2.5 cursor-pointer"
+                  >
+                    <Settings className="mr-3 h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium">Configurações</span>
+                  </DropdownMenuItem>
+
                   {/* Colaboradores - apenas para transportadoras */}
                   {(user.userType === 'transportadora' || user.userType === 'agenciador') && (
                     <>

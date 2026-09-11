@@ -5,9 +5,10 @@ import { Button } from './button';
 import { Badge } from './badge';
 import { Progress } from './progress';
 import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertCircle, 
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  AlertTriangle,
   Eye, 
   EyeOff, 
   Upload,
@@ -52,6 +53,8 @@ interface ValidationState {
   isValid: boolean;
   isValidating: boolean;
   message?: string;
+  /** Formato válido, mas com uma ressalva a destacar em âmbar (ex: CNPJ não está ATIVO). */
+  isWarning?: boolean;
 }
 
 // Enhanced CPF Input
@@ -179,10 +182,16 @@ export function CNPJInput({
         if (companyData && onCompanyData) {
           onCompanyData(companyData);
         }
-        setValidation({ 
-          isValid: true, 
+        const situacaoAtiva = !companyData?.situacao || companyData.situacao.toUpperCase() === 'ATIVA';
+        setValidation({
+          isValid: true,
           isValidating: false,
-          message: companyData ? 'CNPJ válido - dados encontrados' : 'CNPJ válido'
+          isWarning: !!companyData && !situacaoAtiva,
+          message: companyData
+            ? situacaoAtiva
+              ? 'CNPJ válido - dados encontrados'
+              : `Atenção: situação cadastral "${companyData.situacao}" na Receita Federal`
+            : 'CNPJ válido'
         });
         setHasLookedUp(true);
       } catch (error) {
@@ -253,6 +262,7 @@ export function CNPJInput({
           disabled={disabled}
           className={`pr-10 ${
             error ? 'border-destructive focus:border-destructive' :
+            validation.isWarning ? 'border-amber-500 focus:border-amber-500' :
             validation.isValid ? 'border-green-500 focus:border-green-500' :
             validation.isValidating ? 'border-accent' : ''
           }`}
@@ -260,6 +270,8 @@ export function CNPJInput({
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
           {validation.isValidating || isLookingUp ? (
             <Loader2 className="w-4 h-4 animate-spin text-accent" />
+          ) : validation.isWarning ? (
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
           ) : validation.isValid ? (
             <CheckCircle2 className="w-4 h-4 text-green-500" />
           ) : hasBlurred && value.trim() && !validation.isValid ? (
@@ -274,7 +286,7 @@ export function CNPJInput({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className={`text-sm mt-1 ${
-              error ? 'text-destructive' : validation.isValid ? 'text-green-600' : 'text-destructive'
+              error ? 'text-destructive' : validation.isWarning ? 'text-amber-600' : validation.isValid ? 'text-green-600' : 'text-destructive'
             }`}
           >
             {error || validation.message}
@@ -470,6 +482,7 @@ export function CEPInput({
           disabled={disabled}
           className={`pr-10 ${
             error ? 'border-destructive focus:border-destructive' :
+            validation.isWarning ? 'border-amber-500 focus:border-amber-500' :
             validation.isValid ? 'border-green-500 focus:border-green-500' :
             validation.isValidating ? 'border-accent' : ''
           }`}
@@ -477,6 +490,8 @@ export function CEPInput({
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
           {validation.isValidating || isLookingUp ? (
             <Loader2 className="w-4 h-4 animate-spin text-accent" />
+          ) : validation.isWarning ? (
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
           ) : validation.isValid ? (
             <CheckCircle2 className="w-4 h-4 text-green-500" />
           ) : hasBlurred && value.trim() && !validation.isValid ? (
@@ -491,7 +506,7 @@ export function CEPInput({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className={`text-sm mt-1 ${
-              error ? 'text-destructive' : validation.isValid ? 'text-green-600' : 'text-destructive'
+              error ? 'text-destructive' : validation.isWarning ? 'text-amber-600' : validation.isValid ? 'text-green-600' : 'text-destructive'
             }`}
           >
             {error || validation.message}

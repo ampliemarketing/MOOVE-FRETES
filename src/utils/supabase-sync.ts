@@ -44,7 +44,7 @@ export async function syncCompanyToSupabase(company: any): Promise<{ success: bo
       rntrc_expiry: company.rntrcExpiry || null,
       is_individual: company.isIndividual || false,
       main_cpf: company.mainCpf || null,
-      corporate_email: company.corporateEmail || null,
+      email: company.corporateEmail || null,
       created_at: company.createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

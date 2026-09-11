@@ -1292,32 +1292,37 @@ export function ChatScreen({ user, initialFreightId, initialMessage, initialUser
               .maybeSingle();
             
             if (!user1Exists && currentUserData.id) {
+              // profiles não tem coluna cpf_cnpj — são duas colunas
+              // separadas (cpf/cnpj). Esse cache local antigo guarda os dois
+              // num campo só; decide qual é pelo tipo de usuário.
               await supabase.from('profiles').upsert({
                 id: currentUserData.id,
                 email: currentUserData.email,
                 name: currentUserData.name,
                 user_type: currentUserData.userType,
-                cpf_cnpj: currentUserData.cpfCnpj || null,
+                cpf: currentUserData.userType === 'caminhoneiro' ? (currentUserData.cpfCnpj || null) : null,
+                cnpj: currentUserData.userType !== 'caminhoneiro' ? (currentUserData.cpfCnpj || null) : null,
                 phone: currentUserData.phone || null,
                 status: currentUserData.status || 'active',
                 created_at: currentUserData.createdAt || new Date().toISOString(),
               }, { onConflict: 'id' });
             }
-            
+
             // Verificar/criar perfil do outro usuário
             const { data: user2Exists } = await supabase
               .from('profiles')
               .select('id')
               .eq('id', otherUserId)
               .maybeSingle();
-            
+
             if (!user2Exists && otherUserData.id) {
               await supabase.from('profiles').upsert({
                 id: otherUserData.id,
                 email: otherUserData.email,
                 name: otherUserData.name,
                 user_type: otherUserData.userType,
-                cpf_cnpj: otherUserData.cpfCnpj || null,
+                cpf: otherUserData.userType === 'caminhoneiro' ? (otherUserData.cpfCnpj || null) : null,
+                cnpj: otherUserData.userType !== 'caminhoneiro' ? (otherUserData.cpfCnpj || null) : null,
                 phone: otherUserData.phone || null,
                 status: otherUserData.status || 'active',
                 created_at: otherUserData.createdAt || new Date().toISOString(),

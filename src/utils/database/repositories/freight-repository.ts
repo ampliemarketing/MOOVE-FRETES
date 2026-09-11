@@ -848,7 +848,9 @@ export class FreightRepository {
         vehicle_types: freight.truckType ? [freight.truckType] : [],
         is_urgent: freight.urgent || false,
         views_count: freight.views || 0,
-        quotes_count: freight.quotesCount || 0,
+        // ⚠️ freights não tem coluna quotes_count — derrubaria este upsert
+        // inteiro com PGRST204. (syncToSupabase não é chamado em lugar
+        // nenhum hoje, sem efeito prático, mas fica corrigido.)
         metadata: {
           originalStatus: freight.status,
           customerName: freight.customerName,

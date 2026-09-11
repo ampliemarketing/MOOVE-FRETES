@@ -45,9 +45,12 @@ export async function fetchAdminUsers(): Promise<AdminUser[]> {
 }
 
 export async function updateUserStatus(userId: string, status: AdminUser['status']): Promise<void> {
+  // profiles não tem coluna is_active — só status (active/pending/blocked/
+  // suspended, ver 0001_core_schema.sql) já representa isso sozinho.
+  // Mandar is_active aqui derruba o update inteiro com PGRST204.
   await supabase
     .from('profiles')
-    .update({ status, is_active: status !== 'blocked' && status !== 'suspended' })
+    .update({ status })
     .eq('id', userId);
 }
 
@@ -601,9 +604,37 @@ export async function updateMasterSettings(config: any) {
 }
 
 
+/**
+ * Recalcula profiles.verification_status a partir de TODOS os documentos do
+ * usuário (tabela documents) — é o elo que faltava entre "documento aprovado
+ * no painel" e o usuário realmente aparecer como verificado (no painel e no
+ * app mobile, que lê esse campo pra mostrar "documentos em análise").
+ *
+ * Regra: qualquer documento rejeitado -> perfil 'rejected'. Todos aprovados
+ * (e pelo menos 1 documento) -> 'verified'. Caso contrário -> 'pending'.
+ */
+async function recomputeVerificationStatus(userId: string): Promise<void> {
+  const { data: docs, error } = await supabase
+    .from('documents')
+    .select('status')
+    .eq('user_id', userId);
+
+  if (error || !docs || docs.length === 0) return;
+
+  const hasRejected = docs.some((d: any) => d.status === 'rejected');
+  const allApproved = docs.every((d: any) => d.status === 'approved');
+
+  const verification_status = hasRejected ? 'rejected' : allApproved ? 'verified' : 'pending';
+
+  await supabase
+    .from('profiles')
+    .update({ verification_status, updated_at: new Date().toISOString() })
+    .eq('id', userId);
+}
+
 export async function approveVerificationRequest(documentId: string) {
   const { data: { user } } = await supabase.auth.getUser();
-  const { error } = await supabase
+  const { data: doc, error } = await supabase
     .from('documents')
     .update({
       status: 'approved',
@@ -612,13 +643,20 @@ export async function approveVerificationRequest(documentId: string) {
       reviewed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq('id', documentId);
+    .eq('id', documentId)
+    .select('user_id')
+    .single();
+
+  if (!error && doc?.user_id) {
+    await recomputeVerificationStatus(doc.user_id);
+  }
+
   return { error };
 }
 
 export async function rejectVerificationRequest(documentId: string, reason: string) {
   const { data: { user } } = await supabase.auth.getUser();
-  const { error } = await supabase
+  const { data: doc, error } = await supabase
     .from('documents')
     .update({
       status: 'rejected',
@@ -627,7 +665,14 @@ export async function rejectVerificationRequest(documentId: string, reason: stri
       reviewed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq('id', documentId);
+    .eq('id', documentId)
+    .select('user_id')
+    .single();
+
+  if (!error && doc?.user_id) {
+    await recomputeVerificationStatus(doc.user_id);
+  }
+
   return { error };
 }
 

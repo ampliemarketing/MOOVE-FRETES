@@ -148,7 +148,10 @@ export async function createCollaboratorWithAuth(
               phone,
               user_type: 'collaborator',
               verification_status: 'verified',
-              is_active: true,
+              // profiles não tem coluna is_active — status já é isso
+              // (default 'active'), mandar is_active derruba o insert com
+              // PGRST204 e deixa o colaborador sem linha em profiles.
+              status: 'active',
             });
           
           if (profileInsertError) {

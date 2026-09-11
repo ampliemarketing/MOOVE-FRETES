@@ -335,7 +335,10 @@ export async function syncFreights(userId: string): Promise<SyncResult> {
               visibility: 'public',
               vehicle_types: [freight.truckType],
               views_count: freight.views || 0,
-              quotes_count: freight.quotesCount || 0,
+              // ⚠️ freights não tem coluna quotes_count — mandar isso aqui
+              // derrubava o upsert inteiro com PGRST204 pra todo frete
+              // sincronizado do cache local (essa função É chamada de
+              // verdade, via syncAllUserData -> useAutoSync).
               created_at: freight.createdAt,
               updated_at: new Date().toISOString(),
               metadata: {
@@ -1187,7 +1190,10 @@ export async function syncDriverProfile(userId: string): Promise<SyncResult> {
           rating: driverData.rating || 0,
           completed_trips: driverData.completedTrips || 0,
           current_location: driverData.currentLocation || null,
-          preferred_routes: driverData.preferredRoutes || [],
+          // ⚠️ preferred_routes NÃO é coluna de drivers — é tabela própria
+          // (public.preferred_routes, FK driver_id). Mandar essa chave aqui
+          // derrubava o upsert inteiro com PGRST204 (função não é chamada em
+          // lugar nenhum hoje, então sem efeito prático, mas fica corrigido).
           created_at: driverData.createdAt,
           updated_at: new Date().toISOString()
         }, {
@@ -1243,7 +1249,7 @@ export async function syncCompanyProfile(userId: string): Promise<SyncResult> {
         .from('companies')
         .select('id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       // Preparar dados da empresa
       const companyDataToSync = {
@@ -1258,7 +1264,7 @@ export async function syncCompanyProfile(userId: string): Promise<SyncResult> {
         municipal_registration: companyData.municipalRegistration || '',
         // Contato
         phone: companyData.phone || '',
-        corporate_email: companyData.corporateEmail || companyData.email || '',
+        email: companyData.corporateEmail || companyData.email || '',
         website: companyData.contact?.website || '',
         description: companyData.description || '',
         // Endereço (JSONB)
@@ -1357,7 +1363,7 @@ export async function syncPreferredRoutes(userId: string): Promise<SyncResult> {
       .from('drivers')
       .select('id')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (driverLookupError || !driverRow) {
       // Usuário não é motorista — pular sync de rotas sem erro

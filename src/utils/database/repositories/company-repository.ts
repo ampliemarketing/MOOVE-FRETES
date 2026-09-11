@@ -29,7 +29,7 @@ export class CompanyRepository {
             company_name: company.name, // ✅ CORRIGIDO: coluna é company_name, não name
             cnpj: company.cnpj || null,
             phone: company.phone || null,
-            corporate_email: company.email || null, // ✅ CORRIGIDO: coluna é corporate_email, não email
+            email: company.email || null, // ✅ schema novo: coluna é 'email' (não mais 'corporate_email')
             company_type: (company as any).companyType || 'transportadora', // ✅ NOT NULL - precisa de valor
             address: company.address ? (typeof company.address === 'string' ? {
               city: company.city || '',
