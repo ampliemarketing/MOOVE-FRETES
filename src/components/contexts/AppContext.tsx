@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useReducer, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo, useRef } from 'react';
 import { UIProvider, useUI } from './UIContext';
+import { useAuth } from './AuthContext';
 import { toast } from 'sonner@2.0.3';
 import type { User as DBUser } from '../../utils/database/schema';
 
@@ -230,34 +231,60 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
   const { setConnectionStatus, setLastSync } = useUI();
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Initialize app with Supabase backend connection
+  // A sessão vem do AuthContext (única fonte). Antes, este provider chamava
+  // supabase.auth.getSession() por conta própria em paralelo com o
+  // AuthContext — o que disputava o lock de auth do gotrue-js — e só rodava
+  // uma vez na montagem: como login/logout não recarregam a página, depois de
+  // um login sem F5 o usuário daqui ficava vazio, e depois de logout → login
+  // com outra conta ficava a conta ANTIGA (o AppLayout prioriza state.user).
+  const { user: authUser, loading: authLoading } = useAuth();
+  const authUserRef = useRef(authUser);
+  authUserRef.current = authUser;
+
+  // 'pending' = AuthContext ainda restaurando a sessão inicial (não fazer nada);
+  // 'anon'    = sem usuário (sem sessão, ou deslogou) → limpar o estado;
+  // 'user:ID' = usuário logado → carregar os dados dele.
+  const authUserId = authUser?.id ?? null;
+  const sessionKey = authUserId ? `user:${authUserId}` : authLoading ? 'pending' : 'anon';
+
   useEffect(() => {
+    if (sessionKey === 'pending') return;
+
+    if (sessionKey === 'anon') {
+      // Descarta usuário, notificações etc. da conta anterior (se houver).
+      dispatch({ type: 'LOGOUT' });
+      setConnectionStatus('online');
+      setLastSync(new Date().toISOString());
+      return;
+    }
+
+    // Evita que um carregamento atrasado da conta anterior sobrescreva a atual
+    // (ex.: logout → login com outra conta antes da consulta terminar).
+    let cancelled = false;
+    const sessionUserId = sessionKey.slice('user:'.length);
+    const sessionUserEmail = authUserRef.current?.email || '';
+
     const initializeApp = async () => {
       try {
-        
+
         // Import Supabase client
         const { getSupabaseClient } = await import('../../utils/supabase/client');
         const supabase = getSupabaseClient();
-        
-        // Check for existing session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('AppProvider: Error getting session:', error);
-        }
-        
-        if (session?.user) {
-          
+
+        {
+
           // Load user profile from database (profiles table)
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', session.user.id)
+            .eq('id', sessionUserId)
             .single();
-          
+
+          if (cancelled) return;
+
           if (profile) {
             // ✅ Para empresas, buscar nome da tabela companies
-            let displayName = profile.name || profile.full_name || session.user.email || 'Usuário';
+            let displayName = profile.name || profile.full_name || sessionUserEmail || 'Usuário';
             let companyName = profile.company_name;
             let avatarUrl = profile.avatar_url;
             
@@ -266,17 +293,19 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
               const { data: company } = await supabase
                 .from('companies')
                 .select('trading_name, company_name, logo_url')
-                .eq('user_id', session.user.id)
+                .eq('user_id', sessionUserId)
                 .maybeSingle();
-              
+
+              if (cancelled) return;
+
               if (company) {
                 displayName = company.trading_name || company.company_name || displayName;
                 companyName = company.trading_name || company.company_name;
                 avatarUrl = company.logo_url || avatarUrl;
-                
+
                 // ✅ AUTO-SINCRONIZAÇÃO: Se profiles.name está diferente de companies.trading_name, corrigir automaticamente
                 if (profile.name !== displayName) {
-                  
+
                   // Atualizar profiles.name para manter sincronizado
                   const { error: syncError } = await supabase
                     .from('profiles')
@@ -284,8 +313,8 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
                       name: displayName,
                       updated_at: new Date().toISOString()
                     })
-                    .eq('id', session.user.id);
-                  
+                    .eq('id', sessionUserId);
+
                   if (syncError) {
                     console.error('❌ [AppContext] Erro ao sincronizar profiles:', syncError);
                   } else {
@@ -293,11 +322,13 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
                 }
               }
             }
-            
+
+            if (cancelled) return;
+
             const user: User = {
-              id: session.user.id, // SEMPRE usar o UUID do Supabase Auth, não o profile.id
+              id: sessionUserId, // SEMPRE usar o UUID do Supabase Auth, não o profile.id
               name: displayName,
-              email: session.user.email || '',
+              email: sessionUserEmail,
               userType: profile.user_type,
               verified: profile.email_verified || false,
               rating: profile.rating || 0,
@@ -314,19 +345,25 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
                 darkMode: false,
                 language: 'pt',
                 autoLocation: true
-              }
+              },
+              // Colaborador: o vínculo com a empresa vem do AuthContext
+              // (loadCollaboratorData). Sem isso, o AppLayout — que prioriza
+              // este usuário — perderia o companyId do colaborador.
+              collaborator: authUserRef.current?.collaborator,
             };
-            
+
             dispatch({ type: 'SET_USER', payload: user });
-            
+
             // ✅ CARREGAR NOTIFICAÇÕES INICIAIS
             try {
               const { database } = await import('../../utils/database');
-              const notificationsResponse = await database.notifications.getByUser(session.user.id, {
+              const notificationsResponse = await database.notifications.getByUser(sessionUserId, {
                 limit: 50,
                 offset: 0
               });
-              
+
+              if (cancelled) return;
+
               if (notificationsResponse.success && notificationsResponse.data) {
                 dispatch({ 
                   type: 'SET_NOTIFICATIONS', 
@@ -345,15 +382,17 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
               console.error('❌ [AppContext] Erro ao carregar notificações:', error);
             }
           }
-        } else {
         }
-        
+
+        if (cancelled) return;
+
         setConnectionStatus('online');
         setLastSync(new Date().toISOString());
         dispatch({ type: 'SET_LOADING', payload: false });
 
 
       } catch (error) {
+        if (cancelled) return;
         console.error('AppProvider: Error initializing app:', error);
         setConnectionStatus('offline');
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -361,7 +400,12 @@ function AppProviderCore({ children }: { children: React.ReactNode }) {
     };
 
     initializeApp();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionKey]);
 
   // ✅ SUPABASE REALTIME: Escutar notificações em tempo real (centralizado)
   useEffect(() => {

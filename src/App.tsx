@@ -28,16 +28,19 @@ function GlobalNotifications() {
 }
 
 function App() {
+  // AuthProvider por fora: ele é a única fonte da sessão do Supabase. O
+  // AppProvider fica dentro para seguir o usuário do AuthContext (login/logout)
+  // em vez de chamar getSession() por conta própria em paralelo.
   return (
-    <AppProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <AppProvider>
         <NotificationProviderWrapper>
           <RouterProvider router={router} />
           <GlobalNotifications />
           <Toaster position="top-right" />
         </NotificationProviderWrapper>
-      </AuthProvider>
-    </AppProvider>
+      </AppProvider>
+    </AuthProvider>
   );
 }
 

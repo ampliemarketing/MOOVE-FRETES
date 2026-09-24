@@ -9,15 +9,21 @@ RUN npm install
 COPY . .
 
 # Declare build-time args for Vite (passed from EasyPanel environment variables)
+# IMPORTANTE: Vite "assa" essas variáveis dentro do JS na hora do build — uma
+# variável só setada como "runtime env" no container não faz efeito nenhum
+# depois disso, porque o HTML/JS já foi gerado estaticamente. Por isso elas
+# precisam chegar aqui como ARG (build-time), não só como env do container.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
 ARG VITE_SUPABASE_PROJECT_ID
+ARG VITE_SUPABASE_FUNCTIONS_URL
 ARG VITE_MAPBOX_TOKEN
 ARG VITE_ADMIN_EMAILS
 
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
+ENV VITE_SUPABASE_FUNCTIONS_URL=$VITE_SUPABASE_FUNCTIONS_URL
 ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
 ENV VITE_ADMIN_EMAILS=$VITE_ADMIN_EMAILS
 
